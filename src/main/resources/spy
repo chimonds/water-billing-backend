@@ -1,0 +1,2 @@
+realdriver=com.mysql.jdbc.Driver
+logfile     = /Users/manyala/Desktop/spy.log
