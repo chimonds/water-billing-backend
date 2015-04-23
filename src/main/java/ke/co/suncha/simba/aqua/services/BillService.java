@@ -30,8 +30,10 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Bill;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.BillRepository;
+import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +61,9 @@ public class BillService {
 	private AccountRepository accountRepository;
 
 	@Autowired
+	private BillingMonthRepository billingMonthRepository;
+
+	@Autowired
 	private AuthManager authManager;
 
 	@Autowired
@@ -76,6 +81,33 @@ public class BillService {
 	private Sort sortByDateAddedDesc() {
 		return new Sort(Sort.Direction.DESC, "createdOn");
 	}
+
+	// private Bill getLastBill(Long accountId) {
+	//
+	// Bill lastBill = new Bill();
+	// // get current billing month
+	// BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+	//
+	// Account account = accountRepository.findOne(accountId);
+	// Bill bill =
+	// billRepository.findTopByAccountOrderByBillingMonth_MonthDesc(account);
+	// if (bill == null) {
+	// // seems its iniatial bill so check if account is metered
+	// if (account.isMetered()) {
+	// lastBill.setCurrentReading(account.getMeter().getInitialReading());
+	// } else {
+	// // TODO;
+	// }
+	// } else {
+	// if (bill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
+	// bill.setBilled(true);
+	// } else {
+	// lastBill = bill;
+	// }
+	// System.out.println("Bill Id:" + bill.getBillId());
+	// }
+	//
+	// }
 
 	public RestResponse getAllByAccount(RestRequestObject<RestPageRequest> requestObject, Long account_id) {
 		try {
@@ -104,6 +136,49 @@ public class BillService {
 						response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
 					}
 				}
+			}
+		} catch (Exception ex) {
+			responseObject.setMessage(ex.getLocalizedMessage());
+			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+			log.error(ex.getLocalizedMessage());
+		}
+		return response;
+	}
+
+	public RestResponse getLastBill(RestRequestObject<RestPageRequest> requestObject, Long accountId) {
+		try {
+			response = authManager.tokenValid(requestObject.getToken());
+			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+
+				Bill lastBill = new Bill();
+				// get current billing month
+				BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+
+				Account account = accountRepository.findOne(accountId);
+
+				Page<Bill> bills;
+				bills = billRepository.findTop1ByAccountOrderByBillCodeDesc(account, new PageRequest(0, 1));
+
+				if (!bills.hasContent()) {
+					// seems its iniatial bill so check if account is metered
+					if (account.isMetered()) {
+						lastBill.setCurrentReading(account.getMeter().getInitialReading());
+					} else {
+						// TODO;
+					}
+				} else {
+
+					lastBill = bills.getContent().get(0);
+
+					if (lastBill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
+						lastBill.setBilled(false);
+					}
+					System.out.println("Bill Id:" + lastBill.getBillId());
+					responseObject.setMessage("Fetched data successfully");
+					responseObject.setPayload(lastBill);
+					response = new RestResponse(responseObject, HttpStatus.OK);
+				}
+
 			}
 		} catch (Exception ex) {
 			responseObject.setMessage(ex.getLocalizedMessage());

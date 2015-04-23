@@ -25,6 +25,7 @@ package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Bill;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,5 +37,8 @@ import org.springframework.data.repository.PagingAndSortingRepository;
  */
 public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
 	Page<Bill> findAll(Pageable pageable);
+
 	Page<Bill> findAllByAccount(Account account, Pageable pageable);
+
+	Page<Bill> findTop1ByAccountOrderByBillCodeDesc(Account account, Pageable pageable);
 }

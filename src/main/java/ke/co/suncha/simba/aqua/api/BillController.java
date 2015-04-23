@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 package ke.co.suncha.simba.aqua.api;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -41,9 +42,6 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 
-
-
-
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -54,11 +52,17 @@ import com.wordnik.swagger.annotations.ApiParam;
 public class BillController {
 	@Autowired
 	private BillService billService;
-	
+
 	@RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
 	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAll(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long account_id,@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+	public RestResponse getAll(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long account_id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return billService.getAllByAccount(requestObject, account_id);
 	}
-	
+
+	@RequestMapping(value = "last/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
+	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse getLastBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return billService.getLastBill(requestObject, accountId);
+	}
+
 }

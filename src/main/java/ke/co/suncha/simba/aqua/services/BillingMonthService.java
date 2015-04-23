@@ -114,7 +114,7 @@ public class BillingMonthService {
 	}
 
 	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "billingMonth");
+		return new Sort(Sort.Direction.DESC, "month");
 	}
 
 	public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {

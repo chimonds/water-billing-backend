@@ -39,6 +39,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -97,6 +98,10 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 	@Column(name = "total_billed")
 	private Double totalBilled = (double) 0;
 	
+	@Transient
+	private Boolean billed= true;
+	
+	
 
 	@NotNull
 	@Column(name = "transaction_date")
@@ -128,6 +133,20 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 	private List<BillItem> billItems;
 	
 	
+
+	/**
+	 * @return the billed
+	 */
+	public Boolean isBilled() {
+		return billed;
+	}
+
+	/**
+	 * @param billed the billed to set
+	 */
+	public void setBilled(Boolean billed) {
+		this.billed = billed;
+	}
 
 	/**
 	 * @return the unitsBilled

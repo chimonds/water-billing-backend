@@ -213,17 +213,23 @@ public class ReleaseManager {
 
 						for (int y = 1; y <= 12; y++) {
 
-							String month = y + "";
-							if (month.length() == 1) {
-								month = "0" + month;
-							}
-							String billingCode = current + "" + month;
+							
+							
 							try {
 								BillingMonth bm = new BillingMonth();
-								bm.setCode(Integer.valueOf(billingCode));
+								//bm.setCode(Integer.valueOf(billingCode));
 								Calendar c = Calendar.getInstance();
 								c.set(current, y, 24);
-								bm.setBillingMonth(c);
+								bm.setMonth(c);
+								
+								String month = y + "";
+								if (month.length() == 1) {
+									month = "0" + month;
+								}
+								String billingCode = current + "" + month;
+								
+								
+								bm.setCode(Integer.valueOf(billingCode));
 								billingMonthRepository.save(bm);
 							} catch (Exception ex) {
 								ex.printStackTrace();

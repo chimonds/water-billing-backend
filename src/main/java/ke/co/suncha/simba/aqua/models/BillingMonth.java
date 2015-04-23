@@ -62,7 +62,7 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
 	@NotNull
 	@Column(name = "billing_month", unique = true)
 	@Temporal(TemporalType.DATE)
-	private Calendar billingMonth;
+	private Calendar month;
 
 	@NotNull
 	@Column(name = "code", unique = true)
@@ -100,19 +100,20 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
 		this.billingMonthId = billingMonthId;
 	}
 
+
+
 	/**
-	 * @return the billingMonth
+	 * @return the month
 	 */
-	public Calendar getBillingMonth() {
-		return billingMonth;
+	public Calendar getMonth() {
+		return month;
 	}
 
 	/**
-	 * @param billingMonth
-	 *            the billingMonth to set
+	 * @param month the month to set
 	 */
-	public void setBillingMonth(Calendar billingMonth) {
-		this.billingMonth = billingMonth;
+	public void setMonth(Calendar month) {
+		this.month = month;
 	}
 
 	/**
