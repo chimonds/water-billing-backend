@@ -1,6 +1,8 @@
 package ke.co.suncha.simba;
 
 import com.mangofactory.swagger.plugin.EnableSwagger;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -22,15 +24,16 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 // auto generation of API docs
 public class Application extends SpringBootServletInitializer {
 
-	private static final Class<Application> applicationClass = Application.class;
 
-	public static void main(String[] args) {
-		SpringApplication.run(applicationClass, args);
-	}
+    private static final Class<Application> applicationClass = Application.class;
 
-	@Override
-	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+    public static void main(String[] args) {
+        SpringApplication.run(applicationClass, args);
+    }
 
-		return application.sources(applicationClass);
-	}
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+
+        return application.sources(applicationClass);
+    }
 }

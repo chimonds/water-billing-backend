@@ -36,8 +36,8 @@ public class TariffMatrix extends SimbaBaseEntity implements Serializable {
     @Column(name = "amount")
     private Double amount = (double) 0;
 
-    @Enumerated(EnumType.STRING)
-    private TariffRateType tariffRateType;
+    @Column(name = "rate_type", length = 10)
+    private String rateType;
 
     // Bills belong to a billing month
     @ManyToOne(fetch = FetchType.EAGER)
@@ -77,13 +77,6 @@ public class TariffMatrix extends SimbaBaseEntity implements Serializable {
         this.amount = amount;
     }
 
-    public TariffRateType getTariffRateType() {
-        return tariffRateType;
-    }
-
-    public void setTariffRateType(TariffRateType tariffRateType) {
-        this.tariffRateType = tariffRateType;
-    }
 
     public Tariff getTariff() {
         return tariff;
@@ -91,5 +84,14 @@ public class TariffMatrix extends SimbaBaseEntity implements Serializable {
 
     public void setTariff(Tariff tariff) {
         this.tariff = tariff;
+    }
+
+
+    public String getRateType() {
+        return rateType;
+    }
+
+    public void setRateType(String rateType) {
+        this.rateType = rateType;
     }
 }

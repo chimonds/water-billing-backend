@@ -26,17 +26,18 @@ package ke.co.suncha.simba.aqua.api;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.services.TariffService;
 
+import ke.co.suncha.simba.aqua.utils.BillMeta;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -50,11 +51,18 @@ import com.wordnik.swagger.annotations.ApiOperation;
 @Api(value = "Connection tariffs", description = "Connection tariff API")
 public class TariffController extends AbstractRestHandler {
 	@Autowired
-	private TariffService tariffService;
+	private TariffService service;
 
 	@RequestMapping(value = "", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
 	@ApiOperation(value = "Get a paginated list of all account tariffs.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
 	public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return tariffService.getAllByFilter(requestObject);
+		return service.getAllByFilter(requestObject);
+	}
+
+	@RequestMapping(value = "calculate/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@ApiOperation(value = "Calculate  resource.", notes = "")
+	public RestResponse update(@ApiParam(value = "The ID of the existing account resource", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<BillMeta> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return service.calculate(requestObject,accountId);
 	}
 }

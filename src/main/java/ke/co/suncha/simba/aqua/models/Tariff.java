@@ -32,6 +32,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 /**
@@ -58,7 +60,8 @@ public class Tariff extends SimbaBaseEntity implements Serializable {
 	private String description;
 
 	// a tariff has tariff matrixes
-	@OneToMany(mappedBy = "tariff", fetch = FetchType.EAGER )
+	@JsonIgnore
+	@OneToMany(mappedBy = "tariff", fetch = FetchType.LAZY )
 	private List<TariffMatrix> tariffMatrixes;
 
 
