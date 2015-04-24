@@ -24,13 +24,9 @@
 package ke.co.suncha.simba.aqua.models;
 
 import java.io.Serializable;
+import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -60,6 +56,12 @@ public class Tariff extends SimbaBaseEntity implements Serializable {
 
 	@Column(name = "description")
 	private String description;
+
+	// a tariff has tariff matrixes
+	@OneToMany(mappedBy = "tariff", fetch = FetchType.EAGER )
+	private List<TariffMatrix> tariffMatrixes;
+
+
 
 	/**
 	 * @return the tariffId
@@ -101,5 +103,13 @@ public class Tariff extends SimbaBaseEntity implements Serializable {
 	 */
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public List<TariffMatrix> getTariffMatrixes() {
+		return tariffMatrixes;
+	}
+
+	public void setTariffMatrixes(List<TariffMatrix> tariffMatrixes) {
+		this.tariffMatrixes = tariffMatrixes;
 	}
 }
