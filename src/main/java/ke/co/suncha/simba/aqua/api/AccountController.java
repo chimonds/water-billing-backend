@@ -49,61 +49,59 @@ import com.wordnik.swagger.annotations.ApiParam;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @RestController
 @RequestMapping(value = "/api/v1/accounts")
 @Api(value = "Consumer accounts", description = "Consumer accounts API")
 public class AccountController extends AbstractRestHandler {
-	@Autowired
-	private AccountService accountService;
+    @Autowired
+    private AccountService accountService;
 
-	@RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.CREATED)
-	@ApiOperation(value = "Create an account resource.", notes = "Returns the URL of the new resource in the Location header.")
-	public RestResponse create(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long id,@RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return this.accountService.create(requestObject, id);
-	}
+    @RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.CREATED)
+    @ApiOperation(value = "Create an account resource.", notes = "Returns the URL of the new resource in the Location header.")
+    public RestResponse create(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return this.accountService.create(requestObject, id);
+    }
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all accounts belongine to a consumer.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAll(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return accountService.getAllByConsumer(requestObject, id);
-	}
+    @RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all accounts belongine to a consumer.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getAll(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getAllByConsumer(requestObject, id);
+    }
 
-	@RequestMapping(value = "/one", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse findOne(@RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return accountService.getOne(requestObject);
-	}
-	
-	@RequestMapping(value = "one/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse findOne(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return accountService.getById(requestObject, id);
-	}
-	
-	
-	
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse update(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return accountService.update(requestObject, id);
-	}
-	
-	@RequestMapping(value = "transfer/{id}", method = RequestMethod.PUT, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ApiOperation(value = "Transfer account resource to a new consumer.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse transfer(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return accountService.transfer(requestObject, id);
-	}
-	
-	@RequestMapping(value = "", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return accountService.getAllByFilter(requestObject);
-	}
+    @RequestMapping(value = "/one", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse findOne(@RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getOne(requestObject);
+    }
+
+    @RequestMapping(value = "one/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse findOne(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getById(requestObject, id);
+    }
+
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse update(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.update(requestObject, id);
+    }
+
+    @RequestMapping(value = "transfer/{id}", method = RequestMethod.PUT, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Transfer account resource to a new consumer.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse transfer(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.transfer(requestObject, id);
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getAllByFilter(requestObject);
+    }
 }

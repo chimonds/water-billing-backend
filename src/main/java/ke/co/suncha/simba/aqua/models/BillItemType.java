@@ -40,7 +40,6 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Entity
 @Table(name = "bill_item_types")
@@ -48,81 +47,95 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class BillItemType extends SimbaBaseEntity implements Serializable {
 
-	private static final long serialVersionUID = 5444566265765452040L;
+    private static final long serialVersionUID = 5444566265765452040L;
 
-	@Id
-	@Column(name = "bill_type_id", nullable = false)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long billTypeId;
+    @Id
+    @Column(name = "bill_type_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long billTypeId;
 
-	@NotNull
-	@Column(name = "name", unique = true)
-	private String name;
+    @NotNull
+    @Column(name = "name", unique = true)
+    private String name;
 
-	@Column(name = "description")
-	private String description;
+    @Column(name = "description")
+    private String description;
 
-	@Column(name = "amount")
-	private Double amount = (double) 0;
+    @Column(name = "amount")
+    private Double amount = (double) 0;
 
-	/**
-	 * @return the billTypeId
-	 */
-	public long getBillTypeId() {
-		return billTypeId;
-	}
+    @Column(name = "is_active")
+    private Boolean active = true;
 
-	/**
-	 * @param billTypeId
-	 *            the billTypeId to set
-	 */
-	public void setBillTypeId(long billTypeId) {
-		this.billTypeId = billTypeId;
-	}
 
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+     * @return the active
+     */
+    public Boolean isActive() {
+        return active;
+    }
 
-	/**
-	 * @param name
-	 *            the name to set
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
+    /**
+     * @param active the active to set
+     */
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 
-	/**
-	 * @return the description
-	 */
-	public String getDescription() {
-		return description;
-	}
+    /**
+     * @return the billTypeId
+     */
+    public long getBillTypeId() {
+        return billTypeId;
+    }
 
-	/**
-	 * @param description
-	 *            the description to set
-	 */
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    /**
+     * @param billTypeId the billTypeId to set
+     */
+    public void setBillTypeId(long billTypeId) {
+        this.billTypeId = billTypeId;
+    }
 
-	/**
-	 * @return the amount
-	 */
-	public Double getAmount() {
-		return amount;
-	}
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
 
-	/**
-	 * @param amount
-	 *            the amount to set
-	 */
-	public void setAmount(Double amount) {
-		this.amount = amount;
-	}
+    /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return the description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @param description the description to set
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * @return the amount
+     */
+    public Double getAmount() {
+        return amount;
+    }
+
+    /**
+     * @param amount the amount to set
+     */
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
 
 }

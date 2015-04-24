@@ -37,10 +37,6 @@ import org.springframework.data.repository.PagingAndSortingRepository;
  */
 public interface AccountRepository extends PagingAndSortingRepository<Account, Long> {
 
-//	Page<Account> findByConsumer(Consumer consumer, Pageable pageable);
-
-//	Page<Account> findBy(Consumer consumer, Pageable pageable);
-
 	Account findByaccNo(String accoutNo);
 
 	Account findByMeter(Meter meter);

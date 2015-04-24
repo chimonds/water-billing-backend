@@ -50,7 +50,6 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 
 @Entity
@@ -58,335 +57,321 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Account extends SimbaBaseEntity implements Serializable {
-	private static final long serialVersionUID = 432730479655553234L;
+    private static final long serialVersionUID = 432730479655553234L;
 
-	@Id
-	@Column(name = "account_id", nullable = false)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long accountId;
+    @Id
+    @Column(name = "account_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long accountId;
 
-	@NotNull
-	@Column(name = "balance_bf")
-	private Double balanceBroughtForward = (double) 0;
+    @NotNull
+    @Column(name = "balance_bf")
+    private Double balanceBroughtForward = (double) 0;
 
-	@NotNull
-	@Column(name = "outstandingBalance")
-	private Double outstandingBalance = (double) 0;
+    @NotNull
+    @Column(name = "outstandingBalance")
+    private Double outstandingBalance = (double) 0;
 
-	@NotNull
-	@Column(name = "acc_no", unique = true, length=9)
-	private String accNo;
+    @NotNull
+    @Column(name = "acc_no", unique = true, length = 9)
+    private String accNo;
 
-	@Transient
-	private String accName;
+    @Transient
+    private String accName;
 
-	@Column(name = "cut_off")
-	private Integer cutOff = 0;
+    @Column(name = "cut_off")
+    private Integer cutOff = 0;
 
-	@Column(name = "average_consumption")
-	private Integer averageConsumption = 0;
+    @Column(name = "average_consumption")
+    private Integer averageConsumption = 0;
 
-	@Transient
-	private Boolean active;
+    @Transient
+    private Boolean active;
 
-	@Transient
-	private Boolean metered = false;
+    @Transient
+    private Boolean metered = false;
 
-	// account belongs to a consumer
-	@JsonIgnore
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	@JoinColumn(name = "consumer_id")
-	private Consumer consumer;
-	
+    // account belongs to a consumer
+    @JsonIgnore
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "consumer_id")
+    private Consumer consumer;
 
-	// an account has a location
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "location_id")
-	private Location location;
 
-	// an account has a zone
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "zone_id")
-	private Zone zone;
+    // an account has a location
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "location_id")
+    private Location location;
 
-	// an account has a tariff
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "tariff_id")
-	private Tariff tariff;
+    // an account has a zone
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "zone_id")
+    private Zone zone;
 
-	// an account has a bills
-	@JsonIgnore
-	@OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private List<Bill> bills;
+    // an account has a tariff
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "tariff_id")
+    private Tariff tariff;
 
-	// an account has a meter
-	@OneToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "meter_id")
-	private Meter meter;
+    // an account has a bills
+    @JsonIgnore
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Bill> bills;
 
-	// an account has a payments
-	@JsonIgnore
-	@OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private List<Payment> payments;
+    // an account has a meter
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "meter_id")
+    private Meter meter;
 
-	/**
-	 * @return the accName
-	 */
-	public String getAccName() {
-		if (this.consumer != null) {
+    // an account has a payments
+    @JsonIgnore
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Payment> payments;
 
-			String fullName = "";
-			if (this.getConsumer().getFirstName() != null) {
-				fullName = this.getConsumer().getFirstName();
-			}
+    /**
+     * @return the accName
+     */
+    public String getAccName() {
+        if (this.consumer != null) {
 
-			if (this.getConsumer().getMiddleName() != null) {
-				fullName = fullName + " " + this.getConsumer().getMiddleName();
-			}
+            String fullName = "";
+            if (this.getConsumer().getFirstName() != null) {
+                fullName = this.getConsumer().getFirstName();
+            }
 
-			if (this.getConsumer().getLastName() != null) {
-				fullName = fullName + " " + this.getConsumer().getLastName();
-			}
-			this.accName = fullName;
-		} else {
-			this.accName = "Not Assigned";
-		}
-		return accName;
-	}
+            if (this.getConsumer().getMiddleName() != null) {
+                fullName = fullName + " " + this.getConsumer().getMiddleName();
+            }
 
-	/**
-	 * @return the metered
-	 */
-	public Boolean isMetered() {
-		if (this.meter != null) {
-			this.metered = true;
-		}
-		return metered;
-	}
+            if (this.getConsumer().getLastName() != null) {
+                fullName = fullName + " " + this.getConsumer().getLastName();
+            }
+            this.accName = fullName;
+        } else {
+            this.accName = "Not Assigned";
+        }
+        return accName;
+    }
 
-	/**
-	 * @return the meter
-	 */
-	public Meter getMeter() {
-		return meter;
-	}
+    /**
+     * @return the metered
+     */
+    public Boolean isMetered() {
+        if (this.meter != null) {
+            this.metered = true;
+        }
+        return metered;
+    }
 
-	/**
-	 * @param meter
-	 *            the meter to set
-	 */
-	public void setMeter(Meter meter) {
-		this.meter = meter;
-	}
+    /**
+     * @return the meter
+     */
+    public Meter getMeter() {
+        return meter;
+    }
 
-	/**
-	 * @return the outstandingBalance
-	 */
-	public Double getOutstandingBalance() {
-		return outstandingBalance;
-	}
+    /**
+     * @param meter the meter to set
+     */
+    public void setMeter(Meter meter) {
+        this.meter = meter;
+    }
 
-	/**
-	 * @param outstandingBalance
-	 *            the outstandingBalance to set
-	 */
-	public void setOutstandingBalance(Double outstandingBalance) {
-		this.outstandingBalance = outstandingBalance;
-	}
+    /**
+     * @return the outstandingBalance
+     */
+    public Double getOutstandingBalance() {
+        return outstandingBalance;
+    }
 
-	/**
-	 * @return the averageConsumption
-	 */
-	public Integer getAverageConsumption() {
-		return averageConsumption;
-	}
+    /**
+     * @param outstandingBalance the outstandingBalance to set
+     */
+    public void setOutstandingBalance(Double outstandingBalance) {
+        this.outstandingBalance = outstandingBalance;
+    }
 
-	/**
-	 * @param averageConsumption
-	 *            the averageConsumption to set
-	 */
-	public void setAverageConsumption(Integer averageConsumption) {
-		this.averageConsumption = averageConsumption;
-	}
+    /**
+     * @return the averageConsumption
+     */
+    public Integer getAverageConsumption() {
+        return averageConsumption;
+    }
 
-	/**
-	 * @return the payments
-	 */
-	public List<Payment> getPayments() {
-		return payments;
-	}
+    /**
+     * @param averageConsumption the averageConsumption to set
+     */
+    public void setAverageConsumption(Integer averageConsumption) {
+        this.averageConsumption = averageConsumption;
+    }
 
-	/**
-	 * @param payments
-	 *            the payments to set
-	 */
-	public void setPayments(List<Payment> payments) {
-		this.payments = payments;
-	}
+    /**
+     * @return the payments
+     */
+    public List<Payment> getPayments() {
+        return payments;
+    }
 
-	/**
-	 * @return the bills
-	 */
-	public List<Bill> getBills() {
-		return bills;
-	}
+    /**
+     * @param payments the payments to set
+     */
+    public void setPayments(List<Payment> payments) {
+        this.payments = payments;
+    }
 
-	/**
-	 * @param bills
-	 *            the bills to set
-	 */
-	public void setBills(List<Bill> bills) {
-		this.bills = bills;
-	}
+    /**
+     * @return the bills
+     */
+    public List<Bill> getBills() {
+        return bills;
+    }
 
-	/**
-	 * @return the cutOff
-	 */
-	public Integer getCutOff() {
-		return cutOff;
-	}
+    /**
+     * @param bills the bills to set
+     */
+    public void setBills(List<Bill> bills) {
+        this.bills = bills;
+    }
 
-	/**
-	 * @param cutOff
-	 *            the cutOff to set
-	 */
-	public void setCutOff(Integer cutOff) {
-		this.cutOff = cutOff;
-	}
+    /**
+     * @return the cutOff
+     */
+    public Integer getCutOff() {
+        return cutOff;
+    }
 
-	/**
-	 * @return the active
-	 */
-	public Boolean getActive() {
-		if (this.cutOff == 0) {
-			this.active = false;
-		} else if (this.cutOff == 1) {
-			this.active = true;
-		}
-		return active;
-	}
+    /**
+     * @param cutOff the cutOff to set
+     */
+    public void setCutOff(Integer cutOff) {
+        this.cutOff = cutOff;
+    }
 
-	/**
-	 * @param active
-	 *            the active to set
-	 */
-	public void setActive(Boolean active) {
-		this.active = active;
-	}
+    /**
+     * @return the active
+     */
+    public Boolean getActive() {
+        if (this.cutOff == 0) {
+            this.active = false;
+        } else if (this.cutOff == 1) {
+            this.active = true;
+        }
+        return active;
+    }
 
-	/**
-	 * @return the tariff
-	 */
-	public Tariff getTariff() {
-		return tariff;
-	}
+    /**
+     * @param active the active to set
+     */
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 
-	/**
-	 * @param tariff
-	 *            the tariff to set
-	 */
-	public void setTariff(Tariff tariff) {
-		this.tariff = tariff;
-	}
+    /**
+     * @return the tariff
+     */
+    public Tariff getTariff() {
+        return tariff;
+    }
 
-	/**
-	 * @return the zone
-	 */
-	public Zone getZone() {
-		return zone;
-	}
+    /**
+     * @param tariff the tariff to set
+     */
+    public void setTariff(Tariff tariff) {
+        this.tariff = tariff;
+    }
 
-	/**
-	 * @param zone
-	 *            the zone to set
-	 */
-	public void setZone(Zone zone) {
-		this.zone = zone;
-	}
+    /**
+     * @return the zone
+     */
+    public Zone getZone() {
+        return zone;
+    }
 
-	/**
-	 * @return the location
-	 */
-	public Location getLocation() {
-		return location;
-	}
+    /**
+     * @param zone the zone to set
+     */
+    public void setZone(Zone zone) {
+        this.zone = zone;
+    }
 
-	/**
-	 * @param location
-	 *            the location to set
-	 */
-	public void setLocation(Location location) {
-		this.location = location;
-	}
+    /**
+     * @return the location
+     */
+    public Location getLocation() {
+        return location;
+    }
 
-	/**
-	 * @return the accountId
-	 */
-	public long getAccountId() {
-		return accountId;
-	}
+    /**
+     * @param location the location to set
+     */
+    public void setLocation(Location location) {
+        this.location = location;
+    }
 
-	/**
-	 * @param accountId
-	 *            the accountId to set
-	 */
-	public void setAccountId(long accountId) {
-		this.accountId = accountId;
-	}
+    /**
+     * @return the accountId
+     */
+    public long getAccountId() {
+        return accountId;
+    }
 
-	/**
-	 * @return the balanceBroughtForward
-	 */
-	public Double getBalanceBroughtForward() {
-		return balanceBroughtForward;
-	}
+    /**
+     * @param accountId the accountId to set
+     */
+    public void setAccountId(long accountId) {
+        this.accountId = accountId;
+    }
 
-	/**
-	 * @param balanceBroughtForward
-	 *            the balanceBroughtForward to set
-	 */
-	public void setBalanceBroughtForward(Double balanceBroughtForward) {
-		this.balanceBroughtForward = balanceBroughtForward;
-	}
+    /**
+     * @return the balanceBroughtForward
+     */
+    public Double getBalanceBroughtForward() {
+        return balanceBroughtForward;
+    }
 
-	/**
-	 * @return the accNo
-	 */
-	public String getAccNo() {
-		return accNo;
-	}
+    /**
+     * @param balanceBroughtForward the balanceBroughtForward to set
+     */
+    public void setBalanceBroughtForward(Double balanceBroughtForward) {
+        this.balanceBroughtForward = balanceBroughtForward;
+    }
 
-	/**
-	 * @param accNo
-	 *            the accNo to set
-	 */
-	public void setAccNo(String accNo) {
-		this.accNo = accNo;
-	}
+    /**
+     * @return the accNo
+     */
+    public String getAccNo() {
+        return accNo;
+    }
 
-	/**
-	 * @return the consumer
-	 */
-	public Consumer getConsumer() {
-		return consumer;
-	}
+    /**
+     * @param accNo the accNo to set
+     */
+    public void setAccNo(String accNo) {
+        this.accNo = accNo;
+    }
 
-	/**
-	 * @param consumer
-	 *            the consumer to set
-	 */
-	public void setConsumer(Consumer consumer) {
-		this.consumer = consumer;
-	}
+    /**
+     * @return the consumer
+     */
+    public Consumer getConsumer() {
+        return consumer;
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString() {
-		return "ConsumerConnection [accountId=" + accountId + ", balanceBroughtForward=" + balanceBroughtForward + ", account no=" + accNo + ", consumer=" + consumer + ", getTransationId()=" + getTransationId() + "]";
-	}
+    /**
+     * @param consumer the consumer to set
+     */
+    public void setConsumer(Consumer consumer) {
+        this.consumer = consumer;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "ConsumerConnection [accountId=" + accountId + ", balanceBroughtForward=" + balanceBroughtForward + ", account no=" + accNo + ", consumer=" + consumer + ", getTransationId()=" + getTransationId() + "]";
+    }
 
 }

@@ -294,6 +294,7 @@ public class ReleaseManager {
 					BillItemType bit = new BillItemType();
 					bit.setName("Reconnection Fee");
 					bit.setAmount((double) 500);
+					bit.setActive(false);
 					billItemTypeRepository.save(bit);
 
 					bit = new BillItemType();
@@ -308,6 +309,7 @@ public class ReleaseManager {
 
 					bit = new BillItemType();
 					bit.setName("By Pass Fee");
+					bit.setActive(false);
 					bit.setAmount((double) 5000);
 					billItemTypeRepository.save(bit);
 
