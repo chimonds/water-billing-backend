@@ -106,7 +106,7 @@ public class TariffService {
     }
 
 
-    private BillMeta calculate(BillMeta billMeta, Long accountId) {
+    public BillMeta calculate(BillMeta billMeta, Long accountId) {
         BillMeta result = new BillMeta();
 
         Integer unitsConsumed = billMeta.getUnits();

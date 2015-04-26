@@ -65,10 +65,12 @@ public class BillItem extends SimbaBaseEntity implements Serializable {
 
 	// a bill item has a bill iitem type
 	@ManyToOne(fetch = FetchType.EAGER)
+	@NotNull
 	@JoinColumn(name = "bill_item_type_id")
 	private BillItemType billItemType;
 
 	@JsonIgnore
+	@NotNull
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "bill_id")
 	private Bill bill;

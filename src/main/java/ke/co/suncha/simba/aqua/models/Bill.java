@@ -117,12 +117,14 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 
 	// bills belong to an account
 	@JsonIgnore
+	@NotNull
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "account_id")
 	private Account account;
 
 	// Bills belong to a billing month
 	@ManyToOne(fetch = FetchType.EAGER)
+	@NotNull
 	@JoinColumn(name = "billing_month_id")
 	private BillingMonth billingMonth;
 	

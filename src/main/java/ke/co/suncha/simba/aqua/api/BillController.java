@@ -31,6 +31,7 @@ import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.services.BillService;
 
+import ke.co.suncha.simba.aqua.utils.BillRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,6 +64,12 @@ public class BillController {
 	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
 	public RestResponse getLastBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return billService.getLastBill(requestObject, accountId);
+	}
+
+	@RequestMapping(value = "bill/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
+	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse bill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<BillRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return billService.bill(requestObject, accountId);
 	}
 
 }

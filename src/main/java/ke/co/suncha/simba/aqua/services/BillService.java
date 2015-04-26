@@ -28,13 +28,14 @@ import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.Bill;
-import ke.co.suncha.simba.aqua.models.BillingMonth;
+import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
+import ke.co.suncha.simba.aqua.repository.BillItemRepository;
 import ke.co.suncha.simba.aqua.repository.BillRepository;
 import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
 
+import ke.co.suncha.simba.aqua.utils.BillMeta;
+import ke.co.suncha.simba.aqua.utils.BillRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,146 +47,293 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class BillService {
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private BillRepository billRepository;
+    @Autowired
+    private BillRepository billRepository;
 
-	@Autowired
-	private AccountRepository accountRepository;
+    @Autowired
+    private AccountRepository accountRepository;
 
-	@Autowired
-	private BillingMonthRepository billingMonthRepository;
+    @Autowired
+    private BillItemRepository billItemRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private PaymentService paymentService;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    private BillingMonthRepository billingMonthRepository;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    private TariffService tariffService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    @Autowired
+    private AuthManager authManager;
 
-	public BillService() {
-	}
+    @Autowired
+    CounterService counterService;
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+    @Autowired
+    GaugeService gaugeService;
 
-	// private Bill getLastBill(Long accountId) {
-	//
-	// Bill lastBill = new Bill();
-	// // get current billing month
-	// BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
-	//
-	// Account account = accountRepository.findOne(accountId);
-	// Bill bill =
-	// billRepository.findTopByAccountOrderByBillingMonth_MonthDesc(account);
-	// if (bill == null) {
-	// // seems its iniatial bill so check if account is metered
-	// if (account.isMetered()) {
-	// lastBill.setCurrentReading(account.getMeter().getInitialReading());
-	// } else {
-	// // TODO;
-	// }
-	// } else {
-	// if (bill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
-	// bill.setBilled(true);
-	// } else {
-	// lastBill = bill;
-	// }
-	// System.out.println("Bill Id:" + bill.getBillId());
-	// }
-	//
-	// }
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	public RestResponse getAllByAccount(RestRequestObject<RestPageRequest> requestObject, Long account_id) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    public BillService() {
+    }
 
-				Account account = accountRepository.findOne(account_id);
-				if (account == null) {
-					responseObject.setMessage("Invalid account");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-				} else {
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
 
-					RestPageRequest p = requestObject.getObject();
+    private BillingMonth getActiveBillingMonth() {
+        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
 
-					Page<Bill> page;
-					page = billRepository.findAllByAccount(account, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+        if (billingMonth != null) {
+            //set billing code
+            String year = String.valueOf(billingMonth.getMonth().get(Calendar.YEAR));
+            String month = String.valueOf(billingMonth.getMonth().get(Calendar.MONTH));
+            if (month.length() == 1) {
+                month = "0" + month;
+            }
+            String billingCode = year + month;
+            billingMonth.setCode(Integer.valueOf(billingCode));
+            log.info("Billing code:" + billingCode);
+        }
 
-					if (page.hasContent()) {
+        return billingMonth;
+    }
 
-						responseObject.setMessage("Fetched data successfully");
-						responseObject.setPayload(page);
-						response = new RestResponse(responseObject, HttpStatus.OK);
-					} else {
-						responseObject.setMessage("Your search did not match any records");
-						response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-					}
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    public RestResponse bill(RestRequestObject<BillRequest> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-	public RestResponse getLastBill(RestRequestObject<RestPageRequest> requestObject, Long accountId) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                Account account = accountRepository.findOne(accountId);
+                if (account == null) {
+                    responseObject.setMessage("Invalid account.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-				Bill lastBill = new Bill();
-				// get current billing month
-				BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+                log.info("Billing account:" + account.getAccNo());
 
-				Account account = accountRepository.findOne(accountId);
+                Bill lastBill = this.getAccountLastBill(accountId);
+                if (lastBill.isBilled()) {
+                    responseObject.setMessage("The account has already being billed this month.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-				Page<Bill> bills;
-				bills = billRepository.findTop1ByAccountOrderByBillCodeDesc(account, new PageRequest(0, 1));
+                BillRequest billRequest = requestObject.getObject();
 
-				if (!bills.hasContent()) {
-					// seems its iniatial bill so check if account is metered
-					if (account.isMetered()) {
-						lastBill.setCurrentReading(account.getMeter().getInitialReading());
-					} else {
-						// TODO;
-					}
-				} else {
+                Bill bill = new Bill();
 
-					lastBill = bills.getContent().get(0);
+                //set
+                //TODO; check nulls
+                bill.setCurrentReading(billRequest.getCurrentReading());
+                bill.setPreviousReading(billRequest.getPreviousReading());
 
-					if (lastBill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
-						lastBill.setBilled(false);
-					}
-					System.out.println("Bill Id:" + lastBill.getBillId());
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(lastBill);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
 
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                //get units consumed
+                Integer unitsConsumed = bill.getCurrentReading() - bill.getPreviousReading();
+                if (unitsConsumed > 0) {
+                    bill.setConsumptionType("Actual");
+                } else {
+                    unitsConsumed = lastBill.getAverageConsumption();
+                    bill.setConsumptionType("Average");
+                }
+
+                //set units consumed
+                bill.setUnitsBilled(unitsConsumed);
+
+                //set meter rent
+                if (account.isMetered()) {
+                    if (account.getMeter().getMeterOwner().isChargable()) {
+                        bill.setMeterRent(account.getMeter().getMeterSize().getRentAmount());
+                    }
+                }
+
+                //set billing amount
+                BillMeta billMeta = new BillMeta();
+                billMeta.setUnits(unitsConsumed);
+                billMeta = tariffService.calculate(billMeta, accountId);
+
+                bill.setAmount(billMeta.getAmount());
+                bill.setContent(billMeta.getContent());
+
+                //set billcode
+                //String billCode =
+                BillingMonth activeBillingMonth = this.getActiveBillingMonth();
+                bill.setBillingMonth(activeBillingMonth);
+
+                bill.setBillCode(activeBillingMonth.getCode());
+
+                //set average
+                bill.setAverageConsumption(account.getAverageConsumption());
+
+                //
+                log.info("adding bill to data store");
+
+                //set account
+                bill.setAccount(account);
+                Bill createdBill = billRepository.save(bill);
+
+                log.info("Applying charges to bill...");
+                if (billRequest.getBillItemTypes() != null) {
+                    if (!billRequest.getBillItemTypes().isEmpty()) {
+                        List<BillItem> billItems = new ArrayList<>();
+                        for (BillItemType bit : billRequest.getBillItemTypes()) {
+                            BillItem bi = new BillItem();
+                            bi.setAmount(bit.getAmount());
+                            bi.setBill(createdBill);
+                            bi.setBillItemType(bit);
+
+                            BillItem createdBillItem = billItemRepository.save(bi);
+
+                            //add to list
+                            log.info("Adding other charges:" + bit.getName());
+                            billItems.add(createdBillItem);
+                        }
+                        bill.setBillItems(billItems);
+                    }
+                }
+
+                //
+                Double totalAmount = 0.0;
+                if (account.isMetered()) {
+                    if (account.getMeter().getMeterOwner().isChargable()) {
+                        totalAmount += account.getMeter().getMeterSize().getRentAmount();
+                    }
+                }
+                totalAmount += createdBill.getAmount();
+
+                if (createdBill.getBillItems() != null) {
+                    if (!createdBill.getBillItems().isEmpty()) {
+                        for (BillItem bi : createdBill.getBillItems()) {
+                            totalAmount += bi.getAmount();
+                        }
+                    }
+                }
+                //update total amount
+                createdBill.setTotalBilled(totalAmount);
+
+                createdBill = billRepository.save(bill);
+
+                //save outsatanding balance
+                account = accountRepository.findOne(accountId);
+                account.setOutstandingBalance(paymentService.getAccountBalance(account));
+                accountRepository.save(account);
+
+                log.info("Account billed successfully:" + account.getAccNo());
+
+                responseObject.setMessage("Account billed successfully");
+                responseObject.setPayload(bill);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getAllByAccount(RestRequestObject<RestPageRequest> requestObject, Long account_id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+
+                Account account = accountRepository.findOne(account_id);
+                if (account == null) {
+                    responseObject.setMessage("Invalid account");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else {
+
+                    RestPageRequest p = requestObject.getObject();
+
+                    Page<Bill> page;
+                    page = billRepository.findAllByAccount(account, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
+                    if (page.hasContent()) {
+
+                        responseObject.setMessage("Fetched data successfully");
+                        responseObject.setPayload(page);
+                        response = new RestResponse(responseObject, HttpStatus.OK);
+                    } else {
+                        responseObject.setMessage("Your search did not match any records");
+                        response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    private Bill getAccountLastBill(Long accountId) {
+        Bill lastBill = new Bill();
+        // get current billing month
+        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+
+        Account account = accountRepository.findOne(accountId);
+
+        Page<Bill> bills;
+        bills = billRepository.findByAccountOrderByBillCodeDesc(account, new PageRequest(0, 1));
+
+        if (!bills.hasContent()) {
+            // seems its iniatial bill so check if account is metered
+            if (account.isMetered()) {
+                lastBill.setCurrentReading(account.getMeter().getInitialReading());
+            } else {
+                // TODO;
+            }
+        } else {
+
+            lastBill = bills.getContent().get(0);
+            log.info("Most current bill:" + lastBill.getBillingMonth().getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
+            log.info("Billing month:" + billingMonth.getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
+
+            if (lastBill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
+                lastBill.setBilled(false);
+            } else {
+                lastBill.setBilled(true);
+            }
+
+        }
+        return lastBill;
+    }
+
+    public RestResponse getLastBill(RestRequestObject<RestPageRequest> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                Bill bill = this.getAccountLastBill(accountId);
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(bill);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
 }

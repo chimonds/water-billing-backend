@@ -15,9 +15,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 //Sprint Boot Auto Configuration
 @EnableAutoConfiguration
-//@ComponentScan(basePackages = "ke.co.suncha.simba.admin")
-//@EnableJpaRepositories("ke.co.suncha.simba.admin.repositories")
-
 @ComponentScan(basePackages = "ke.co.suncha.simba")
 @EnableJpaRepositories("ke.co.suncha.simba")
 @EnableSwagger

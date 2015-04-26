@@ -38,5 +38,5 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
 
 	Page<Bill> findAllByAccount(Account account, Pageable pageable);
 
-	Page<Bill> findTop1ByAccountOrderByBillCodeDesc(Account account, Pageable pageable);
+	Page<Bill> findByAccountOrderByBillCodeDesc(Account account, Pageable pageable);
 }

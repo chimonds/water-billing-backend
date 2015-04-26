@@ -55,252 +55,287 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class PaymentService {
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
-	@Autowired
-	private AccountRepository accountRepository;
+    @Autowired
+    private AccountRepository accountRepository;
 
-	@Autowired
-	private PaymentTypeRepository paymentTypeRepository;
+    @Autowired
+    private PaymentTypeRepository paymentTypeRepository;
 
-	@Autowired
-	private PaymentSourceRepository paymentSourceRepository;
+    @Autowired
+    private PaymentSourceRepository paymentSourceRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	public PaymentService() {
+    public PaymentService() {
 
-	}
+    }
 
-	public RestResponse createByAccount(RestRequestObject<Payment> requestObject, Long accountId) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    public Double getAccountBalance(Account account) {
+        // update balances
 
-				Account account = accountRepository.findOne(accountId);
-				if (account == null) {
-					responseObject.setMessage("Invalid account");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-					return response;
-				}
+        Double balance = 0d;
 
-				Payment payment = requestObject.getObject();
-				// check if all values are present
-				if (payment.getAmount() == null) {
-					responseObject.setMessage("Invalid amount");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-					return response;
-				}
+        // add balance b/f
+        balance += account.getBalanceBroughtForward();
 
-				if (payment.getAmount() == 0) {
-					responseObject.setMessage("Invalid amount");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-					return response;
-				}
+        List<Bill> bills = account.getBills();
+        if (bills != null) {
+            for (Bill bill : bills) {
+                balance += bill.getAmount();
+                balance += bill.getMeterRent();
 
-				if (payment.getTransactionDate() == null) {
-					responseObject.setMessage("Invalid transaction date");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-					return response;
-				}
+                // get bill items
+                List<BillItem> billItems = bill.getBillItems();
+                if (billItems != null) {
+                    for (BillItem billItem : billItems) {
+                        balance += billItem.getAmount();
+                    }
+                }
+            }
+        }
 
-				Calendar calendar = Calendar.getInstance();
-				if (payment.getTransactionDate().after(calendar)) {
-					responseObject.setMessage("Transaction date can not be greater than now");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-					return response;
-				}
+        // get payments
+        List<Payment> payments = account.getPayments();
+        if (payments != null) {
+            for (Payment p : payments) {
+                balance -= p.getAmount();
+            }
+        }
+        return balance;
+    }
 
-				PaymentType paymentType = paymentTypeRepository.findOne(payment.getPaymentType().getPaymentTypeId());
-				if (paymentType == null) {
-					responseObject.setMessage("Invalid payment type");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-					return response;
-				}
+    public RestResponse createByAccount(RestRequestObject<Payment> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-				// TODO;
-				PaymentSource paymentSource = paymentSourceRepository.findByName("CASH");
+                Account account = accountRepository.findOne(accountId);
+                if (account == null) {
+                    responseObject.setMessage("Invalid account");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-				if (paymentType.isUnique()) {
-					// check if payment exists
-					Payment p = paymentRepository.findByreceiptNo(payment.getReceiptNo());
-					if (p != null) {
-						responseObject.setMessage("Duplicate receipt number");
-						responseObject.setPayload("");
-						response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-						return response;
-					}
-				}
+                Payment payment = requestObject.getObject();
+                // check if all values are present
+                if (payment.getAmount() == null) {
+                    responseObject.setMessage("Invalid amount");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-				if (paymentType.hasComments()) {
-					if (payment.getNotes() == null) {
-						responseObject.setMessage("Notes missing");
-						responseObject.setPayload("");
-						response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-						return response;
-					}
+                if (payment.getAmount() == 0) {
+                    responseObject.setMessage("Invalid amount");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-					if (payment.getNotes().isEmpty()) {
-						responseObject.setMessage("Notes missing");
-						responseObject.setPayload("");
-						response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-						return response;
-					}
+                if (payment.getTransactionDate() == null) {
+                    responseObject.setMessage("Invalid transaction date");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-					if (payment.getNotes().length() <= 10) {
-						responseObject.setMessage("Notes too short");
-						responseObject.setPayload("");
-						response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-						return response;
-					}
-				}
+                Calendar calendar = Calendar.getInstance();
+                if (payment.getTransactionDate().after(calendar)) {
+                    responseObject.setMessage("Transaction date can not be greater than now");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-				if (paymentType.isNegative()) {
-					payment.setAmount(payment.getAmount() * -1);
-				}
-				// create resource
-				payment.setAccount(account);
-				payment.setPaymentType(paymentType);
-				payment.setPaymentSource(paymentSource);
-				Payment created = paymentRepository.save(payment);
+                PaymentType paymentType = paymentTypeRepository.findOne(payment.getPaymentType().getPaymentTypeId());
+                if (paymentType == null) {
+                    responseObject.setMessage("Invalid payment type");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
 
-				// update balances
-				account = accountRepository.findOne(accountId);
-				Double balance = 0d;
+                // TODO;
+                PaymentSource paymentSource = paymentSourceRepository.findByName("CASH");
 
-				// add balance b/f
-				balance += account.getBalanceBroughtForward();
+                if (paymentType.isUnique()) {
+                    // check if payment exists
+                    Payment p = paymentRepository.findByreceiptNo(payment.getReceiptNo());
+                    if (p != null) {
+                        responseObject.setMessage("Duplicate receipt number");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+                }
 
-				List<Bill> bills = account.getBills();
-				if (bills != null) {
-					for (Bill bill : bills) {
-						balance += bill.getAmount();
-						balance += bill.getMeterRent();
+                if (paymentType.hasComments()) {
+                    if (payment.getNotes() == null) {
+                        responseObject.setMessage("Notes missing");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
 
-						// get bill items
-						List<BillItem> billItems = bill.getBillItems();
-						if (billItems != null) {
-							for (BillItem billItem : billItems) {
-								balance += billItem.getAmount();
-							}
-						}
-					}
-				}
+                    if (payment.getNotes().isEmpty()) {
+                        responseObject.setMessage("Notes missing");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
 
-				// get payments
-				List<Payment> payments = account.getPayments();
-				if (payments != null) {
-					for (Payment p : payments) {
-						balance -= p.getAmount();
-					}
-				}
-				// update account outstanding balance
-				account.setOutstandingBalance(balance);
-				accountRepository.save(account);
+                    if (payment.getNotes().length() <= 10) {
+                        responseObject.setMessage("Notes too short");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+                }
 
-				// package response
-				responseObject.setMessage("Payment created successfully. ");
-				responseObject.setPayload(created);
-				response = new RestResponse(responseObject, HttpStatus.CREATED);
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                if (paymentType.isNegative()) {
+                    payment.setAmount(payment.getAmount() * -1);
+                }
+                // create resource
+                payment.setAccount(account);
+                payment.setPaymentType(paymentType);
+                payment.setPaymentSource(paymentSource);
+                Payment created = paymentRepository.save(payment);
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+                // update balances
+                account = accountRepository.findOne(accountId);
+                Double balance = 0d;
 
-	public RestResponse getAllByAccount(RestRequestObject<RestPageRequest> requestObject, Long account_id) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                // add balance b/f
+                balance += account.getBalanceBroughtForward();
 
-				Account account = accountRepository.findOne(account_id);
-				if (account == null) {
-					responseObject.setMessage("Invalid account");
-					responseObject.setPayload("");
-					response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-				} else {
+                List<Bill> bills = account.getBills();
+                if (bills != null) {
+                    for (Bill bill : bills) {
+                        balance += bill.getAmount();
+                        balance += bill.getMeterRent();
 
-					RestPageRequest p = requestObject.getObject();
+                        // get bill items
+                        List<BillItem> billItems = bill.getBillItems();
+                        if (billItems != null) {
+                            for (BillItem billItem : billItems) {
+                                balance += billItem.getAmount();
+                            }
+                        }
+                    }
+                }
 
-					Page<Payment> page;
-					page = paymentRepository.findAllByAccount(account, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                // get payments
+                List<Payment> payments = account.getPayments();
+                if (payments != null) {
+                    for (Payment p : payments) {
+                        balance -= p.getAmount();
+                    }
+                }
+                // update account outstanding balance
+                account.setOutstandingBalance(balance);
 
-					if (page.hasContent()) {
 
-						responseObject.setMessage("Fetched data successfully");
-						responseObject.setPayload(page);
-						response = new RestResponse(responseObject, HttpStatus.OK);
-					} else {
-						responseObject.setMessage("Your search did not match any records");
-						response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-					}
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                accountRepository.save(account);
 
-	public RestResponse getAllByReceiptNo(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				RestPageRequest p = requestObject.getObject();
-				Page<Payment> page;
-				if (p.getFilter().isEmpty()) {
-					page = paymentRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				} else {
-					page = paymentRepository.findAllByReceiptNoContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                // package response
+                responseObject.setMessage("Payment created successfully. ");
+                responseObject.setPayload(created);
+                response = new RestResponse(responseObject, HttpStatus.CREATED);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-				}
-				if (page.hasContent()) {
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(page);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
+
+    public RestResponse getAllByAccount(RestRequestObject<RestPageRequest> requestObject, Long account_id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+
+                Account account = accountRepository.findOne(account_id);
+                if (account == null) {
+                    responseObject.setMessage("Invalid account");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else {
+
+                    RestPageRequest p = requestObject.getObject();
+
+                    Page<Payment> page;
+                    page = paymentRepository.findAllByAccount(account, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
+                    if (page.hasContent()) {
+
+                        responseObject.setMessage("Fetched data successfully");
+                        responseObject.setPayload(page);
+                        response = new RestResponse(responseObject, HttpStatus.OK);
+                    } else {
+                        responseObject.setMessage("Your search did not match any records");
+                        response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getAllByReceiptNo(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                RestPageRequest p = requestObject.getObject();
+                Page<Payment> page;
+                if (p.getFilter().isEmpty()) {
+                    page = paymentRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
+                    page = paymentRepository.findAllByReceiptNoContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
+                }
+                if (page.hasContent()) {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(page);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
 }

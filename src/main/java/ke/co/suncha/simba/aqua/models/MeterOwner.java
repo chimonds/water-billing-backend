@@ -96,7 +96,7 @@ public class MeterOwner extends SimbaBaseEntity implements Serializable {
 	/**
 	 * @return the charge
 	 */
-	public Boolean getCharge() {
+	public Boolean isChargable() {
 		return charge;
 	}
 
