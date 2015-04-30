@@ -31,6 +31,7 @@ import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.services.AccountService;
 
 
@@ -104,4 +105,11 @@ public class AccountController extends AbstractRestHandler {
     public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return accountService.getAllByFilter(requestObject);
     }
+
+    @RequestMapping(value = "/report", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getReport(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getAll(requestObject);
+    }
+
 }

@@ -79,13 +79,10 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @Transient
     private String accName;
 
-    @Column(name = "cut_off")
-    private Integer cutOff = 0;
-
     @Column(name = "average_consumption")
     private Integer averageConsumption = 0;
 
-    @Transient
+    @Column(name = "cut_off")
     private Boolean active;
 
     @Transient
@@ -233,29 +230,11 @@ public class Account extends SimbaBaseEntity implements Serializable {
         this.bills = bills;
     }
 
-    /**
-     * @return the cutOff
-     */
-    public Integer getCutOff() {
-        return cutOff;
-    }
-
-    /**
-     * @param cutOff the cutOff to set
-     */
-    public void setCutOff(Integer cutOff) {
-        this.cutOff = cutOff;
-    }
 
     /**
      * @return the active
      */
-    public Boolean getActive() {
-        if (this.cutOff == 0) {
-            this.active = false;
-        } else if (this.cutOff == 1) {
-            this.active = true;
-        }
+    public Boolean isActive() {
         return active;
     }
 

@@ -44,112 +44,123 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class SimbaOptionService {
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	private SimbaOptionRepository optionRepository;
+    @Autowired
+    private SimbaOptionRepository optionRepository;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	public RestResponse create(SimbaOption option) {
-		SimbaOption so = optionRepository.findByName(option.getName());
-		if (so != null) {
-			responseObject.setMessage("Option already exists");
-			response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-		} else {
-			try {
-				// create resource
-				SimbaOption createdOption = optionRepository.save(option);
+    public SimbaOption getOption(String name) {
+        SimbaOption option = optionRepository.findByName(name);
+        if (option == null) {
+            option = new SimbaOption();
+            option.setName(name);
+            option.setValue(name);
+            option = optionRepository.save(option);
+        }
+        return option;
+    }
 
-				// package response
-				responseObject.setMessage("Option created successfully");
-				responseObject.setPayload(createdOption);
-				response = new RestResponse(responseObject, HttpStatus.CREATED);
-			} catch (Exception ex) {
-				responseObject.setMessage(ex.getLocalizedMessage());
-				response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+    public RestResponse create(SimbaOption option) {
+        SimbaOption so = optionRepository.findByName(option.getName());
+        if (so != null) {
+            responseObject.setMessage("Option already exists");
+            response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+        } else {
+            try {
+                // create resource
+                SimbaOption createdOption = optionRepository.save(option);
 
-				//
-				log.error(ex.getLocalizedMessage());
-			}
-		}
-		return response;
-	}
+                // package response
+                responseObject.setMessage("Option created successfully");
+                responseObject.setPayload(createdOption);
+                response = new RestResponse(responseObject, HttpStatus.CREATED);
+            } catch (Exception ex) {
+                responseObject.setMessage(ex.getLocalizedMessage());
+                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-	public RestResponse update(RestRequestObject<SimbaOption> requestObject, Long id) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				SimbaOption option = requestObject.getObject();
-				SimbaOption so = optionRepository.findOne(id);
-				if (so == null) {
-					responseObject.setMessage("Option not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					so.setName(option.getName());
-					so.setValue(option.getValue());
-					// so.setDescription(option.getDescription());
+                //
+                log.error(ex.getLocalizedMessage());
+            }
+        }
+        return response;
+    }
 
-					// save
-					optionRepository.save(so);
-					responseObject.setMessage("Option updated successfully");
-					responseObject.setPayload(so);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    public RestResponse update(RestRequestObject<SimbaOption> requestObject, Long id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                SimbaOption option = requestObject.getObject();
+                SimbaOption so = optionRepository.findOne(id);
+                if (so == null) {
+                    responseObject.setMessage("Option not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
+                    so.setName(option.getName());
+                    so.setValue(option.getValue());
+                    // so.setDescription(option.getDescription());
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+                    // save
+                    optionRepository.save(so);
+                    responseObject.setMessage("Option updated successfully");
+                    responseObject.setPayload(so);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	public RestResponse getAllByName(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
 
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				RestPageRequest p = requestObject.getObject();
-				Page<SimbaOption> options;
-				if (p.getFilter().isEmpty()) {
-					options = optionRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				} else {
-					options = optionRepository.findByNameContaining(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				}
-				if (options.hasContent()) {
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(options);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
+
+    public RestResponse getAllByName(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                RestPageRequest p = requestObject.getObject();
+                Page<SimbaOption> options;
+                if (p.getFilter().isEmpty()) {
+                    options = optionRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
+                    options = optionRepository.findByNameContaining(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                }
+                if (options.hasContent()) {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(options);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

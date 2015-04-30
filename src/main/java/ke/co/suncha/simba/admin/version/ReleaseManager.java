@@ -115,7 +115,7 @@ public class ReleaseManager {
 	 * @return
 	 */
 
-	@PostConstruct
+//	@PostConstruct
 	private void release_1() {
 		try {
 			System.out.println("Running updates release_1.....");

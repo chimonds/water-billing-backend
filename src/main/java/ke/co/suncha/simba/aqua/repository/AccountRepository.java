@@ -31,6 +31,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -45,4 +47,7 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
 	Page<Account> findByAccNoLike(String accNo, Pageable pageable);
 
 	Page<Account> findByAccNo(String accNo, Pageable pageable);
+
+	List<Account> findAll();
+
 }
