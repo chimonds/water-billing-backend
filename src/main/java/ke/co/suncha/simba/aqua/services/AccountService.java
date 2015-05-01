@@ -361,7 +361,7 @@ public class AccountService {
         return balance;
     }
 
-    public RestResponse getAll(RestRequestObject<ReportsParam> requestObject) {
+    public RestResponse getAccountsReceivables(RestRequestObject<ReportsParam> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -440,19 +440,128 @@ public class AccountService {
                             }
 
                             if (br.getBalance() > 0) {
-                                totalAmount += acc.getOutstandingBalance();
+                                totalAmount += br.getBalance();
                                 balances.add(br);
                             }
                         }
                     }
                     log.info("Packaged report data...");
 
+
                     ReportObject report = new ReportObject();
                     report.setAmount(totalAmount);
                     report.setDate(Calendar.getInstance());
 
+                    accounts = null;
+
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS_RECEIVABLE").getValue());
+                    report.setContent(balances);
+                    log.info("Sending Payload send to client...");
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getCreditBalances(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                log.info("Getting credit balances params");
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    log.info("ParamsJSON:" + jsonString);
+                    params = mapper.readValue(jsonString, Map.class);
+
+                }
+
+                log.info("Generating credit balances report");
+                List<Account> accounts;
+                accounts = accountRepository.findAll();
+                Double totalAmount = 0.0;
+                if (!accounts.isEmpty()) {
+                    log.info(accounts.size() + " accounts found.");
+                    List<BalancesReport> balances = new ArrayList<>();
+
+                    for (Account acc : accounts) {
+                        BalancesReport br = new BalancesReport();
+                        br.setAccName(acc.getAccName());
+                        br.setAccNo(acc.getAccNo());
+                        br.setZone(acc.getZone().getName());
+                        br.setBalance(acc.getOutstandingBalance());
+                        br.setActive(acc.isActive());
+
+                        Boolean include = true;
+                        if (params != null) {
+                            if (!params.isEmpty()) {
+                                //zone id
+                                if (params.containsKey("zoneId")) {
+                                    Object zoneId = params.get("zoneId");
+                                    if (acc.getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                        include = false;
+                                    }
+                                }
+                                //account status
+                                if (params.containsKey("accountStatus")) {
+                                    String status = params.get("accountStatus");
+                                    if (status.compareToIgnoreCase("inactive") == 0) {
+                                        if (acc.isActive()) {
+                                            include = false;
+                                        }
+                                    } else if (status.compareToIgnoreCase("active") == 0) {
+                                        if (!acc.isActive()) {
+                                            include = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (include) {
+                            //get balance based on date
+                            if (params.containsKey("transactionDate")) {
+                                Calendar calendar = Calendar.getInstance();
+                                Object unixTime = params.get("transactionDate");
+                                if (unixTime.toString().compareToIgnoreCase("null") != 0) {
+                                    calendar.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                                }
+
+                                //update balance on local object
+                                br.setBalance(this.getAccountBalanceByDate(acc, calendar));
+                            }
+
+                            if (br.getBalance() < 0) {
+                                totalAmount += (br.getBalance());
+                                balances.add(br);
+                            }
+                        }
+                    }
+                    log.info("Packaged report data...");
+
+
+                    ReportObject report = new ReportObject();
+                    report.setAmount(totalAmount);
+                    report.setDate(Calendar.getInstance());
+
+                    accounts = null;
+
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:CREDIT_BALANCES").getValue());
                     report.setContent(balances);
                     log.info("Sending Payload send to client...");
                     responseObject.setMessage("Fetched data successfully");

@@ -106,10 +106,16 @@ public class AccountController extends AbstractRestHandler {
         return accountService.getAllByFilter(requestObject);
     }
 
-    @RequestMapping(value = "/report", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-    @ApiOperation(value = "Get a list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse getReport(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return accountService.getAll(requestObject);
+    @RequestMapping(value = "/accountsReceivables", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all accounts receivables.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse accountsReceivables(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getAccountsReceivables(requestObject);
+    }
+
+    @RequestMapping(value = "/creditBalances", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all credit balances.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse creditBalances(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getCreditBalances(requestObject);
     }
 
 }

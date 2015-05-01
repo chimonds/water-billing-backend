@@ -64,7 +64,7 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path-assert</artifactId>
             <version>0.9.1</version>
-            <scope>test</scope>
+            <!--<scope>test</scope>-->
         </dependency>
 
         <!-- integration with Swagger API doc generation http://goo.gl/J5FQDM -->
