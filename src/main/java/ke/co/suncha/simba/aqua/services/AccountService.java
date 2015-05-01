@@ -33,6 +33,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.reports.AccountRecord;
 import ke.co.suncha.simba.aqua.reports.BalancesReport;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
@@ -563,6 +564,96 @@ public class AccountService {
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:CREDIT_BALANCES").getValue());
                     report.setContent(balances);
+                    log.info("Sending Payload send to client...");
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getFieldCardReport(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+
+                List<Account> accounts;
+                accounts = accountRepository.findAll();
+
+                if (!accounts.isEmpty()) {
+                    log.info(accounts.size() + " accounts found.");
+                    List<AccountRecord> accountRecords = new ArrayList<>();
+
+                    for (Account acc : accounts) {
+                        AccountRecord ar = new AccountRecord();
+                        ar.setAccName(acc.getAccName());
+                        ar.setAccNo(acc.getAccNo());
+                        ar.setZone(acc.getZone().getName());
+                        ar.setLocation(acc.getLocation().getName());
+                        ar.setActive(acc.isActive());
+
+                        if (acc.isMetered()) {
+                            ar.setMeterNo(acc.getMeter().getMeterNo());
+                            ar.setMeterOwner(acc.getMeter().getMeterOwner().getName());
+                        }
+
+
+                        Boolean include = true;
+                        if (params != null) {
+                            if (!params.isEmpty()) {
+                                //zone id
+                                if (params.containsKey("zoneId")) {
+                                    Object zoneId = params.get("zoneId");
+                                    if (acc.getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                        include = false;
+                                    }
+                                }
+
+                                //account status
+                                if (params.containsKey("accountStatus")) {
+                                    String status = params.get("accountStatus");
+                                    if (status.compareToIgnoreCase("inactive") == 0) {
+                                        if (acc.isActive()) {
+                                            include = false;
+                                        }
+                                    } else if (status.compareToIgnoreCase("active") == 0) {
+                                        if (!acc.isActive()) {
+                                            include = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (include) {
+                            accountRecords.add(ar);
+                        }
+                    }
+                    log.info("Packaged report data...");
+                    
+                    ReportObject report = new ReportObject();
+                    report.setDate(Calendar.getInstance());
+                    accounts = null;
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:FIELD_CARD").getValue());
+                    report.setContent(accountRecords);
                     log.info("Sending Payload send to client...");
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(report);

@@ -12,6 +12,9 @@ public class ReportObject {
     private Calendar date;
     private String title;
     private Double amount;
+    private Double meterRent;
+    private Double charges;
+    private Integer units;
     private String company;
     private Object content;
 
@@ -52,7 +55,32 @@ public class ReportObject {
         return content;
     }
 
+
     public void setContent(Object content) {
         this.content = content;
+    }
+
+    public Double getMeterRent() {
+        return meterRent;
+    }
+
+    public void setMeterRent(Double meterRent) {
+        this.meterRent = meterRent;
+    }
+
+    public Double getCharges() {
+        return charges;
+    }
+
+    public void setCharges(Double charges) {
+        this.charges = charges;
+    }
+
+    public Integer getUnits() {
+        return units;
+    }
+
+    public void setUnits(Integer units) {
+        this.units = units;
     }
 }

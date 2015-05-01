@@ -46,49 +46,61 @@ import com.wordnik.swagger.annotations.ApiParam;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @RestController
 @RequestMapping(value = "/api/v1/bills")
 @Api(value = "Account bills", description = "Account bills API")
 public class BillController {
-	@Autowired
-	private BillService billService;
+    @Autowired
+    private BillService billService;
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAll(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long account_id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return billService.getAllByAccount(requestObject, account_id);
-	}
+    @RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getAll(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long account_id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getAllByAccount(requestObject, account_id);
+    }
 
-	@RequestMapping(value = "last/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getLastBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return billService.getLastBill(requestObject, accountId);
-	}
+    @RequestMapping(value = "last/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getLastBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getLastBill(requestObject, accountId);
+    }
 
-	@RequestMapping(value = "bill/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse bill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<BillRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return billService.bill(requestObject, accountId);
-	}
+    @RequestMapping(value = "bill/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse bill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<BillRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.bill(requestObject, accountId);
+    }
 
-	@RequestMapping(value = "/negativeReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-	@ApiOperation(value = "Get a list of all negative readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse negativeReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return billService.getNegativeReadingsReport(requestObject);
-	}
+    @RequestMapping(value = "/negativeReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all negative readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse negativeReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getNegativeReadingsReport(requestObject);
+    }
 
-	@RequestMapping(value = "/meterStops", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-	@ApiOperation(value = "Get a list of all meter stops.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse meterStops(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return billService.getMeterStopsReport(requestObject);
-	}
+    @RequestMapping(value = "/meterStops", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all meter stops.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse meterStops(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getMeterStopsReport(requestObject);
+    }
 
-	@RequestMapping(value = "/meterReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-	@ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse meterReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return billService.getMeterReadingsReport(requestObject);
-	}
+    @RequestMapping(value = "/meterReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse meterReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getMeterReadingsReport(requestObject);
+    }
+
+
+    @RequestMapping(value = "/billedAmount", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse billedAmount(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getBilledAmountReport(requestObject);
+    }
+
+    @RequestMapping(value = "/checklist", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse billingChecklist(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.getBillingChecklistReport(requestObject);
+    }
 
 }
