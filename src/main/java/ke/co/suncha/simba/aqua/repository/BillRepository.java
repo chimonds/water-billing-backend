@@ -25,18 +25,24 @@ package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Bill;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
-	Page<Bill> findAll(Pageable pageable);
+    Page<Bill> findAll(Pageable pageable);
 
-	Page<Bill> findAllByAccount(Account account, Pageable pageable);
+    Page<Bill> findAllByAccount(Account account, Pageable pageable);
 
-	Page<Bill> findByAccountOrderByBillCodeDesc(Account account, Pageable pageable);
+    Page<Bill> findByAccountOrderByBillCodeDesc(Account account, Pageable pageable);
+
+    List<Bill> findAllByConsumptionTypeAndBillingMonth(String consumptionType, BillingMonth billingMonth);
+
+    List<Bill> findAllByBillingMonth(BillingMonth billingMonth);
 }
