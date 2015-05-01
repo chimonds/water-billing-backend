@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.services.BillService;
 
 import ke.co.suncha.simba.aqua.utils.BillRequest;
@@ -70,6 +71,24 @@ public class BillController {
 	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
 	public RestResponse bill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<BillRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return billService.bill(requestObject, accountId);
+	}
+
+	@RequestMapping(value = "/negativeReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+	@ApiOperation(value = "Get a list of all negative readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse negativeReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return billService.getNegativeReadingsReport(requestObject);
+	}
+
+	@RequestMapping(value = "/meterStops", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+	@ApiOperation(value = "Get a list of all meter stops.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse meterStops(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return billService.getMeterStopsReport(requestObject);
+	}
+
+	@RequestMapping(value = "/meterReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+	@ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse meterReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return billService.getMeterReadingsReport(requestObject);
 	}
 
 }

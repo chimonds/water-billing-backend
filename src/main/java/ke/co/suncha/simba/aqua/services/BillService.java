@@ -23,12 +23,18 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.reports.BalancesReport;
+import ke.co.suncha.simba.aqua.reports.MeterRecord;
+import ke.co.suncha.simba.aqua.reports.ReportObject;
+import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.BillItemRepository;
 import ke.co.suncha.simba.aqua.repository.BillRepository;
@@ -47,9 +53,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -66,6 +70,9 @@ public class BillService {
 
     @Autowired
     private BillItemRepository billItemRepository;
+
+    @Autowired
+    private SimbaOptionService optionService;
 
     @Autowired
     private PaymentService paymentService;
@@ -327,6 +334,299 @@ public class BillService {
                 responseObject.setMessage("Fetched data successfully");
                 responseObject.setPayload(bill);
                 response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getMeterReadingsReport(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+
+                List<Bill> bills;
+                List<MeterRecord> meterRecords = new ArrayList<>();
+
+                if (params != null) {
+                    if (!params.isEmpty()) {
+
+                        if (params.containsKey("billingMonth")) {
+                            Calendar calendar = Calendar.getInstance();
+                            Object unixTime = params.get("billingMonth");
+
+                            if (unixTime.toString().compareToIgnoreCase("null") == 0) {
+                                responseObject.setMessage("Invalid billing date.");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+
+                            calendar.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                            BillingMonth billingMonth;
+                            billingMonth = billingMonthRepository.findByMonth(calendar);
+                            if (billingMonth == null) {
+                                responseObject.setMessage("Invalid billing month.");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+
+                            bills = billRepository.findAllByBillingMonth(billingMonth);
+                            log.info("Bills " + bills.size() + " found.");
+                            if (bills == null) {
+                                responseObject.setMessage("No content found");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+                            Integer totalUnits = 0;
+                            for (Bill b : bills) {
+                                MeterRecord mr = new MeterRecord();
+                                mr.setAccName(b.getAccount().getAccName());
+                                mr.setAccNo(b.getAccount().getAccNo());
+                                mr.setZone(b.getAccount().getZone().getName());
+                                mr.setUnits(b.getUnitsBilled());
+                                mr.setAverage(b.getAverageConsumption());
+                                mr.setConsumption(b.getConsumptionType());
+                                mr.setCurrentReading(b.getCurrentReading());
+                                mr.setPreviousReading(b.getPreviousReading());
+
+                                Boolean include = true;
+                                //zone id
+                                if (params.containsKey("zoneId")) {
+                                    Object zoneId = params.get("zoneId");
+                                    if (b.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                        include = false;
+                                    }
+                                }
+
+                                if (include) {
+                                    totalUnits += mr.getUnits();
+                                    meterRecords.add(mr);
+                                }
+                            }
+
+                            //send report
+                            ReportObject report = new ReportObject();
+                            report.setAmount(Double.valueOf(totalUnits.toString()));
+                            report.setDate(Calendar.getInstance());
+
+
+                            report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                            report.setTitle(this.optionService.getOption("REPORT:METER_READINGS").getValue());
+                            report.setContent(meterRecords);
+
+                            responseObject.setMessage("Fetched data successfully");
+                            responseObject.setPayload(report);
+                            response = new RestResponse(responseObject, HttpStatus.OK);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getMeterStopsReport(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+
+                List<Bill> bills;
+                List<MeterRecord> meterRecords = new ArrayList<>();
+
+                if (params != null) {
+                    if (!params.isEmpty()) {
+
+                        if (params.containsKey("billingMonth")) {
+                            Calendar calendar = Calendar.getInstance();
+                            Object unixTime = params.get("billingMonth");
+
+                            if (unixTime.toString().compareToIgnoreCase("null") == 0) {
+                                responseObject.setMessage("Invalid billing date.");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+
+                            calendar.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                            BillingMonth billingMonth;
+                            billingMonth = billingMonthRepository.findByMonth(calendar);
+                            if (billingMonth == null) {
+                                responseObject.setMessage("Invalid billing month.");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+
+                            bills = billRepository.findAllByBillingMonth(billingMonth);
+                            log.info("Bills " + bills.size() + " found.");
+                            if (bills == null) {
+                                responseObject.setMessage("No content found");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+                            Integer totalUnits = 0;
+                            for (Bill b : bills) {
+                                MeterRecord mr = new MeterRecord();
+                                mr.setAccName(b.getAccount().getAccName());
+                                mr.setAccNo(b.getAccount().getAccNo());
+                                mr.setZone(b.getAccount().getZone().getName());
+                                mr.setUnits(b.getUnitsBilled());
+                                mr.setAverage(b.getAverageConsumption());
+                                mr.setConsumption(b.getConsumptionType());
+                                mr.setCurrentReading(b.getCurrentReading());
+                                mr.setPreviousReading(b.getPreviousReading());
+
+                                Boolean include = true;
+                                if (params.containsKey("zoneId")) {
+                                    Object zoneId = params.get("zoneId");
+                                    if (b.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                        include = false;
+                                    }
+                                }
+
+                                if (include) {
+                                    Integer units = mr.getCurrentReading() - mr.getPreviousReading();
+                                    if (units == 0) {
+                                        totalUnits += mr.getUnits();
+                                        meterRecords.add(mr);
+                                    }
+                                }
+                            }
+
+                            //send report
+                            ReportObject report = new ReportObject();
+                            report.setAmount(Double.valueOf(totalUnits.toString()));
+                            report.setDate(Calendar.getInstance());
+
+                            report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                            report.setTitle(this.optionService.getOption("REPORT:METER_STOPS").getValue());
+                            report.setContent(meterRecords);
+
+                            responseObject.setMessage("Fetched data successfully");
+                            responseObject.setPayload(report);
+                            response = new RestResponse(responseObject, HttpStatus.OK);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getNegativeReadingsReport(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+
+                List<Bill> bills;
+                List<MeterRecord> meterRecords = new ArrayList<>();
+
+                if (params != null) {
+                    if (!params.isEmpty()) {
+
+                        if (params.containsKey("billingMonth")) {
+                            Calendar calendar = Calendar.getInstance();
+                            Object unixTime = params.get("billingMonth");
+
+                            if (unixTime.toString().compareToIgnoreCase("null") == 0) {
+                                responseObject.setMessage("Invalid billing date.");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+
+                            calendar.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                            BillingMonth billingMonth;
+                            billingMonth = billingMonthRepository.findByMonth(calendar);
+                            if (billingMonth == null) {
+                                responseObject.setMessage("Invalid billing month.");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+
+                            bills = billRepository.findAllByBillingMonth(billingMonth);
+                            log.info("Bills " + bills.size() + " found.");
+                            if (bills == null) {
+                                responseObject.setMessage("No content found");
+                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                return response;
+                            }
+                            Integer totalUnits = 0;
+                            for (Bill b : bills) {
+                                MeterRecord mr = new MeterRecord();
+                                mr.setAccName(b.getAccount().getAccName());
+                                mr.setAccNo(b.getAccount().getAccNo());
+                                mr.setZone(b.getAccount().getZone().getName());
+                                mr.setUnits(b.getUnitsBilled());
+                                mr.setAverage(b.getAverageConsumption());
+                                mr.setConsumption(b.getConsumptionType());
+                                mr.setCurrentReading(b.getCurrentReading());
+                                mr.setPreviousReading(b.getPreviousReading());
+
+                                Boolean include = true;
+                                if (params.containsKey("zoneId")) {
+                                    Object zoneId = params.get("zoneId");
+                                    if (b.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                        include = false;
+                                    }
+                                }
+
+                                if (include) {
+                                    Integer units = mr.getCurrentReading() - mr.getPreviousReading();
+                                    if (units <0) {
+                                        totalUnits += mr.getUnits();
+                                        meterRecords.add(mr);
+                                    }
+                                }
+                            }
+
+                            //send report
+                            ReportObject report = new ReportObject();
+                            report.setAmount(Double.valueOf(totalUnits.toString()));
+                            report.setDate(Calendar.getInstance());
+
+                            report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                            report.setTitle(this.optionService.getOption("REPORT:NEGATIVE_METER_READINGS").getValue());
+                            report.setContent(meterRecords);
+
+                            responseObject.setMessage("Fetched data successfully");
+                            responseObject.setPayload(report);
+                            response = new RestResponse(responseObject, HttpStatus.OK);
+                        }
+                    }
+                }
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

@@ -30,6 +30,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.Calendar;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -42,4 +44,6 @@ public interface BillingMonthRepository extends PagingAndSortingRepository<Billi
 
 	@Query("select count(u) from BillingMonth u where u.current = ?1")
 	Long countWithCurrent(Integer current);
+
+	BillingMonth findByMonth(Calendar calendar);
 }
