@@ -42,6 +42,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -154,6 +156,34 @@ public class BillingMonthService {
 				if (billingMonth != null) {
 					responseObject.setMessage("Fetched data successfully");
 					responseObject.setPayload(billingMonth);
+					response = new RestResponse(responseObject, HttpStatus.OK);
+				} else {
+					responseObject.setMessage("Your search did not match any records");
+					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+				}
+			}
+		} catch (Exception ex) {
+			responseObject.setMessage(ex.getLocalizedMessage());
+			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+			log.error(ex.getLocalizedMessage());
+		}
+		return response;
+	}
+
+	public RestResponse getAll(RestRequestObject<RestPageRequest> requestObject) {
+		try {
+			response = authManager.tokenValid(requestObject.getToken());
+			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+
+				RestPageRequest p = requestObject.getObject();
+
+				List<BillingMonth> billingMonths;
+
+				billingMonths = billingMonthRepository.findAllByIsEnabledOrderByMonthDesc(1);
+				if (!billingMonths.isEmpty()) {
+
+					responseObject.setMessage("Fetched data successfully");
+					responseObject.setPayload(billingMonths);
 					response = new RestResponse(responseObject, HttpStatus.OK);
 				} else {
 					responseObject.setMessage("Your search did not match any records");

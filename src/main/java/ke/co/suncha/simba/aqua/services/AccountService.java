@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -56,6 +57,7 @@ import scala.util.parsing.json.JSON;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 @Service
+@Scope("prototype")
 public class AccountService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -647,7 +649,7 @@ public class AccountService {
                         }
                     }
                     log.info("Packaged report data...");
-                    
+
                     ReportObject report = new ReportObject();
                     report.setDate(Calendar.getInstance());
                     accounts = null;

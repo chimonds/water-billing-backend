@@ -62,6 +62,12 @@ public class BillingMonthController extends AbstractRestHandler {
 	public RestResponse getAllByFilter(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return billingMonthService.getAllByFilter(requestObject);
 	}
+
+	@RequestMapping(value = "/all", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
+	@ApiOperation(value = "Get a paginated list of all billing months.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return billingMonthService.getAll(requestObject);
+	}
 	
 	@RequestMapping(value = "/active", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
 	@ApiOperation(value = "Get a paginated list of all billing months.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")

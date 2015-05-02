@@ -31,6 +31,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.Calendar;
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -39,6 +40,8 @@ import java.util.Calendar;
 public interface BillingMonthRepository extends PagingAndSortingRepository<BillingMonth, Long> {
 	
 	Page<BillingMonth> findByIsEnabled(Integer isEnabled, Pageable pageable);
+
+	List<BillingMonth> findAllByIsEnabledOrderByMonthDesc(Integer isEnabled);
 
 	BillingMonth findByCurrent(Integer isCurrent);
 
