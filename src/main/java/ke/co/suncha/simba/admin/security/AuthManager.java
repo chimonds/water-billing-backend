@@ -27,12 +27,16 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
+import com.auth0.jwt.internal.com.fasterxml.jackson.databind.ObjectMapper;
+import com.auth0.jwt.internal.org.apache.commons.codec.binary.Base64;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 
+import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +52,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.UUID;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -58,11 +63,10 @@ public class AuthManager {
     @Autowired
     private UserRepository userRepository;
 
-    protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    @Autowired
+    SimbaOptionService optionService;
 
-    protected final String AUTH_SECRET_CODE = "XXXXXXXX";
-    // TODO; change this
-    protected final Long SESSION_TIME_OUT = 300L;
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -96,6 +100,7 @@ public class AuthManager {
 
                         // generate token
                         String token = this.generateToken(user);
+
                         LoginResponse lr = new LoginResponse();
                         lr.setToken(token);
                         lr.setName(user.getFirstName() + " " + user.getLastName());
@@ -125,70 +130,121 @@ public class AuthManager {
         return passEncoder.encode(username.toLowerCase() + password);
     }
 
+    private Long getIdleSessionTimeout() {
+        Long timeout = 1L;
+        try {
+            timeout = Long.valueOf(optionService.getOption("SESSION_TIME_OUT:IDLE").getValue());
+        } catch (Exception ex) {
+        }
+        return timeout;
+    }
+
+    private Integer getGlobalTokenTimeout() {
+        Integer timeout = 1;
+        try {
+            timeout = Integer.valueOf(optionService.getOption("SESSION_TIME_OUT:GLOBAL").getValue());
+        } catch (Exception ex) {
+        }
+        return timeout;
+    }
+
     private String generateToken(User user) {
         String myToken = "";
         try {
             // Initialize
-            JWTSigner jwtSigner = new JWTSigner(AUTH_SECRET_CODE);
+            //generate auth key for the session
+            String authKey = UUID.randomUUID().toString();
+            JWTSigner jwtSigner = new JWTSigner(authKey);
 
             Map<String, Object> map = new HashMap<String, Object>();
 
             map.put("email_address", user.getEmailAddress());
-            map.put("user_id", user.getUserId());
 
             // set options
             JWTSigner.Options options = new JWTSigner.Options();
             options.setJwtId(true);
+            options.setExpirySeconds(this.getGlobalTokenTimeout());
 
             // get token
             myToken = jwtSigner.sign(map, options);
+
+            //save user auth key
+            user.getUserAuth().setAuthKey(authKey);
+            userRepository.save(user);
+
         } catch (Exception ex) {
             log.error(ex.getLocalizedMessage());
         }
         return myToken;
     }
 
+    JsonNode decodeAndParse(String b64String) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonString = new String(Base64.decodeBase64(b64String), "UTF-8");
+        JsonNode jwtHeader = (JsonNode) mapper.readValue(jsonString, JsonNode.class);
+        return jwtHeader;
+    }
+
     public RestResponse tokenValid(String token) {
         RestResponseObject obj = new RestResponseObject();
         RestResponse response;
 
+        //generate a random key
+        String authKey = UUID.randomUUID().toString();
+
         try {
-            Map<String, Object> decodedPayload = new JWTVerifier(AUTH_SECRET_CODE).verify(token);
+            if (token != null && !"".equals(token)) {
+                String[] pieces = token.split("\\.");
+                if (pieces.length != 3) {
+                    obj.setMessage("Invalid token");
+                    response = new RestResponse(obj, HttpStatus.UNAUTHORIZED);
+                    return response;
+                }
 
-            // get last access time
-            String emailAddress = decodedPayload.get("email_address").toString();
-            User user = userRepository.findByEmailAddress(emailAddress);
+                JsonNode jwtPayload = this.decodeAndParse(pieces[1]);
 
-            Calendar lastAccessDate = user.getUserAuth().getLastAccess();
+                String emailAddress = jwtPayload.get("email_address").asText();
 
-            Calendar today = Calendar.getInstance();
+                User user = userRepository.findByEmailAddress(emailAddress);
+                authKey = user.getUserAuth().getAuthKey();
+                log.info("Auth Key:" + authKey);
 
-            // difference in miliseconds
-            Long diffInMilliseconds = today.getTimeInMillis() - lastAccessDate.getTimeInMillis();
+                Map<String, Object> decodedPayload = new JWTVerifier(authKey).verify(token);
+                // get last access time
+                Calendar lastAccessDate = user.getUserAuth().getLastAccess();
+
+                Calendar today = Calendar.getInstance();
+
+                // difference in miliseconds
+                Long diffInMilliseconds = today.getTimeInMillis() - lastAccessDate.getTimeInMillis();
 
 
-            long seconds = new Long(Long.MAX_VALUE);
+                long seconds = new Long(Long.MAX_VALUE);
 
-            // TODO; i do not know y this happens f***
-            diffInMilliseconds = Math.abs(diffInMilliseconds);
-            if (diffInMilliseconds > 0) {
-                seconds = diffInMilliseconds / 1000;
-            }
+                // TODO; i do not know y this happens f***
+                diffInMilliseconds = Math.abs(diffInMilliseconds);
+                if (diffInMilliseconds > 0) {
+                    seconds = diffInMilliseconds / 1000;
+                }
 
-            if (seconds > SESSION_TIME_OUT) {
-                obj.setMessage("Your session timed out");
-                log.info("Session timed out for:" + emailAddress);
-                response = new RestResponse(obj, HttpStatus.UNAUTHORIZED);
+                if (seconds > this.getIdleSessionTimeout()) {
+                    obj.setMessage("Your session timed out");
+                    log.info("Session timed out for:" + emailAddress);
+                    response = new RestResponse(obj, HttpStatus.UNAUTHORIZED);
+                } else {
+                    obj.setMessage("Ok");
+                    response = new RestResponse(obj, HttpStatus.OK);
+                    // save last access
+                    UserAuth auth = user.getUserAuth();
+                    auth.setLastAccess(today);
+                    user.setUserAuth(auth);
+                    userRepository.save(user);
+                }
+
             } else {
-                obj.setMessage("Ok");
-                response = new RestResponse(obj, HttpStatus.OK);
-                // save last access
-                UserAuth auth = user.getUserAuth();
-                auth.setLastAccess(today);
-                user.setUserAuth(auth);
-                userRepository.save(user);
+                obj.setMessage("Invalid signature");
+                response = new RestResponse(obj, HttpStatus.UNAUTHORIZED);
             }
-
         } catch (SignatureException signatureException) {
             log.error(signatureException.getLocalizedMessage());
             obj.setMessage("Invalid signature");
