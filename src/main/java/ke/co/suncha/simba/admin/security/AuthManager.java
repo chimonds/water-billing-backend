@@ -130,10 +130,10 @@ public class AuthManager {
         return passEncoder.encode(username.toLowerCase() + password);
     }
 
-    private Long getIdleSessionTimeout() {
-        Long timeout = 1L;
+    private Integer getIdleSessionTimeout() {
+        Integer timeout = 1;
         try {
-            timeout = Long.valueOf(optionService.getOption("SESSION_TIME_OUT:IDLE").getValue());
+            timeout = Integer.valueOf(optionService.getOption("SESSION_TIME_OUT:IDLE").getValue());
         } catch (Exception ex) {
         }
         return timeout;
@@ -210,33 +210,22 @@ public class AuthManager {
                 log.info("Auth Key:" + authKey);
 
                 Map<String, Object> decodedPayload = new JWTVerifier(authKey).verify(token);
-                // get last access time
-                Calendar lastAccessDate = user.getUserAuth().getLastAccess();
+                
+                Calendar lastAccess = user.getUserAuth().getLastAccess();
+                //add session idle timeout
+                lastAccess.add(Calendar.SECOND, this.getIdleSessionTimeout());
 
-                Calendar today = Calendar.getInstance();
-
-                // difference in miliseconds
-                Long diffInMilliseconds = today.getTimeInMillis() - lastAccessDate.getTimeInMillis();
-
-
-                long seconds = new Long(Long.MAX_VALUE);
-
-                // TODO; i do not know y this happens f***
-                diffInMilliseconds = Math.abs(diffInMilliseconds);
-                if (diffInMilliseconds > 0) {
-                    seconds = diffInMilliseconds / 1000;
-                }
-
-                if (seconds > this.getIdleSessionTimeout()) {
+                if (Calendar.getInstance().after(lastAccess)) {
                     obj.setMessage("Your session timed out");
                     log.info("Session timed out for:" + emailAddress);
                     response = new RestResponse(obj, HttpStatus.UNAUTHORIZED);
                 } else {
+                    //good to go
                     obj.setMessage("Ok");
                     response = new RestResponse(obj, HttpStatus.OK);
                     // save last access
                     UserAuth auth = user.getUserAuth();
-                    auth.setLastAccess(today);
+                    auth.setLastAccess(Calendar.getInstance());
                     user.setUserAuth(auth);
                     userRepository.save(user);
                 }
