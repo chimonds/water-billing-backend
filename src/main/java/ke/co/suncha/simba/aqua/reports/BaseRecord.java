@@ -4,7 +4,7 @@ package ke.co.suncha.simba.aqua.reports;
  * @author Maitha Manyala <maitha.manyala at gmail.com> on 5/6/15.
  */
 public class BaseRecord {
-    private  String accNo;
+    private String accNo;
     private String accName;
     private String zone;
     private Double amount;

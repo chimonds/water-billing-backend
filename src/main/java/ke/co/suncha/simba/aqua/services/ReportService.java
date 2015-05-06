@@ -6,10 +6,14 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.models.Bill;
+import ke.co.suncha.simba.aqua.models.BillItem;
 import ke.co.suncha.simba.aqua.models.Payment;
 import ke.co.suncha.simba.aqua.reports.PaymentRecord;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
+import ke.co.suncha.simba.aqua.reports.StatementRecord;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
 import ke.co.suncha.simba.aqua.repository.PaymentRepository;
@@ -58,6 +62,120 @@ public class ReportService {
     private RestResponseObject responseObject = new RestResponseObject();
 
     public ReportService() {
+    }
+
+    public RestResponse getAccountStatementReport(RestRequestObject<ReportsParam> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                log.info("Getting account statement report...");
+                ReportsParam request = requestObject.getObject();
+
+                Map<String, String> params = this.getParamsMap(request);
+
+                log.info("Getting account statement by account");
+                Account account;
+
+                account = accountRepository.findOne(Long.valueOf(accountId));
+                if (account == null) {
+                    responseObject.setMessage("Invalid account.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                //fill report
+                List<StatementRecord> records = new ArrayList<StatementRecord>();
+
+                //balance brought forward
+                StatementRecord balanceBf = new StatementRecord();
+                balanceBf.setTransactionDate(account.getCreatedOn());
+                balanceBf.setItemType("Balance B/f");
+                balanceBf.setRefNo("");
+                balanceBf.setAmount(account.getBalanceBroughtForward());
+                records.add(balanceBf);
+
+                //add bills
+                if (!account.getBills().isEmpty()) {
+                    for (Bill bill : account.getBills()) {
+                        //add bill record
+                        Calendar billingMonth = bill.getBillingMonth().getMonth();
+
+                        String billingYearMonth = billingMonth.get(Calendar.YEAR) + " " + billingMonth.get(Calendar.MONTH);
+
+                        StatementRecord billRecord = new StatementRecord();
+                        billRecord.setTransactionDate(bill.getTransactionDate());
+                        billRecord.setItemType("Bill");
+                        billRecord.setRefNo(billingYearMonth);
+                        billRecord.setAmount(bill.getAmount());
+                        records.add(billRecord);
+
+                        //get billing items
+                        if (!bill.getBillItems().isEmpty()) {
+                            for (BillItem billItem : bill.getBillItems()) {
+                                StatementRecord billItemRecord = new StatementRecord();
+                                billItemRecord.setTransactionDate(bill.getTransactionDate());
+                                billItemRecord.setItemType("Charge");
+                                billItemRecord.setRefNo(billingYearMonth);
+                                billItemRecord.setAmount(billItem.getAmount());
+                                records.add(billItemRecord);
+                            }
+                        }
+                    }
+                }
+
+                //add payments
+                if (!account.getPayments().isEmpty()) {
+                    for (Payment payment : account.getPayments()) {
+                        StatementRecord paymentRecord = new StatementRecord();
+                        paymentRecord.setTransactionDate(payment.getTransactionDate());
+                        paymentRecord.setItemType(payment.getPaymentType().getName());
+                        paymentRecord.setRefNo(payment.getReceiptNo() + "-" + payment.getPaymentType().getName());
+                        paymentRecord.setAmount(payment.getAmount());
+
+                        Double amount = Math.abs(payment.getAmount());
+
+                        if (!payment.getPaymentType().isNegative()) {
+                            paymentRecord.setAmount(amount * -1);
+                        }
+                        records.add(paymentRecord);
+                    }
+                }
+
+                if (!records.isEmpty()) {
+                    //Sort collection by transaction date
+                    Collections.sort(records);
+
+                    Double runningTotal = 0.0;
+                    //calculate running totals
+                    Integer location = 0;
+                    for (StatementRecord record : records) {
+                        runningTotal += record.getAmount();
+                        record.setRunningAmount(runningTotal);
+                        records.set(location, record);
+                        location++;
+                    }
+                }
+
+                log.info("Done crunching Statement report data...");
+
+                ReportObject report = new ReportObject();
+                report.setAmount(0.0);
+                report.setDate(Calendar.getInstance());
+                account = null;
+                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                report.setTitle(this.optionService.getOption("REPORT:ACCOUNT_STATEMENT").getValue());
+                report.setContent(records);
+                log.info("Sending Payload send to client...");
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(report);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
     }
 
     public RestResponse getPaymentsReport(RestRequestObject<ReportsParam> requestObject) {
