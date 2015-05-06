@@ -30,6 +30,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.Calendar;
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -42,4 +45,7 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 	Page<Payment> findAllByAccount(Account account, Pageable pageable);
 
 	Payment findByreceiptNo(String receiptNo);
+
+	List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
+
 }
