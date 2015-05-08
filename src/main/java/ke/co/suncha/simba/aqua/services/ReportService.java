@@ -6,17 +6,9 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.Bill;
-import ke.co.suncha.simba.aqua.models.BillItem;
-import ke.co.suncha.simba.aqua.models.Payment;
-import ke.co.suncha.simba.aqua.reports.PaymentRecord;
-import ke.co.suncha.simba.aqua.reports.ReportObject;
-import ke.co.suncha.simba.aqua.reports.ReportsParam;
-import ke.co.suncha.simba.aqua.reports.StatementRecord;
-import ke.co.suncha.simba.aqua.repository.AccountRepository;
-import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
-import ke.co.suncha.simba.aqua.repository.PaymentRepository;
+import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.reports.*;
+import ke.co.suncha.simba.aqua.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +36,15 @@ public class ReportService {
     private ConsumerRepository consumerRepository;
 
     @Autowired
+    private BillItemTypeRepository billItemTypeRepository;
+
+    @Autowired
+    private BillingMonthRepository billingMonthRepository;
+
+    @Autowired
+    private BillRepository billRepository;
+
+    @Autowired
     private PaymentRepository paymentRepository;
 
     @Autowired
@@ -64,7 +65,145 @@ public class ReportService {
     public ReportService() {
     }
 
-    public RestResponse getAccountStatementReport(RestRequestObject<ReportsParam> requestObject, Long accountId) {
+    public RestResponse getBillingSummary(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                log.info("Getting billing summary report...");
+                ReportsParam request = requestObject.getObject();
+
+                Map<String, String> params = this.getParamsMap(request);
+
+                BillingSummaryRecord bsr = new BillingSummaryRecord();
+
+                List<BillItemType> billItemTypes = billItemTypeRepository.findAll();
+                if (!billItemTypes.isEmpty()) {
+                    Integer x = 0;
+                    for (BillItemType bit : billItemTypes) {
+                        //set amount to zero
+                        bit.setAmount(0.0);
+                        billItemTypes.set(x, bit);
+                        x++;
+                    }
+                }
+
+                List<Bill> bills;
+                if (params.isEmpty()) {
+                    responseObject.setMessage("Please select billing month.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (params.containsKey("billingMonthId")) {
+                    Object billingMonthId = params.get("billingMonthId");
+
+                    BillingMonth billingMonth;
+                    billingMonth = billingMonthRepository.findOne(Long.valueOf(billingMonthId.toString()));
+
+                    if (billingMonth == null) {
+                        responseObject.setMessage("Invalid billing month.");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+
+                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    log.info("Bills " + bills.size() + " found.");
+                    if (bills == null || bills.isEmpty()) {
+                        responseObject.setMessage("No content found");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+
+                    for (Bill b : bills) {
+                        Boolean include = true;
+                        if (params.containsKey("zoneId")) {
+                            Object zoneId = params.get("zoneId");
+                            if (b.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                include = false;
+                            }
+                        }
+
+
+                        if (include) {
+
+                            //amount billed
+                            if (b.getConsumptionType().compareToIgnoreCase("Actual") == 0) {
+                                bsr.setBilledOnActual(bsr.getBilledOnActual() + b.getAmount());
+                            } else if (b.getConsumptionType().compareToIgnoreCase("Average") == 0) {
+                                bsr.setBilledOnEstimate(bsr.getBilledOnEstimate() + b.getAmount());
+                            }
+
+                            //Other charges
+                            if (!b.getBillItems().isEmpty()) {
+                                for (BillItem bi : b.getBillItems()) {
+                                    if (bi.getBillItemType().getName().compareToIgnoreCase("Reconnection Fee") == 0) {
+                                        bsr.setReconnectionFee(bsr.getReconnectionFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("At Owners Request Fee") == 0) {
+                                        bsr.setAtOwnersRequestFee(bsr.getAtOwnersRequestFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Change Of Account Name") == 0) {
+                                        bsr.setChangeOfAccountName(bsr.getChangeOfAccountName() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("By Pass Fee") == 0) {
+                                        bsr.setByPassFee(bsr.getByPassFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Bounced Cheque Fee") == 0) {
+                                        bsr.setBouncedChequeFee(bsr.getBouncedChequeFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Irrigation") == 0) {
+                                        bsr.setSurchargeIrrigation(bsr.getSurchargeIrrigation() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Missuse") == 0) {
+                                        bsr.setSurchargeMissuse(bsr.getSurchargeMissuse() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Meter Servicing") == 0) {
+                                        bsr.setMeterServicing(bsr.getMeterServicing() + bi.getAmount());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    List<Payment> payments;
+                    payments = paymentRepository.findByBillingMonth(billingMonth);
+
+                    if (!payments.isEmpty()) {
+
+                        for (Payment p : payments) {
+                            //payments
+                            Boolean include = true;
+                            if (params.containsKey("zoneId")) {
+                                Object zoneId = params.get("zoneId");
+                                if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                    include = false;
+                                }
+                            }
+
+                            if (include) {
+                                if (p.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
+                                    bsr.setCreditAdjustments(bsr.getCreditAdjustments() + Math.abs(p.getAmount()));
+                                } else if (p.getPaymentType().getName().compareToIgnoreCase("Debit") == 0) {
+                                    bsr.setDebitAdjustments(bsr.getDebitAdjustments() + Math.abs(p.getAmount()));
+                                }
+                            }
+                        }
+                    }
+
+                    //send report
+                    ReportObject report = new ReportObject();
+                    report.setDate(Calendar.getInstance());
+
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:BILLING_SUMMARY").getValue());
+                    report.setContent(bsr);
+
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getAccountStatement(RestRequestObject<ReportsParam> requestObject, Long accountId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -178,7 +317,7 @@ public class ReportService {
         return response;
     }
 
-    public RestResponse getPaymentsReport(RestRequestObject<ReportsParam> requestObject) {
+    public RestResponse getPayments(RestRequestObject<ReportsParam> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {

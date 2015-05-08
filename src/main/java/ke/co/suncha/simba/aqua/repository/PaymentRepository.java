@@ -24,6 +24,7 @@
 package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.models.Payment;
 
 import org.springframework.data.domain.Page;
@@ -35,17 +36,18 @@ import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface PaymentRepository extends PagingAndSortingRepository<Payment, Long> {
-	Page<Payment> findAll(Pageable pageable);
+    Page<Payment> findAll(Pageable pageable);
 
-	Page<Payment> findAllByReceiptNoContains(String receiptNo, Pageable pageable);
+    Page<Payment> findAllByReceiptNoContains(String receiptNo, Pageable pageable);
 
-	Page<Payment> findAllByAccount(Account account, Pageable pageable);
+    Page<Payment> findAllByAccount(Account account, Pageable pageable);
 
-	Payment findByreceiptNo(String receiptNo);
+    Payment findByreceiptNo(String receiptNo);
 
-	List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
+    List<Payment> findByBillingMonth(BillingMonth billingMonth);
+
+    List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
 
 }

@@ -26,14 +26,20 @@ public class ReportController extends AbstractRestHandler {
 
     @RequestMapping(value = "/payments", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of payments.", notes = "The list is not paginated.")
-    public RestResponse getPaymentsReport(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return reportService.getPaymentsReport(requestObject);
+    public RestResponse getPayments(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getPayments(requestObject);
     }
 
     @RequestMapping(value = "/statement/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get an account statement.", notes = "The list is not paginated.")
-    public RestResponse getAccountStatementReport(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long accountId,@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return reportService.getAccountStatementReport(requestObject,accountId);
+    public RestResponse getAccountStatement(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long accountId,@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getAccountStatement(requestObject, accountId);
+    }
+
+    @RequestMapping(value = "/billingSummary", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list billing summary items.", notes = "The list is not paginated.")
+    public RestResponse getBillingSummary(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getBillingSummary(requestObject);
     }
 
 }
