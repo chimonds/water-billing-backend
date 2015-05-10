@@ -61,6 +61,9 @@ public class ReportService {
     @Autowired
     GaugeService gaugeService;
 
+    @Autowired
+    AccountService accountService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -75,8 +78,6 @@ public class ReportService {
                 ReportsParam request = requestObject.getObject();
 
                 Map<String, String> params = this.getParamsMap(request);
-
-
 
                 if (params.isEmpty() || !params.containsKey("billingMonthId")) {
                     responseObject.setMessage("Please select billing month.");
@@ -105,8 +106,7 @@ public class ReportService {
                     return response;
                 }
 
-                BillingSummaryRecord bsr = new BillingSummaryRecord();
-
+                List<MonthlyBillRecord> records = new ArrayList<>();
 
                 for (Bill b : bills) {
                     Boolean include = true;
@@ -119,70 +119,63 @@ public class ReportService {
 
 
                     if (include) {
+                        MonthlyBillRecord monthlyBillRecord = new MonthlyBillRecord();
+                        monthlyBillRecord.setAccName(b.getAccount().getAccName());
+                        monthlyBillRecord.setAccNo(b.getAccount().getAccNo());
+                        if (b.getAccount().isMetered()) {
+                            monthlyBillRecord.setMeterNo(b.getAccount().getMeter().getMeterNo());
+                            monthlyBillRecord.setMeterSize(b.getAccount().getMeter().getMeterSize().getSize());
+                        }
+                        monthlyBillRecord.setLocation(b.getAccount().getLocation().getName());
+                        monthlyBillRecord.setBilledAmount(b.getTotalBilled());
+                        monthlyBillRecord.setBillContent(b.getContent());
 
-                        //amount billed
-                        if (b.getConsumptionType().compareToIgnoreCase("Actual") == 0) {
-                            bsr.setBilledOnActual(bsr.getBilledOnActual() + b.getAmount());
-                        } else if (b.getConsumptionType().compareToIgnoreCase("Average") == 0) {
-                            bsr.setBilledOnEstimate(bsr.getBilledOnEstimate() + b.getAmount());
+                        //balance from last bill
+                        Calendar date = billingMonth.getMonth();
+                        date.add(Calendar.MONTH, -1);
+                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), date);
+                        monthlyBillRecord.setBalanceBf(balanceBeforeBill);
+
+                        //payments
+                        List<Payment> payments = paymentRepository.findByBillingMonthAndAccount(billingMonth, b.getAccount());
+                        if (!payments.isEmpty()) {
+                            List<PaymentRecord> paymentRecords = new ArrayList<>();
+                            for (Payment p : payments) {
+                                PaymentRecord paymentRecord = new PaymentRecord();
+                                paymentRecord.setTransactionDate(p.getTransactionDate());
+                                paymentRecord.setAmount(p.getAmount());
+                                paymentRecords.add(paymentRecord);
+                            }
+                            monthlyBillRecord.setPayments(paymentRecords);
                         }
 
-                        //Other charges
+                        //Charges
+                        List<ChargeRecord> chargeRecords = new ArrayList<>();
                         if (!b.getBillItems().isEmpty()) {
                             for (BillItem bi : b.getBillItems()) {
-                                if (bi.getBillItemType().getName().compareToIgnoreCase("Reconnection Fee") == 0) {
-                                    bsr.setReconnectionFee(bsr.getReconnectionFee() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("At Owners Request Fee") == 0) {
-                                    bsr.setAtOwnersRequestFee(bsr.getAtOwnersRequestFee() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("Change Of Account Name") == 0) {
-                                    bsr.setChangeOfAccountName(bsr.getChangeOfAccountName() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("By Pass Fee") == 0) {
-                                    bsr.setByPassFee(bsr.getByPassFee() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("Bounced Cheque Fee") == 0) {
-                                    bsr.setBouncedChequeFee(bsr.getBouncedChequeFee() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Irrigation") == 0) {
-                                    bsr.setSurchargeIrrigation(bsr.getSurchargeIrrigation() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Missuse") == 0) {
-                                    bsr.setSurchargeMissuse(bsr.getSurchargeMissuse() + bi.getAmount());
-                                } else if (bi.getBillItemType().getName().compareToIgnoreCase("Meter Servicing") == 0) {
-                                    bsr.setMeterServicing(bsr.getMeterServicing() + bi.getAmount());
-                                }
+                                ChargeRecord chargeRecord = new ChargeRecord();
+                                chargeRecord.setName(bi.getBillItemType().getName());
+                                chargeRecord.setAmount(bi.getAmount());
+                                chargeRecords.add(chargeRecord);
                             }
                         }
+
+                        if (!chargeRecords.isEmpty()) {
+                            monthlyBillRecord.setCharges(chargeRecords);
+                        }
+
+                        records.add(monthlyBillRecord);
                     }
                 }
-                List<Payment> payments;
-                payments = paymentRepository.findByBillingMonth(billingMonth);
 
-                if (!payments.isEmpty()) {
-
-                    for (Payment p : payments) {
-                        //payments
-                        Boolean include = true;
-                        if (params.containsKey("zoneId")) {
-                            Object zoneId = params.get("zoneId");
-                            if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                                include = false;
-                            }
-                        }
-
-                        if (include) {
-                            if (p.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
-                                bsr.setCreditAdjustments(bsr.getCreditAdjustments() + Math.abs(p.getAmount()));
-                            } else if (p.getPaymentType().getName().compareToIgnoreCase("Debit") == 0) {
-                                bsr.setDebitAdjustments(bsr.getDebitAdjustments() + Math.abs(p.getAmount()));
-                            }
-                        }
-                    }
-                }
 
                 //send report
                 ReportObject report = new ReportObject();
                 report.setDate(Calendar.getInstance());
 
                 report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
-                report.setTitle(this.optionService.getOption("REPORT:BILLING_SUMMARY").getValue());
-                report.setContent(bsr);
+                report.setTitle(this.optionService.getOption("REPORT:MONTHLY_BILLS").getValue());
+                report.setContent(records);
 
                 responseObject.setMessage("Fetched data successfully");
                 responseObject.setPayload(report);
@@ -196,7 +189,6 @@ public class ReportService {
         }
         return response;
     }
-
 
     public RestResponse getPotentialCutOff(RestRequestObject<ReportsParam> requestObject) {
         try {

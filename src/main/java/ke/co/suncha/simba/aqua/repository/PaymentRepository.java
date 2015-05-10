@@ -47,7 +47,7 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     Payment findByreceiptNo(String receiptNo);
 
     List<Payment> findByBillingMonth(BillingMonth billingMonth);
-
+    List<Payment> findByBillingMonthAndAccount(BillingMonth billingMonth, Account account);
     List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
 
 }

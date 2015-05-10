@@ -327,7 +327,7 @@ public class AccountService {
         return response;
     }
 
-    private Double getAccountBalanceByDate(Account account, Calendar calendar) {
+    public Double getAccountBalanceByDate(Account account, Calendar calendar) {
         // update balances
         Double balance = 0d;
 

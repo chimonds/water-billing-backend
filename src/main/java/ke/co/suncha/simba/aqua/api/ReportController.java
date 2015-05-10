@@ -48,4 +48,10 @@ public class ReportController extends AbstractRestHandler {
         return reportService.getPotentialCutOff(requestObject);
     }
 
+    @RequestMapping(value = "/monthlyBills", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of accounts.", notes = "The list is not paginated.")
+    public RestResponse getMonthlyBills(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getMonthlyBills(requestObject);
+    }
+
 }
