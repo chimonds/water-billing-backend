@@ -56,8 +56,6 @@ public class AuthController extends AbstractRestHandler {
 	@ResponseStatus(HttpStatus.OK)
 	@ApiOperation(value = "Authenticate a user resource.", notes = "Returns the URL of the new resource in the Location header.")
 	public RestResponse authenticate(@RequestBody Credential credential, HttpServletRequest request, HttpServletResponse response) {
-		
-		
 		return this.authService.authenticate(credential);
 	}
 }

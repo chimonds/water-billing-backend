@@ -23,6 +23,8 @@
  */
 package ke.co.suncha.simba.admin.helpers;
 
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 
 import javax.servlet.Filter;
@@ -33,10 +35,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
-import ke.co.suncha.simba.admin.security.AuthManager;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -44,8 +42,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SimbaCORSFilter implements Filter {
-	@Autowired
-	private AuthManager authManager;
+
 
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
 

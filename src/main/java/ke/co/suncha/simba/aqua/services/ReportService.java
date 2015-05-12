@@ -192,6 +192,7 @@ public class ReportService {
 
     public RestResponse getPotentialCutOff(RestRequestObject<ReportsParam> requestObject) {
         try {
+            log.info("Generating potential cut off list report");
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 ReportsParam request = requestObject.getObject();
@@ -244,8 +245,15 @@ public class ReportService {
                         if (include) {
                             PotentialCutOffRecord pcr = new PotentialCutOffRecord();
 
-                            pcr.setAccName(acc.getAccName());
-                            pcr.setZone(acc.getZone().getName());
+                            if (acc.getConsumer() != null) {
+                                pcr.setAccName(acc.getAccName());
+                            }
+
+                            if (acc.getZone() != null) {
+                                pcr.setZone(acc.getZone().getName());
+                            }
+
+
                             pcr.setAccNo(acc.getAccNo());
 
                             Page<Bill> bills;
@@ -257,8 +265,11 @@ public class ReportService {
                                 pcr.setBeforeBilling(acc.getOutstandingBalance() - lastBill.getTotalBilled());
 
                                 pcr.setBilledAmount(lastBill.getTotalBilled());
+                            } else {
+                                pcr.setBeforeBilling(0.0);
                             }
                             pcr.setAfterBilling(acc.getOutstandingBalance());
+
 
                             if (pcr.getBeforeBilling() > 0) {
                                 records.add(pcr);
@@ -286,6 +297,7 @@ public class ReportService {
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
             log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
         }
         return response;
     }
@@ -329,6 +341,9 @@ public class ReportService {
                         return response;
                     }
 
+                    Double totalAmountBilled = 0.0;
+                    Double totalMeterRent = 0.0;
+
                     for (Bill b : bills) {
                         Boolean include = true;
                         if (params.containsKey("zoneId")) {
@@ -341,6 +356,8 @@ public class ReportService {
 
                         if (include) {
 
+                            totalAmountBilled += b.getAmount();
+                            totalMeterRent += b.getMeterRent();
                             //amount billed
                             if (b.getConsumptionType().compareToIgnoreCase("Actual") == 0) {
                                 bsr.setBilledOnActual(bsr.getBilledOnActual() + b.getAmount());
@@ -351,6 +368,7 @@ public class ReportService {
                             //Other charges
                             if (!b.getBillItems().isEmpty()) {
                                 for (BillItem bi : b.getBillItems()) {
+                                    totalAmountBilled += bi.getAmount();
                                     if (bi.getBillItemType().getName().compareToIgnoreCase("Reconnection Fee") == 0) {
                                         bsr.setReconnectionFee(bsr.getReconnectionFee() + bi.getAmount());
                                     } else if (bi.getBillItemType().getName().compareToIgnoreCase("At Owners Request Fee") == 0) {
@@ -400,7 +418,8 @@ public class ReportService {
                     //send report
                     ReportObject report = new ReportObject();
                     report.setDate(Calendar.getInstance());
-
+                    report.setAmount(totalAmountBilled);
+                    report.setMeterRent(totalMeterRent);
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:BILLING_SUMMARY").getValue());
                     report.setContent(bsr);
@@ -414,6 +433,7 @@ public class ReportService {
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
             log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
         }
         return response;
     }
@@ -474,6 +494,16 @@ public class ReportService {
                                 records.add(billItemRecord);
                             }
                         }
+
+                        //get meter rent
+                        if(bill.getMeterRent()>0){
+                            billRecord = new StatementRecord();
+                            billRecord.setTransactionDate(bill.getTransactionDate());
+                            billRecord.setItemType("Meter Rent");
+                            billRecord.setRefNo(billingYearMonth);
+                            billRecord.setAmount(bill.getMeterRent());
+                            records.add(billRecord);
+                        }
                     }
                 }
 
@@ -482,7 +512,7 @@ public class ReportService {
                     for (Payment payment : account.getPayments()) {
                         StatementRecord paymentRecord = new StatementRecord();
                         paymentRecord.setTransactionDate(payment.getTransactionDate());
-                        paymentRecord.setItemType(payment.getPaymentType().getName());
+
                         paymentRecord.setRefNo(payment.getReceiptNo() + "-" + payment.getPaymentType().getName());
                         paymentRecord.setAmount(payment.getAmount());
 
@@ -490,7 +520,18 @@ public class ReportService {
 
                         if (!payment.getPaymentType().isNegative()) {
                             paymentRecord.setAmount(amount * -1);
+                            if(payment.getPaymentType().getName().compareToIgnoreCase("Credit")==0){
+                                paymentRecord.setItemType("Adjustment");
+                            }
+                            else{
+                                paymentRecord.setItemType("Payment");
+                            }
+
+                            //paymentRecord.setItemType(payment.getPaymentType().getName());
+                        }else{
+                            paymentRecord.setItemType("Adjustment");
                         }
+
                         records.add(paymentRecord);
                     }
                 }
@@ -551,7 +592,7 @@ public class ReportService {
                 if (params.containsKey("fromDate")) {
                     Object unixTime = params.get("fromDate");
                     if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                        fromDate.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                        fromDate.setTimeInMillis(Long.valueOf(unixTime.toString()) * 1000);
                     }
                 }
 
@@ -560,7 +601,8 @@ public class ReportService {
                 if (params.containsKey("toDate")) {
                     Object unixTime = params.get("toDate");
                     if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                        toDate.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                        Long milliSeconds = Long.valueOf(unixTime.toString()) * 1000;
+                        toDate.setTimeInMillis(milliSeconds);
                     }
                 }
 

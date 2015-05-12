@@ -435,7 +435,7 @@ public class AccountService {
                                 Calendar calendar = Calendar.getInstance();
                                 Object unixTime = params.get("transactionDate");
                                 if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                                    calendar.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                                    calendar.setTimeInMillis(Long.valueOf(unixTime.toString())*1000);
                                 }
 
                                 //update balance on local object
@@ -541,7 +541,7 @@ public class AccountService {
                                 Calendar calendar = Calendar.getInstance();
                                 Object unixTime = params.get("transactionDate");
                                 if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                                    calendar.setTimeInMillis(Long.valueOf(unixTime.toString()));
+                                    calendar.setTimeInMillis(1000*Long.valueOf(unixTime.toString()));
                                 }
 
                                 //update balance on local object

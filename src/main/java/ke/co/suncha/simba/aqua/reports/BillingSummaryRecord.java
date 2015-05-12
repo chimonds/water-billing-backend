@@ -8,19 +8,19 @@ import java.util.List;
  * @author Maitha Manyala <maitha.manyala at gmail.com> on 5/7/15.
  */
 public class BillingSummaryRecord {
-    private Double billedOnActual;
-    private Double billedOnEstimate;
-    private Double creditAdjustments;
-    private Double debitAdjustments;
-    private Double totalCharges;
-    private Double reconnectionFee;
-    private Double atOwnersRequestFee;
-    private Double changeOfAccountName;
-    private  Double byPassFee;
-    private  Double bouncedChequeFee;
-    private Double surchargeIrrigation;
-    private Double surchargeMissuse;
-    private  Double meterServicing;
+    private Double billedOnActual = 0.0;
+    private Double billedOnEstimate = 0.0;
+    private Double creditAdjustments = 0.0;
+    private Double debitAdjustments = 0.0;
+    private Double totalCharges = 0.0;
+    private Double reconnectionFee = 0.0;
+    private Double atOwnersRequestFee = 0.0;
+    private Double changeOfAccountName = 0.0;
+    private Double byPassFee = 0.0;
+    private Double bouncedChequeFee = 0.0;
+    private Double surchargeIrrigation = 0.0;
+    private Double surchargeMissuse = 0.0;
+    private Double meterServicing = 0.0;
 
 
     public Double getBilledOnActual() {
