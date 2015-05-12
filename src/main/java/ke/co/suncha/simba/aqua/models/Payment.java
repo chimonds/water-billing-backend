@@ -66,7 +66,7 @@ public class Payment extends SimbaBaseEntity implements Serializable {
 
 	@NotNull
 	@Column(name = "transaction_date")
-	private Calendar  transactionDate =Calendar.getInstance();
+	private Calendar  transactionDate = Calendar.getInstance();
 
 	@NotNull
 	@Column(name = "receipt_no", length = 15)

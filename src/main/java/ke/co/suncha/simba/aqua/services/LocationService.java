@@ -41,6 +41,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -70,6 +71,7 @@ public class LocationService {
 
 	}
 
+	@Transactional
 	public RestResponse create(RestRequestObject<Location> requestObject) {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
@@ -98,6 +100,7 @@ public class LocationService {
 		return response;
 	}
 
+	@Transactional
 	public RestResponse update(RestRequestObject<Location> requestObject) {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());

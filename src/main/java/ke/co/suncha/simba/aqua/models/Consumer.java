@@ -267,7 +267,7 @@ public class Consumer extends SimbaBaseEntity implements Serializable {
 	@Override
 	public String toString() {
 		return "Consumer [consumerId=" + consumerId + ", firstName=" + firstName + ", middleName=" + middleName + ", lastName=" + lastName + ", identityNo=" + identityNo + ", phoneNumber=" + phoneNumber + ", emailAddress=" + emailAddress + ", postalAddress=" + postalAddress
-				+ ", postalCode=" + postalCode + ", city=" + city + ", createdOn=" + this.getCreatedOn() + ", transactionID=" + this.getTransationId() + "]";
+				+ ", postalCode=" + postalCode + ", city=" + city + ", createdOn=" + this.getCreatedOn() + "]";
 	}
 
 }

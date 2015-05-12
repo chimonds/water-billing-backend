@@ -51,6 +51,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import scala.util.parsing.json.JSON;
 
 /**
@@ -87,6 +88,7 @@ public class AccountService {
 
     }
 
+    @Transactional
     public RestResponse create(RestRequestObject<Account> requestObject, Long id) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -133,6 +135,7 @@ public class AccountService {
         return response;
     }
 
+    @Transactional
     public RestResponse update(RestRequestObject<Account> requestObject, Long id) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -175,6 +178,7 @@ public class AccountService {
         return response;
     }
 
+    @Transactional
     public RestResponse transfer(RestRequestObject<Account> requestObject, Long id) {
         try {
             response = authManager.tokenValid(requestObject.getToken());

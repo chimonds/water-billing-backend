@@ -36,6 +36,7 @@ import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 
+import ke.co.suncha.simba.admin.service.CurrentUserService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,9 @@ public class AuthManager {
 
     @Autowired
     SimbaOptionService optionService;
+
+    @Autowired
+    CurrentUserService currentUserService;
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     private RestResponse response;
@@ -97,6 +101,7 @@ public class AuthManager {
                         // save last access
                         user.getUserAuth().setLastAccess(Calendar.getInstance());
                         userRepository.save(user);
+                        currentUserService.setUser(user.getUserId());
 
                         // generate token
                         String token = this.generateToken(user);
@@ -210,7 +215,7 @@ public class AuthManager {
                 log.info("Auth Key:" + authKey);
 
                 Map<String, Object> decodedPayload = new JWTVerifier(authKey).verify(token);
-                
+
                 Calendar lastAccess = user.getUserAuth().getLastAccess();
                 //add session idle timeout
                 lastAccess.add(Calendar.SECOND, this.getIdleSessionTimeout());
@@ -220,6 +225,7 @@ public class AuthManager {
                     log.info("Session timed out for:" + emailAddress);
                     response = new RestResponse(obj, HttpStatus.UNAUTHORIZED);
                 } else {
+                    currentUserService.setUser(user.getUserId());
                     //good to go
                     obj.setMessage("Ok");
                     response = new RestResponse(obj, HttpStatus.OK);

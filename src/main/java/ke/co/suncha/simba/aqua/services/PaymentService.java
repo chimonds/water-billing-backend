@@ -52,6 +52,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -122,10 +123,7 @@ public class PaymentService {
         return balance;
     }
 
-
-
-
-
+    @Transactional
     public RestResponse createByAccount(RestRequestObject<Payment> requestObject, Long accountId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());

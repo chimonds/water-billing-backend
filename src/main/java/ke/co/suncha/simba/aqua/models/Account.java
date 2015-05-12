@@ -350,7 +350,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
      */
     @Override
     public String toString() {
-        return "ConsumerConnection [accountId=" + accountId + ", balanceBroughtForward=" + balanceBroughtForward + ", account no=" + accNo + ", consumer=" + consumer + ", getTransationId()=" + getTransationId() + "]";
+        return "ConsumerConnection [accountId=" + accountId + ", balanceBroughtForward=" + balanceBroughtForward + ", account no=" + accNo + ", consumer=" + consumer +   "]";
     }
 
 }

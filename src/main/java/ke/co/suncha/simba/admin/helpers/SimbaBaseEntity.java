@@ -26,80 +26,88 @@ package ke.co.suncha.simba.admin.helpers;
 import java.util.Calendar;
 import java.util.UUID;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import ke.co.suncha.simba.admin.models.User;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public abstract class SimbaBaseEntity {
 
-	@NotNull
-	@Column(name = "transaction_id", length = 100)
-	@JsonIgnore
-	private String transationId = UUID.randomUUID().toString();
+    @NotNull
+    @Column(name = "approval_level", length = 0)
+    private Integer approvalLevel = 0;
 
-	@Column(name = "created_on")
-	@Temporal(TemporalType.TIMESTAMP)
-	private Calendar createdOn = Calendar.getInstance();
+    @CreatedDate
+    @NotNull
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar createdOn = Calendar.getInstance();
 
-	@NotNull
-	@Column(name = "approval_level", length = 0)
-	private Integer approvalLevel = 0;
+    @LastModifiedDate
+    @NotNull
+    @Temporal(TemporalType.TIMESTAMP)
+    @JsonIgnore
+    private Calendar lastModifiedDate = Calendar.getInstance();
 
-	/**
-	 * @return the approvalLevel
-	 */
-	public Integer getApprovalLevel() {
-		return approvalLevel;
-	}
+    @CreatedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn
+    @JsonIgnore
+    private User createdBy;
 
-	/**
-	 * @param approvalLevel
-	 *            the approvalLevel to set
-	 */
-	public void setApprovalLevel(Integer approvalLevel) {
-		this.approvalLevel = approvalLevel;
-	}
+    @LastModifiedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn
+    @JsonIgnore
+    private User lastModifiedBy;
 
+    public Integer getApprovalLevel() {
+        return approvalLevel;
+    }
 
+    public void setApprovalLevel(Integer approvalLevel) {
+        this.approvalLevel = approvalLevel;
+    }
 
-	/**
-	 * @return the createdOn
-	 */
-	public Calendar getCreatedOn() {
-		return createdOn;
-	}
+    public Calendar getCreatedOn() {
+        return createdOn;
+    }
 
-	/**
-	 * @param createdOn the createdOn to set
-	 */
-	public void setCreatedOn(Calendar createdOn) {
-		this.createdOn = createdOn;
-	}
+    public void setCreatedOn(Calendar createdOn) {
+        this.createdOn = createdOn;
+    }
 
-	/**
-	 * @return the transationId
-	 */
-	public String getTransationId() {
-		if (this.transationId == null) {
-			this.transationId = UUID.randomUUID().toString();
-		}
-		return transationId;
-	}
+    public Calendar getLastModifiedDate() {
+        return lastModifiedDate;
+    }
 
-	/**
-	 * @param transationId
-	 *            the transationId to set
-	 */
-	public void setTransationId(String transationId) {
-		this.transationId = transationId;
-	}
+    public void setLastModifiedDate(Calendar lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public User getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(User lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
 }

@@ -41,159 +41,161 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class ConsumerService {
 
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private ConsumerRepository consumerRepository;
+    @Autowired
+    private ConsumerRepository consumerRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	public ConsumerService() {
+    public ConsumerService() {
 
-	}
+    }
 
-	public RestResponse create(RestRequestObject<Consumer> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    @Transactional
+    public RestResponse create(RestRequestObject<Consumer> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-				Consumer consumer = requestObject.getObject();
-				Consumer co = consumerRepository.findByIdentityNo(consumer.getIdentityNo());
-				if (co != null) {
-					responseObject.setMessage("Consumer already exists");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-				} else {
-					// create resource
-					Consumer created = consumerRepository.save(consumer);
+                Consumer consumer = requestObject.getObject();
+                Consumer co = consumerRepository.findByIdentityNo(consumer.getIdentityNo());
+                if (co != null) {
+                    responseObject.setMessage("Consumer already exists");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                } else {
+                    // create resource
+                    Consumer created = consumerRepository.save(consumer);
 
-					// package response
-					responseObject.setMessage("Consumer created successfully. ");
-					responseObject.setPayload(created);
-					response = new RestResponse(responseObject, HttpStatus.CREATED);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // package response
+                    responseObject.setMessage("Consumer created successfully. ");
+                    responseObject.setPayload(created);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	public RestResponse update(RestRequestObject<Consumer> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    @Transactional
+    public RestResponse update(RestRequestObject<Consumer> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-				Consumer consumer = requestObject.getObject();
+                Consumer consumer = requestObject.getObject();
 
-				Consumer co = consumerRepository.findOne(consumer.getConsumerId());
-				if (co == null) {
-					responseObject.setMessage("Consumer not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					co.setFirstName(consumer.getFirstName());
-					co.setLastName(consumer.getLastName());
-					co.setMiddleName(consumer.getMiddleName());
-					co.setEmailAddress(consumer.getEmailAddress());
-					co.setCity(consumer.getCity());
-					co.setPostalAddress(consumer.getPostalAddress());
-					co.setPostalCode(consumer.getPostalCode());
-					co.setPhoneNumber(consumer.getPhoneNumber());
-					co.setIdentityNo(consumer.getIdentityNo());
+                Consumer co = consumerRepository.findOne(consumer.getConsumerId());
+                if (co == null) {
+                    responseObject.setMessage("Consumer not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
+                    co.setFirstName(consumer.getFirstName());
+                    co.setLastName(consumer.getLastName());
+                    co.setMiddleName(consumer.getMiddleName());
+                    co.setEmailAddress(consumer.getEmailAddress());
+                    co.setCity(consumer.getCity());
+                    co.setPostalAddress(consumer.getPostalAddress());
+                    co.setPostalCode(consumer.getPostalCode());
+                    co.setPhoneNumber(consumer.getPhoneNumber());
+                    co.setIdentityNo(consumer.getIdentityNo());
 
-					// save
-					consumerRepository.save(co);
-					responseObject.setMessage("Consumer  updated successfully");
-					responseObject.setPayload(co);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    // save
+                    consumerRepository.save(co);
+                    responseObject.setMessage("Consumer  updated successfully");
+                    responseObject.setPayload(co);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
 
-	public RestResponse getOne(RestRequestObject<RestPageRequest> requestObject, Long id) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				Consumer consumer = consumerRepository.findOne(id);
-				if (consumer != null) {
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(consumer);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    public RestResponse getOne(RestRequestObject<RestPageRequest> requestObject, Long id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                Consumer consumer = consumerRepository.findOne(id);
+                if (consumer != null) {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(consumer);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-				RestPageRequest p = requestObject.getObject();
+                RestPageRequest p = requestObject.getObject();
 
-				Page<Consumer> page;
-				if (p.getFilter().isEmpty()) {
-					page = consumerRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				} else {
-					page = consumerRepository.findByFirstNameContainsOrLastNameContainsOrMiddleNameContains(p.getFilter(), p.getFilter(), p.getFilter(),
+                Page<Consumer> page;
+                if (p.getFilter().isEmpty()) {
+                    page = consumerRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
+                    page = consumerRepository.findByFirstNameContainsOrLastNameContainsOrMiddleNameContains(p.getFilter(), p.getFilter(), p.getFilter(),
 
-					new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                            new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
-				}
-				if (page.hasContent()) {
+                }
+                if (page.hasContent()) {
 
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(page);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(page);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

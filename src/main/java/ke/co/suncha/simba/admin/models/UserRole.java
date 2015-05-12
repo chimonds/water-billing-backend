@@ -47,7 +47,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * User role entity class
- * 
+ *
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
  */
@@ -62,7 +62,7 @@ public class UserRole  extends SimbaBaseEntity implements Serializable{
 	// ==============
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1350419347037615957L;
 
@@ -81,7 +81,7 @@ public class UserRole  extends SimbaBaseEntity implements Serializable{
 	// The user role description
 	@Column(name = "role_description")
 	private String description="";
-	
+
 	/**
 	 * @return the serialversionuid
 	 */
@@ -90,21 +90,21 @@ public class UserRole  extends SimbaBaseEntity implements Serializable{
 	}
 
 
-	
+
 	//A user is asigned one Role (eg. Riziki is asigned an administrator role)
 //	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 //	private  List<User> users;
 
 //	@ManyToMany(targetEntity = SystemAction.class, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
 //	private List<SystemAction> systemActions;
-	
-	
-	 @ManyToMany (cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	 @JoinTable(name="user_role_system_actions")
-	 private List<SystemAction> systemActions;
 
-	
-	
+
+	@ManyToMany (cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinTable(name="user_role_system_actions")
+	private List<SystemAction> systemActions;
+
+
+
 
 	// ==============
 	// PUBLIC FIELDS
