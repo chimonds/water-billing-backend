@@ -23,15 +23,15 @@
  */
 package ke.co.suncha.simba.admin.security;
 
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.ObjectMapper;
 import com.auth0.jwt.internal.org.apache.commons.codec.binary.Base64;
+import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
+import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -41,6 +41,7 @@ import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.audit.AuditEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,7 +54,6 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.util.UUID;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -70,11 +70,60 @@ public class AuthManager {
     @Autowired
     CurrentUserService currentUserService;
 
+    @Autowired
+    SystemActionRepository systemActionRepository;
+
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
     public AuthManager() {
+
+    }
+
+    public Boolean grant(String token, String action) {
+        Boolean grant = false;
+        try {
+            if (token != null && !"".equals(token)) {
+                String[] pieces = token.split("\\.");
+                if (pieces.length != 3) {
+                    return false;
+                }
+                JsonNode jwtPayload = this.decodeAndParse(pieces[1]);
+                String emailAddress = jwtPayload.get("email_address").asText();
+                User user = userRepository.findByEmailAddress(emailAddress);
+
+                if (user == null) {
+                    return false;
+                }
+
+                if (user.getUserRole() == null) {
+                    return false;
+                }
+
+                //get system action
+                SystemAction systemAction = systemActionRepository.findByName(action);
+                if (systemAction == null) {
+                    systemAction = new SystemAction();
+                    systemAction.setName(action);
+                    systemAction.setDescription("Auto generated");
+                    systemAction.setIsActive(true);
+                    systemAction = systemActionRepository.save(systemAction);
+                }
+                if (!user.getUserRole().getSystemActions().contains(systemAction)) {
+                    log.error(user.getEmailAddress() + " denied to perform:" + action);
+                    return false;
+                }
+                log.info(user.getEmailAddress() + " allowed to perform: " + action);
+                return true;
+
+
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+
+        return grant;
 
     }
 
@@ -106,12 +155,22 @@ public class AuthManager {
                         // generate token
                         String token = this.generateToken(user);
 
-                        LoginResponse lr = new LoginResponse();
-                        lr.setToken(token);
-                        lr.setName(user.getFirstName() + " " + user.getLastName());
+                        LoginResponse loginResponse = new LoginResponse();
+                        loginResponse.setToken(token);
+                        loginResponse.setName(user.getFirstName() + " " + user.getLastName());
+
+                        List<String> permissions = new ArrayList<>();
+                        if (user.getUserRole() != null) {
+                            if (!user.getUserRole().getSystemActions().isEmpty()) {
+                                for (SystemAction systemAction : user.getUserRole().getSystemActions()) {
+                                    permissions.add(systemAction.getName());
+                                }
+                            }
+                        }
+                        loginResponse.setPermissions(permissions);
 
                         responseObject.setMessage("Logged in successfully");
-                        responseObject.setPayload(lr);
+                        responseObject.setPayload(loginResponse);
                         response = new RestResponse(responseObject, HttpStatus.OK);
                     }
                 } else {
@@ -183,12 +242,13 @@ public class AuthManager {
         return myToken;
     }
 
-    JsonNode decodeAndParse(String b64String) throws IOException {
+    public JsonNode decodeAndParse(String b64String) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = new String(Base64.decodeBase64(b64String), "UTF-8");
         JsonNode jwtHeader = (JsonNode) mapper.readValue(jsonString, JsonNode.class);
         return jwtHeader;
     }
+
 
     public RestResponse tokenValid(String token) {
         RestResponseObject obj = new RestResponseObject();

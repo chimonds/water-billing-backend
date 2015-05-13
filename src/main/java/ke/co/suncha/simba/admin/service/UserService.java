@@ -23,8 +23,11 @@
  */
 package ke.co.suncha.simba.admin.service;
 
+import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
+import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
+import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
@@ -46,164 +49,168 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class UserService {
 
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    @Autowired
+    private SystemActionRepository systemActionRepository;
 
-	public UserService() {
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	}
+    public UserService() {
 
-	public RestResponse create(RestRequestObject<User> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    }
 
-				User user = requestObject.getObject();
-				User u = userRepository.findByEmailAddress(user.getEmailAddress());
-				if (u != null) {
-					responseObject.setMessage("User already exists");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
 
-				} else {
 
-					// generate and set password;
-					UserAuth auth = new UserAuth();
+    public RestResponse create(RestRequestObject<User> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-					BCryptPasswordEncoder passEncoder = new BCryptPasswordEncoder();
+                User user = requestObject.getObject();
+                User u = userRepository.findByEmailAddress(user.getEmailAddress());
+                if (u != null) {
+                    responseObject.setMessage("User already exists");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
 
-					// encode pass plus email address
-					String pass = passEncoder.encode(user.getEmailAddress().toLowerCase() + "simbaone");
+                } else {
 
-					auth.setAuthPassword(pass);
+                    // generate and set password;
+                    UserAuth auth = new UserAuth();
 
-					user.setUserAuth(auth);
+                    BCryptPasswordEncoder passEncoder = new BCryptPasswordEncoder();
 
-					// send password
+                    // encode pass plus email address
+                    String pass = passEncoder.encode(user.getEmailAddress().toLowerCase() + "simbaone");
 
-					// create resource
-					User createdUser = userRepository.save(user);
+                    auth.setAuthPassword(pass);
 
-					// package response
-					responseObject.setMessage("User created successfully. Log in instructions have been sent to " + user.getEmailAddress());
-					responseObject.setPayload(createdUser);
-					response = new RestResponse(responseObject, HttpStatus.CREATED);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    user.setUserAuth(auth);
 
-			//
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // send password
 
-	public RestResponse getUser(long id) {
-		try {
-			User user = userRepository.findOne(id);
-			if (user == null) {
-				responseObject.setMessage("User  not found.");
-				response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-			} else {
-				responseObject.setMessage("Data found");
-				responseObject.setPayload(user);
-				response = new RestResponse(responseObject, HttpStatus.OK);
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // create resource
+                    User createdUser = userRepository.save(user);
 
-	public RestResponse update(RestRequestObject<User> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				User user = requestObject.getObject();
-				User u = userRepository.findOne(user.getUserId());
-				if (u == null) {
-					responseObject.setMessage("User not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					u.setFirstName(user.getFirstName());
-					u.setLastName(user.getLastName());
-					u.setActive(user.isActive());
+                    // package response
+                    responseObject.setMessage("User created successfully. Log in instructions have been sent to " + user.getEmailAddress());
+                    responseObject.setPayload(createdUser);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-					//
-					u.setUserRole(user.getUserRole());
+            //
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-					// save
-					userRepository.save(u);
-					responseObject.setMessage("User  updated successfully");
-					responseObject.setPayload(u);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
+    public RestResponse getUser(long id) {
+        try {
+            User user = userRepository.findOne(id);
+            if (user == null) {
+                responseObject.setMessage("User  not found.");
+                response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+            } else {
+                responseObject.setMessage("Data found");
+                responseObject.setPayload(user);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+    public RestResponse update(RestRequestObject<User> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                User user = requestObject.getObject();
+                User u = userRepository.findOne(user.getUserId());
+                if (u == null) {
+                    responseObject.setMessage("User not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
+                    u.setFirstName(user.getFirstName());
+                    u.setLastName(user.getLastName());
+                    u.setActive(user.isActive());
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    //
+                    u.setUserRole(user.getUserRole());
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+                    // save
+                    userRepository.save(u);
+                    responseObject.setMessage("User  updated successfully");
+                    responseObject.setPayload(u);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
 
-	public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-				RestPageRequest p = requestObject.getObject();
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-				Page<User> pageOfUsers;
-				if (p.getFilter().isEmpty()) {
-					pageOfUsers = userRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				} else {
-					pageOfUsers = userRepository.findByEmailAddressContaining(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
 
-				}
-				if (pageOfUsers.hasContent()) {
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(pageOfUsers);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+
+                RestPageRequest p = requestObject.getObject();
+
+                Page<User> pageOfUsers;
+                if (p.getFilter().isEmpty()) {
+                    pageOfUsers = userRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
+                    pageOfUsers = userRepository.findByEmailAddressContaining(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
+                }
+                if (pageOfUsers.hasContent()) {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(pageOfUsers);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

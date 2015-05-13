@@ -49,202 +49,208 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class UserRoleService {
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private UserRoleRepository userRoleRepository;
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	public UserRoleService() {
-	}
+    public UserRoleService() {
+    }
 
-	public RestResponse create(RestRequestObject<UserRole> requestObject) {
+    public RestResponse create(RestRequestObject<UserRole> requestObject) {
 
-		response = authManager.tokenValid(requestObject.getToken());
+        response = authManager.tokenValid(requestObject.getToken());
 
-		if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-			UserRole userRole = requestObject.getObject();
-			UserRole ur = userRoleRepository.findByName(userRole.getName());
+        if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-			if (ur != null) {
-				responseObject.setMessage("User role already exists");
-				response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+            if (!authManager.grant(requestObject.getToken(), "roles_add")) {
+                responseObject.setMessage("You are not authorized to perform action, please contact your admin.");
+                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                return response;
+            }
 
-			} else {
-				try {
-					// create resource
-					UserRole createdUserRole = userRoleRepository.save(userRole);
+            UserRole userRole = requestObject.getObject();
+            UserRole ur = userRoleRepository.findByName(userRole.getName());
 
-					// package response
-					responseObject.setMessage("User role created successfully");
-					responseObject.setPayload(createdUserRole);
-					response = new RestResponse(responseObject, HttpStatus.CREATED);
-				} catch (Exception ex) {
-					responseObject.setMessage(ex.getLocalizedMessage());
-					response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            if (ur != null) {
+                responseObject.setMessage("User role already exists");
+                response = new RestResponse(responseObject, HttpStatus.CONFLICT);
 
-					//
-					log.error(ex.getLocalizedMessage());
-				}
-			}
-		}
-		return response;
-	}
+            } else {
+                try {
+                    // create resource
+                    UserRole createdUserRole = userRoleRepository.save(userRole);
 
-	public RestResponse getUserRole(long id) {
-		try {
-			UserRole ur = userRoleRepository.findOne(id);
-			if (ur == null) {
-				responseObject.setMessage("User role not found.");
+                    // package response
+                    responseObject.setMessage("User role created successfully");
+                    responseObject.setPayload(createdUserRole);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
+                } catch (Exception ex) {
+                    responseObject.setMessage(ex.getLocalizedMessage());
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-				response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-			} else {
-				responseObject.setMessage("Data found");
-				responseObject.setPayload(ur);
-				response = new RestResponse(responseObject, HttpStatus.OK);
-			}
+                    //
+                    log.error(ex.getLocalizedMessage());
+                }
+            }
+        }
+        return response;
+    }
 
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+    public RestResponse getUserRole(long id) {
+        try {
+            UserRole ur = userRoleRepository.findOne(id);
+            if (ur == null) {
+                responseObject.setMessage("User role not found.");
 
-	public RestResponse updateWithPermissions(RestRequestObject<List<SystemAction>> requestObject, Long userRoleId) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+            } else {
+                responseObject.setMessage("Data found");
+                responseObject.setPayload(ur);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
 
-				List<SystemAction> systemActions = requestObject.getObject();
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-				UserRole ur = userRoleRepository.findOne(userRoleId);
-				if (ur == null) {
-					responseObject.setMessage("User role not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// update system actions
-					ur.setSystemActions(systemActions);
+    public RestResponse updateWithPermissions(RestRequestObject<List<SystemAction>> requestObject, Long userRoleId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-					// save
-					userRoleRepository.save(ur);
+                List<SystemAction> systemActions = requestObject.getObject();
 
-					responseObject.setMessage("User role permissions updated successfully");
-					responseObject.setPayload(ur);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                UserRole ur = userRoleRepository.findOne(userRoleId);
+                if (ur == null) {
+                    responseObject.setMessage("User role not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // update system actions
+                    ur.setSystemActions(systemActions);
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // save
+                    userRoleRepository.save(ur);
 
-	public RestResponse update(RestRequestObject<UserRole> requestObject, Long userRoleId) {
+                    responseObject.setMessage("User role permissions updated successfully");
+                    responseObject.setPayload(ur);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-		response = authManager.tokenValid(requestObject.getToken());
-		try {
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				UserRole userRole = requestObject.getObject();
-				UserRole ur = userRoleRepository.findOne(userRoleId);
-				if (ur == null) {
-					responseObject.setMessage("User role not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					ur.setDescription(userRole.getDescription());
-					ur.setName(userRole.getName());
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-					// save
-					userRoleRepository.save(ur);
+    public RestResponse update(RestRequestObject<UserRole> requestObject, Long userRoleId) {
 
-					responseObject.setMessage("User role updated successfully");
-					responseObject.setPayload(ur);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+        response = authManager.tokenValid(requestObject.getToken());
+        try {
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                UserRole userRole = requestObject.getObject();
+                UserRole ur = userRoleRepository.findOne(userRoleId);
+                if (ur == null) {
+                    responseObject.setMessage("User role not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
+                    ur.setDescription(userRole.getDescription());
+                    ur.setName(userRole.getName());
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // save
+                    userRoleRepository.save(ur);
 
-	public void delete(Long id) {
-		userRoleRepository.delete(id);
-	}
+                    responseObject.setMessage("User role updated successfully");
+                    responseObject.setPayload(ur);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	public RestResponse getAllUserRolesByName(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
+    public void delete(Long id) {
+        userRoleRepository.delete(id);
+    }
 
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				RestPageRequest pageRequest = requestObject.getObject();
-				Page<UserRole> pageOfUserRoles;
-				if (pageRequest.getFilter().isEmpty()) {
-					pageOfUserRoles = userRoleRepository.findAll(new PageRequest(pageRequest.getPage(), pageRequest.getSize(), sortByDateAddedDesc()));
-				} else {
-					pageOfUserRoles = userRoleRepository.findByNameContaining(pageRequest.getFilter(), new PageRequest(pageRequest.getPage(), pageRequest.getSize(), sortByDateAddedDesc()));
-				}
-				if (pageOfUserRoles.hasContent()) {
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
 
-					// null sensitive data and get the role
-					List<UserRole> urList = pageOfUserRoles.getContent();
-					List<UserRole> newUserRoles = new ArrayList<>();
-					for (UserRole ur : urList) {
-						ur.setSystemActions(null);
-						newUserRoles.add(ur);
-					}
+    public RestResponse getAllUserRolesByName(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
 
-					CustomPage cPage = new CustomPage();
-					cPage.setContent(newUserRoles);
-					cPage.setFirst(pageOfUserRoles.isFirst());
-					cPage.setLast(pageOfUserRoles.isLast());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                RestPageRequest pageRequest = requestObject.getObject();
+                Page<UserRole> pageOfUserRoles;
+                if (pageRequest.getFilter().isEmpty()) {
+                    pageOfUserRoles = userRoleRepository.findAll(new PageRequest(pageRequest.getPage(), pageRequest.getSize(), sortByDateAddedDesc()));
+                } else {
+                    pageOfUserRoles = userRoleRepository.findByNameContaining(pageRequest.getFilter(), new PageRequest(pageRequest.getPage(), pageRequest.getSize(), sortByDateAddedDesc()));
+                }
+                if (pageOfUserRoles.hasContent()) {
 
-					cPage.setNumberOfElements(pageOfUserRoles.getNumberOfElements());
-					cPage.setTotalElements(pageOfUserRoles.getTotalElements());
-					cPage.setTotalPages(pageOfUserRoles.getTotalPages());
+                    // null sensitive data and get the role
+                    List<UserRole> urList = pageOfUserRoles.getContent();
+                    List<UserRole> newUserRoles = new ArrayList<>();
+                    for (UserRole ur : urList) {
+                        ur.setSystemActions(null);
+                        newUserRoles.add(ur);
+                    }
 
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(cPage);
-					response = new RestResponse(responseObject, HttpStatus.OK);
+                    CustomPage cPage = new CustomPage();
+                    cPage.setContent(newUserRoles);
+                    cPage.setFirst(pageOfUserRoles.isFirst());
+                    cPage.setLast(pageOfUserRoles.isLast());
 
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
+                    cPage.setNumberOfElements(pageOfUserRoles.getNumberOfElements());
+                    cPage.setTotalElements(pageOfUserRoles.getTotalElements());
+                    cPage.setTotalPages(pageOfUserRoles.getTotalPages());
 
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(cPage);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

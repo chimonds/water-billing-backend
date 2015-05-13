@@ -23,6 +23,8 @@
  */
 package ke.co.suncha.simba.admin.security;
 
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -30,6 +32,8 @@ package ke.co.suncha.simba.admin.security;
 public class LoginResponse {
 	private String token;
 	private String name;
+	private List<String> permissions;
+
 
 	/**
 	 * @return the token
@@ -51,5 +55,13 @@ public class LoginResponse {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public List<String> getPermissions() {
+		return permissions;
+	}
+
+	public void setPermissions(List<String> permissions) {
+		this.permissions = permissions;
 	}
 }

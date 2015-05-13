@@ -66,7 +66,7 @@ public class SystemAction  extends SimbaBaseEntity {
 
 	@NotNull
 	@Column(name = "is_active")
-	private Integer isActive=1;
+	private Boolean active=true;
 	
 //	@ManyToMany(cascade = CascadeType.ALL,targetEntity = UserRole.class, fetch = FetchType.LAZY)
 //	private List<UserRole> userRoles;
@@ -114,14 +114,14 @@ public class SystemAction  extends SimbaBaseEntity {
 	/**
 	 * @return the isActive
 	 */
-	public Integer getIsActive() {
-		return isActive;
+	public Boolean isActive() {
+		return active;
 	}
 
 	/**
-	 * @param isActive the isActive to set
+	 * @param active the isActive to set
 	 */
-	public void setIsActive(Integer isActive) {
-		this.isActive = isActive;
+	public void setIsActive(Boolean active) {
+		this.active = active;
 	}
 }

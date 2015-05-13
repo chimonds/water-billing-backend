@@ -139,33 +139,32 @@ public class ReleaseManager {
                 } catch (Exception ex) {
 
                 }
-//                User dbUser = userRepository.findOne(Long.valueOf("1"));
-                try {
 
+                try {
 
                     // setup default system actions
                     SystemAction systemAction = new SystemAction();
-                    systemAction.setName("Users:add");
+                    systemAction.setName("users_add");
                     systemAction.setDescription("Add users to the system");
                     systemActionRepository.save(systemAction);
 
                     systemAction = new SystemAction();
-                    systemAction.setName("Users:update");
+                    systemAction.setName("users_update");
                     systemAction.setDescription("Update users info");
                     systemActionRepository.save(systemAction);
 
                     systemAction = new SystemAction();
-                    systemAction.setName("Roles:add");
+                    systemAction.setName("roles_add");
                     systemAction.setDescription("Add user roles to the system");
                     systemActionRepository.save(systemAction);
 
                     systemAction = new SystemAction();
-                    systemAction.setName("Roles:update");
+                    systemAction.setName("roles_update");
                     systemAction.setDescription("Update user roles to the system");
                     systemActionRepository.save(systemAction);
 
                     systemAction = new SystemAction();
-                    systemAction.setName("Menu:settings");
+                    systemAction.setName("menu_settings");
                     systemAction.setDescription("View top application level settings menu");
                     systemActionRepository.save(systemAction);
                 } catch (Exception ex) {
@@ -191,7 +190,6 @@ public class ReleaseManager {
                     user.setFirstName("Maitha");
                     user.setLastName("Manyala");
                     user.setActive(true);
-//user.setCreatedBy(dbUser);
 
                     // create auth with default pass 123456
                     UserAuth auth = new UserAuth();
