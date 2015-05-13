@@ -104,6 +104,10 @@ public class SimbaOptionService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "settings_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 SimbaOption option = requestObject.getObject();
                 SimbaOption so = optionRepository.findOne(id);
                 if (so == null) {
@@ -140,6 +144,10 @@ public class SimbaOptionService {
             response = authManager.tokenValid(requestObject.getToken());
 
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "settings_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 RestPageRequest p = requestObject.getObject();
                 Page<SimbaOption> options;
                 if (p.getFilter().isEmpty()) {

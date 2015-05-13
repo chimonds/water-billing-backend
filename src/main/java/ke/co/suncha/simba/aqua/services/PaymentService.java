@@ -128,6 +128,10 @@ public class PaymentService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "payments_create");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
                 Account account = accountRepository.findOne(accountId);
                 if (account == null) {
@@ -280,6 +284,12 @@ public class PaymentService {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
+                response = authManager.grant(requestObject.getToken(), "account_payments_list");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+
                 Account account = accountRepository.findOne(account_id);
                 if (account == null) {
                     responseObject.setMessage("Invalid account");
@@ -315,6 +325,11 @@ public class PaymentService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "payments_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 RestPageRequest p = requestObject.getObject();
                 Page<Payment> page;
                 if (p.getFilter().isEmpty()) {

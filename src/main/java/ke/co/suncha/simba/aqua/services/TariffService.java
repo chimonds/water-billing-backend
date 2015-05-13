@@ -87,6 +87,11 @@ public class TariffService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "tariff_calculate");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 BillMeta bm = requestObject.getObject();
                 if (bm == null) {
                     responseObject.setMessage("Invalid bill meta");
@@ -177,6 +182,12 @@ public class TariffService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "tariff_list");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+
 
                 RestPageRequest p = requestObject.getObject();
 

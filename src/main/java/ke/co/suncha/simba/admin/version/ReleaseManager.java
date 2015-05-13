@@ -142,48 +142,129 @@ public class ReleaseManager {
 
                 try {
 
+                    String content = "account_create,\n" +
+                            "account_view,\n" +
+                            "account_view_profile,\n" +
+                            "account_update,\n" +
+                            "account_transfer,\n" +
+                            "report_account_receivable,\n" +
+                            "report_credit_balances,\n" +
+                            "report_field_report,\n" +
+                            "account_bills,\n" +
+                            "bills_last,\n" +
+                            "account_bill,\n" +
+                            "report_negative_readings,\n" +
+                            "report_meter_stops,\n" +
+                            "report_meter_readings,\n" +
+                            "report_billed_amount,\n" +
+                            "report_billing_checklist,\n" +
+                            "billing_month_view,\n" +
+                            "billing_month_list,\n" +
+                            "billing_month_get_active,\n" +
+                            "billing_month_update,\n" +
+                            "bill_item_type_list,\n" +
+                            "consumers_create,\n" +
+                            "consumers_view,\n" +
+                            "consumers_view_profile,\n" +
+                            "consumers_update,\n" +
+                            "location_create,\n" +
+                            "location_view,\n" +
+                            "location_update,\n" +
+                            "meter_create,\n" +
+                            "meter_view,\n" +
+                            "meter_update,\n" +
+                            "meter_allocate,\n" +
+                            "meter_deallocate,\n" +
+                            "meter_owners_list,\n" +
+                            "meter_sizes_list,\n" +
+                            "payments_create,\n" +
+                            "account_payments_list,\n" +
+                            "payments_view,\n" +
+                            "payments_types_list,\n" +
+                            "report_payments,\n" +
+                            "account_statement,\n" +
+                            "report_billing_summary,\n" +
+                            "report_potential_cut_off,\n" +
+                            "report_monthly_bills,\n" +
+                            "tariff_list,\n" +
+                            "tariff_calculate,\n" +
+                            "zones_create,\n" +
+                            "zones_view,\n" +
+                            "zones_update,\n" +
+                            "roles_create,\n" +
+                            "roles_view,\n" +
+                            "roles_update,\n" +
+                            "users_view,\n" +
+                            "users_create,\n" +
+                            "users_update,\n" +
+                            "permissions_update,\n" +
+                            "settings_update,\n" +
+                            "permissions_update,\n" +
+                            "dashboard_view,\n" +
+                            "settings_view";
+
+                    String[] permissions = content.split(",");
+                    if (permissions.length > 0) {
+                        for (String permission : permissions) {
+                            try {
+                                SystemAction systemAction = new SystemAction();
+                                systemAction.setName(permission.trim());
+                                systemAction.setDescription("Auto generated");
+                                systemActionRepository.save(systemAction);
+                            } catch (Exception ex) {
+
+                            }
+                        }
+                    }
                     // setup default system actions
-                    SystemAction systemAction = new SystemAction();
-                    systemAction.setName("users_add");
-                    systemAction.setDescription("Add users to the system");
-                    systemActionRepository.save(systemAction);
+//                    SystemAction systemAction = new SystemAction();
+//                    systemAction.setName("users_add");
+//                    systemAction.setDescription("Add users to the system");
+//                    systemActionRepository.save(systemAction);
 
-                    systemAction = new SystemAction();
-                    systemAction.setName("users_update");
-                    systemAction.setDescription("Update users info");
-                    systemActionRepository.save(systemAction);
+//                    systemAction = new SystemAction();
+//                    systemAction.setName("users_update");
+//                    systemAction.setDescription("Update users info");
+//                    systemActionRepository.save(systemAction);
+//
+//                    systemAction = new SystemAction();
+//                    systemAction.setName("roles_add");
+//                    systemAction.setDescription("Add user roles to the system");
+//                    systemActionRepository.save(systemAction);
+//
+//                    systemAction = new SystemAction();
+//                    systemAction.setName("roles_update");
+//                    systemAction.setDescription("Update user roles to the system");
+//                    systemActionRepository.save(systemAction);
+//
+//                    systemAction = new SystemAction();
+//                    systemAction.setName("menu_settings");
+//                    systemAction.setDescription("View top application level settings menu");
+//                    systemActionRepository.save(systemAction);
+                } catch (Exception ex) {
 
-                    systemAction = new SystemAction();
-                    systemAction.setName("roles_add");
-                    systemAction.setDescription("Add user roles to the system");
-                    systemActionRepository.save(systemAction);
+                }
 
-                    systemAction = new SystemAction();
-                    systemAction.setName("roles_update");
-                    systemAction.setDescription("Update user roles to the system");
-                    systemActionRepository.save(systemAction);
 
-                    systemAction = new SystemAction();
-                    systemAction.setName("menu_settings");
-                    systemAction.setDescription("View top application level settings menu");
-                    systemActionRepository.save(systemAction);
+                try {
+                    UserRole userRole = new UserRole();
+                    userRole.setName("Administrator");
+                    userRole.setDescription("Administrators have permission to do anything.");
+                    UserRole createdUserRole = userRoleRepository.save(userRole);
                 } catch (Exception ex) {
 
                 }
 
                 try {
-                    // Setup default user role
-                    UserRole userRole = new UserRole();
-                    userRole.setName("Administrator");
-                    userRole.setDescription("Administrators have permission to do anything.");
-                    UserRole createdUserRole = userRoleRepository.save(userRole);
-//                    userRole.setCreatedBy(dbUser);
-                    // get all system actions and assign to the default role
                     List<SystemAction> availableSystemActions = systemActionRepository.findAll();
-                    createdUserRole.setSystemActions(availableSystemActions);
+                    UserRole userRole = userRoleRepository.findOne(1L);
+                    userRole.setSystemActions(availableSystemActions);
+                    userRole = userRoleRepository.save(userRole);
+                } catch (Exception ex) {
 
-                    createdUserRole = userRoleRepository.save(createdUserRole);
+                }
 
+                try {
                     // Setup default user
                     User user = new User();
                     user.setEmailAddress("maitha.manyala@gmail.com");
@@ -195,11 +276,21 @@ public class ReleaseManager {
                     UserAuth auth = new UserAuth();
                     auth.setAuthPassword(AuthManager.encodePassword(user.getEmailAddress().toLowerCase(), "123456"));
                     user.setUserAuth(auth);
-                    user.setUserRole(createdUserRole);
                     userRepository.save(user);
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+
                 }
+
+                try {
+                    User user = userRepository.findOne(1L);
+                    UserRole userRole = userRoleRepository.findOne(1L);
+                    user.setUserRole(userRole);
+                    userRepository.save(user);
+
+                } catch (Exception ex) {
+
+                }
+
 
 //                try {
 //                    //

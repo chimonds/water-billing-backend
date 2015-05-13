@@ -65,7 +65,7 @@ public class SimbaOption extends SimbaBaseEntity {
 	private String value;
 
 	@Column(name = "option_description")
-	private String description;
+	private String description="Not Available";
 
 	/**
 	 * @return the optionId
@@ -116,6 +116,9 @@ public class SimbaOption extends SimbaBaseEntity {
 	 * @return the description
 	 */
 	public String getDescription() {
+		if(this.description==null){
+			this.description="Not Available";
+		}
 		return description;
 	}
 

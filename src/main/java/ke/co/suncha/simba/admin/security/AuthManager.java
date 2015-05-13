@@ -81,50 +81,63 @@ public class AuthManager {
 
     }
 
-    public Boolean grant(String token, String action) {
-        Boolean grant = false;
+    public RestResponse grant(String token, String action) {
+        RestResponseObject obj = new RestResponseObject();
+        RestResponse response;
+        obj.setMessage("You are not authorized to perform action, please contact your admin.");
+        response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
+
+        Boolean grant = true;
         try {
             if (token != null && !"".equals(token)) {
                 String[] pieces = token.split("\\.");
                 if (pieces.length != 3) {
-                    return false;
-                }
-                JsonNode jwtPayload = this.decodeAndParse(pieces[1]);
-                String emailAddress = jwtPayload.get("email_address").asText();
-                User user = userRepository.findByEmailAddress(emailAddress);
-
-                if (user == null) {
-                    return false;
+                    grant = false;
                 }
 
-                if (user.getUserRole() == null) {
-                    return false;
-                }
+                if (grant) {
+                    User user;
+                    JsonNode jwtPayload = this.decodeAndParse(pieces[1]);
+                    String emailAddress = jwtPayload.get("email_address").asText();
+                    user = userRepository.findByEmailAddress(emailAddress);
 
-                //get system action
-                SystemAction systemAction = systemActionRepository.findByName(action);
-                if (systemAction == null) {
-                    systemAction = new SystemAction();
-                    systemAction.setName(action);
-                    systemAction.setDescription("Auto generated");
-                    systemAction.setIsActive(true);
-                    systemAction = systemActionRepository.save(systemAction);
-                }
-                if (!user.getUserRole().getSystemActions().contains(systemAction)) {
-                    log.error(user.getEmailAddress() + " denied to perform:" + action);
-                    return false;
-                }
-                log.info(user.getEmailAddress() + " allowed to perform: " + action);
-                return true;
+                    if (user == null) {
+                        grant = false;
+                    }
 
+                    if (user.getUserRole() == null) {
+                        grant = false;
+                    }
 
+                    if (grant) {
+                        //get system action
+                        SystemAction systemAction = systemActionRepository.findByName(action);
+                        if (systemAction == null) {
+                            systemAction = new SystemAction();
+                            systemAction.setName(action);
+                            systemAction.setDescription("Auto generated");
+                            systemAction.setIsActive(true);
+                            systemAction = systemActionRepository.save(systemAction);
+                        }
+                        if (!user.getUserRole().getSystemActions().contains(systemAction)) {
+                            log.error(user.getEmailAddress() + " denied to perform:" + action);
+
+                            obj.setMessage("You are not authorized to perform action, please contact your admin.");
+                            response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
+                            return response;
+                        }
+
+                        log.info(user.getEmailAddress() + " allowed to perform: " + action);
+                        obj.setMessage("Ok");
+                        response = new RestResponse(obj, HttpStatus.OK);
+                        return response;
+                    }
+                }
             }
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
-
-        return grant;
-
+        return response;
     }
 
     public RestResponse authenticate(Credential c) {
@@ -272,7 +285,6 @@ public class AuthManager {
 
                 User user = userRepository.findByEmailAddress(emailAddress);
                 authKey = user.getUserAuth().getAuthKey();
-                log.info("Auth Key:" + authKey);
 
                 Map<String, Object> decodedPayload = new JWTVerifier(authKey).verify(token);
 

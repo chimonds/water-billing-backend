@@ -74,6 +74,12 @@ public class ReportService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_monthly_bills");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+
                 log.info("Getting Monthly Bills report...");
                 ReportsParam request = requestObject.getObject();
 
@@ -195,6 +201,11 @@ public class ReportService {
             log.info("Generating potential cut off list report");
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_potential_cut_off");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 
@@ -306,6 +317,10 @@ public class ReportService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_billing_summary");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 log.info("Getting billing summary report...");
                 ReportsParam request = requestObject.getObject();
 
@@ -442,6 +457,11 @@ public class ReportService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_statement");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 log.info("Getting account statement report...");
                 ReportsParam request = requestObject.getObject();
 
@@ -577,6 +597,10 @@ public class ReportService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_payments");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 log.info("Getting payments report...");
                 ReportsParam request = requestObject.getObject();
 

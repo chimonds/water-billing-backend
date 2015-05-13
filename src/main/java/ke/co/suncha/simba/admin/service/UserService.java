@@ -83,7 +83,10 @@ public class UserService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "users_create");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 User user = requestObject.getObject();
                 User u = userRepository.findByEmailAddress(user.getEmailAddress());
                 if (u != null) {
@@ -148,6 +151,10 @@ public class UserService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "users_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 User user = requestObject.getObject();
                 User u = userRepository.findOne(user.getUserId());
                 if (u == null) {
@@ -187,7 +194,10 @@ public class UserService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "users_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 RestPageRequest p = requestObject.getObject();
 
                 Page<User> pageOfUsers;

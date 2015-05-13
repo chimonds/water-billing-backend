@@ -72,6 +72,11 @@ public class BillItemTypeService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "bill_item_type_list");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
+
 				List<BillItemType> billItemTypes;
 				billItemTypes = billItemTypeRepository.findAll();
 				if (!billItemTypes.isEmpty()) {

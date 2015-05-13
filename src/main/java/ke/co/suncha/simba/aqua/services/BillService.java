@@ -121,6 +121,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_bill");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
                 Account account = accountRepository.findOne(accountId);
                 if (account == null) {
@@ -258,6 +262,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_bills");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
                 Account account = accountRepository.findOne(account_id);
                 if (account == null) {
@@ -327,6 +335,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "bills_last");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Bill bill = this.getAccountLastBill(accountId);
                 responseObject.setMessage("Fetched data successfully");
                 responseObject.setPayload(bill);
@@ -344,6 +356,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_meter_readings");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 
@@ -445,6 +461,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_meter_stops");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 
@@ -538,6 +558,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_negative_readings");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 
@@ -631,6 +655,11 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_billed_amount");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 
@@ -745,6 +774,10 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_billing_checklist");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 

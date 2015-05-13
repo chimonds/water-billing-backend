@@ -75,7 +75,10 @@ public class ConsumerService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "consumers_create");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Consumer consumer = requestObject.getObject();
                 Consumer co = consumerRepository.findByIdentityNo(consumer.getIdentityNo());
                 if (co != null) {
@@ -104,9 +107,12 @@ public class ConsumerService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "consumers_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
                 Consumer consumer = requestObject.getObject();
-
                 Consumer co = consumerRepository.findOne(consumer.getConsumerId());
                 if (co == null) {
                     responseObject.setMessage("Consumer not found");
@@ -147,6 +153,10 @@ public class ConsumerService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "consumers_view_profile");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Consumer consumer = consumerRepository.findOne(id);
                 if (consumer != null) {
                     responseObject.setMessage("Fetched data successfully");
@@ -169,7 +179,10 @@ public class ConsumerService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "consumers_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 RestPageRequest p = requestObject.getObject();
 
                 Page<Consumer> page;

@@ -97,6 +97,11 @@ public class MeterService {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
+				response = authManager.grant(requestObject.getToken(), "meter_create");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
+
 				Meter meter = requestObject.getObject();
 				Meter m = meterRepository.findByMeterNo(meter.getMeterNo());
 				if (m != null) {
@@ -132,6 +137,10 @@ public class MeterService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "meter_deallocate");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
 				Meter m = meterRepository.findOne(id);
 				if (m == null) {
@@ -189,6 +198,10 @@ public class MeterService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "meter_allocate");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
 				Meter m = meterRepository.findOne(id);
 				if (m == null) {
@@ -246,6 +259,11 @@ public class MeterService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "meter_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
 				Meter meter = requestObject.getObject();
 				Meter m = meterRepository.findOne(meter.getMeterId());
 				if (m == null) {
@@ -285,6 +303,10 @@ public class MeterService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "meter_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
 				RestPageRequest p = requestObject.getObject();
 

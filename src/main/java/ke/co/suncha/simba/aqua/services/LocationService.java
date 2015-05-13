@@ -76,6 +76,10 @@ public class LocationService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "location_create");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 
 				Location location = requestObject.getObject();
 				Location l = locationRepository.findByName(location.getName());
@@ -105,6 +109,10 @@ public class LocationService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "location_update");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 				Location location = requestObject.getObject();
 				Location l = locationRepository.findOne(location.getLocationId());
 				if (l == null) {
@@ -139,6 +147,10 @@ public class LocationService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "location_view");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 
 				RestPageRequest p = requestObject.getObject();
 

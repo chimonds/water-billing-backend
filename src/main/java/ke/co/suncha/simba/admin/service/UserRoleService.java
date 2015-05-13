@@ -75,12 +75,9 @@ public class UserRoleService {
     public RestResponse create(RestRequestObject<UserRole> requestObject) {
 
         response = authManager.tokenValid(requestObject.getToken());
-
         if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
-            if (!authManager.grant(requestObject.getToken(), "roles_add")) {
-                responseObject.setMessage("You are not authorized to perform action, please contact your admin.");
-                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            response = authManager.grant(requestObject.getToken(), "roles_create");
+            if (response.getStatusCode() != HttpStatus.OK) {
                 return response;
             }
 
@@ -137,6 +134,10 @@ public class UserRoleService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "permissions_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
                 List<SystemAction> systemActions = requestObject.getObject();
 
@@ -170,6 +171,11 @@ public class UserRoleService {
         response = authManager.tokenValid(requestObject.getToken());
         try {
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "roles_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 UserRole userRole = requestObject.getObject();
                 UserRole ur = userRoleRepository.findOne(userRoleId);
                 if (ur == null) {
@@ -210,6 +216,12 @@ public class UserRoleService {
             response = authManager.tokenValid(requestObject.getToken());
 
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+
+                response = authManager.grant(requestObject.getToken(), "roles_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 RestPageRequest pageRequest = requestObject.getObject();
                 Page<UserRole> pageOfUserRoles;
                 if (pageRequest.getFilter().isEmpty()) {

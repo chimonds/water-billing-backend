@@ -93,7 +93,10 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "account_create");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Account account = requestObject.getObject();
                 Account acc = accountRepository.findByaccNo(account.getAccNo());
 
@@ -140,6 +143,10 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Account account = requestObject.getObject();
                 Account acc = accountRepository.findOne(id);
 
@@ -183,6 +190,10 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_transfer");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Account account = requestObject.getObject();
 
                 Account acc = accountRepository.findOne(account.getAccountId());
@@ -226,7 +237,10 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "account_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 RestPageRequest p = requestObject.getObject();
 
                 Page<Account> page;
@@ -256,6 +270,11 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 Consumer consumer = consumerRepository.findOne(consumerId);
                 if (consumer == null) {
                     responseObject.setMessage("Invalid consumer info");
@@ -286,6 +305,10 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_view_profile");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Account account = accountRepository.findOne(id);
                 if (account == null) {
                     responseObject.setMessage("Invalid account number");
@@ -309,7 +332,10 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-
+                response = authManager.grant(requestObject.getToken(), "account_view_profile");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
                 Account acc = requestObject.getObject();
                 Account account = accountRepository.findByaccNo(acc.getAccNo());
 
@@ -372,6 +398,11 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_account_receivable");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 log.info("Getting account balances params");
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
@@ -485,6 +516,11 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_credit_balances");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 log.info("Getting credit balances params");
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
@@ -591,6 +627,11 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_field_report");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
                 ReportsParam request = requestObject.getObject();
                 Map<String, String> params = new HashMap<>();
 

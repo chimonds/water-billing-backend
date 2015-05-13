@@ -87,7 +87,7 @@ public class MeterController extends AbstractRestHandler {
 	@RequestMapping(value = "deallocate/{id}", method = RequestMethod.PUT, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	@ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse deallocation(@ApiParam(value = "The ID of the existing zone resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Meter> requestObject, HttpServletRequest request, HttpServletResponse response) {
+	public RestResponse deallocate(@ApiParam(value = "The ID of the existing zone resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Meter> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return meterService.deallocate(requestObject, id);
 	}
 }

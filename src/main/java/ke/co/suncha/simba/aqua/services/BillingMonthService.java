@@ -78,6 +78,11 @@ public class BillingMonthService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "billing_month_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
 				BillingMonth billingMonth = requestObject.getObject();
 				BillingMonth bm = billingMonthRepository.findOne(billingMonth.getBillingMonthId());
 				if (bm == null) {
@@ -125,6 +130,10 @@ public class BillingMonthService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "billing_month_view");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 
 				RestPageRequest p = requestObject.getObject();
 
@@ -154,6 +163,11 @@ public class BillingMonthService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "billing_month_get_active");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
+
 				BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
 				if (billingMonth != null) {
 					responseObject.setMessage("Fetched data successfully");
@@ -176,6 +190,10 @@ public class BillingMonthService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "billing_month_list");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 
 				RestPageRequest p = requestObject.getObject();
 

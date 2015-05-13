@@ -76,6 +76,10 @@ public class ZoneService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "zones_create");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 
 				Zone zone = requestObject.getObject();
 				Zone z = zoneRepository.findByName(zone.getName());
@@ -105,6 +109,10 @@ public class ZoneService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "zones_update");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 				Zone zone = requestObject.getObject();
 				Zone z = zoneRepository.findOne(zone.getZoneId());
 				if (z == null) {
@@ -139,6 +147,10 @@ public class ZoneService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+				response = authManager.grant(requestObject.getToken(), "zones_view");
+				if (response.getStatusCode() != HttpStatus.OK) {
+					return response;
+				}
 
 				RestPageRequest p = requestObject.getObject();
 

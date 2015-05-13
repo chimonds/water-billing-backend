@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CurrentUserService  {
-    private Long currentUserId = 2L;
+    private Long currentUserId = 1L;
 
     @Autowired
     private UserRepository userRepository;
