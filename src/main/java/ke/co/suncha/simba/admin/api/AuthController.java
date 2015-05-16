@@ -26,10 +26,14 @@ package ke.co.suncha.simba.admin.api;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import ke.co.suncha.simba.admin.request.RestPageRequest;
+import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.security.Credential;
 
+import ke.co.suncha.simba.admin.security.PasswordReset;
+import ke.co.suncha.simba.admin.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,19 +47,27 @@ import com.wordnik.swagger.annotations.ApiOperation;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @RestController
 @RequestMapping(value = "/api/v1/auth")
 @Api(value = "auth", description = "Authentication API")
 public class AuthController extends AbstractRestHandler {
-	@Autowired
-	private AuthManager authService;
+    @Autowired
+    private AuthManager authService;
 
-	@RequestMapping(value = "", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.OK)
-	@ApiOperation(value = "Authenticate a user resource.", notes = "Returns the URL of the new resource in the Location header.")
-	public RestResponse authenticate(@RequestBody Credential credential, HttpServletRequest request, HttpServletResponse response) {
-		return this.authService.authenticate(credential);
-	}
+    @Autowired
+    private UserService userService;
+
+    @RequestMapping(value = "", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.OK)
+    @ApiOperation(value = "Authenticate a user resource.", notes = "Returns the URL of the new resource in the Location header.")
+    public RestResponse authenticate(@RequestBody Credential credential, HttpServletRequest request, HttpServletResponse response) {
+        return this.authService.authenticate(credential);
+    }
+
+    @RequestMapping(value = "updatePassword", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Update user resource authentication password.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse updatePassword(@RequestBody RestRequestObject<PasswordReset> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return userService.updatePassword(requestObject);
+    }
 }

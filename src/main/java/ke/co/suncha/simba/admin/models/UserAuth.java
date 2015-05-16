@@ -78,6 +78,18 @@ public class UserAuth extends SimbaBaseEntity implements Serializable {
     @Column(name = "auth_key", length = 100)
     private String authKey;
 
+    @NotNull
+    @Column(name = "rest_auth")
+    private Boolean resetAuth = true;
+
+    public Boolean getResetAuth() {
+        return resetAuth;
+    }
+
+    public void setResetAuth(Boolean resetAuth) {
+        this.resetAuth = resetAuth;
+    }
+
     /**
      * @return the authPassword
      */

@@ -24,6 +24,8 @@
 package ke.co.suncha.simba.admin.service;
 
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
+import edu.vt.middleware.password.*;
+import javassist.tools.framedump;
 import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
@@ -35,6 +37,8 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
 
+import ke.co.suncha.simba.admin.security.Credential;
+import ke.co.suncha.simba.admin.security.PasswordReset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +50,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -77,8 +84,6 @@ public class UserService {
 
     }
 
-
-
     public RestResponse create(RestRequestObject<User> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -101,11 +106,12 @@ public class UserService {
                     BCryptPasswordEncoder passEncoder = new BCryptPasswordEncoder();
 
                     // encode pass plus email address
-                    String pass = passEncoder.encode(user.getEmailAddress().toLowerCase() + "simbaone");
+                    String pass = passEncoder.encode(user.getEmailAddress().toLowerCase() + "123456");
 
                     auth.setAuthPassword(pass);
-
+                    auth.setResetAuth(true);
                     user.setUserAuth(auth);
+
 
                     // send password
 
@@ -113,7 +119,7 @@ public class UserService {
                     User createdUser = userRepository.save(user);
 
                     // package response
-                    responseObject.setMessage("User created successfully. Log in instructions have been sent to " + user.getEmailAddress());
+                    responseObject.setMessage("User created successfully. The default user password is 123456");
                     responseObject.setPayload(createdUser);
                     response = new RestResponse(responseObject, HttpStatus.CREATED);
                 }
@@ -127,6 +133,124 @@ public class UserService {
         }
         return response;
     }
+
+    public RestResponse updatePassword(RestRequestObject<PasswordReset> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "users_change_own_password");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                PasswordReset passwordReset = requestObject.getObject();
+                User user = userRepository.findByEmailAddress(this.authManager.getEmailFromToken(requestObject.getToken()));
+
+                //authenticate user
+
+                if (!authManager.passwordValid(user, passwordReset.getExistingPassword())) {
+                    responseObject.setMessage("Your current password does not match.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (passwordReset.getNewPassword().compareTo(passwordReset.getConfirmPassword()) != 0) {
+                    responseObject.setMessage("Your passwords do not match.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (passwordReset.getNewPassword().compareTo(passwordReset.getExistingPassword()) == 0) {
+                    responseObject.setMessage("Your new password can not be the same as the existing one.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                //password must be between 8 and 16 chars long
+                LengthRule lengthRule = new LengthRule(6, 16);
+
+                // don't allow whitespace
+                WhitespaceRule whitespaceRule = new WhitespaceRule();
+
+                // control allowed characters
+                CharacterCharacteristicsRule charRule = new CharacterCharacteristicsRule();
+
+                // require at least 1 digit in passwords
+                charRule.getRules().add(new DigitCharacterRule(1));
+
+                // require at least 1 non-alphanumeric char
+                charRule.getRules().add(new NonAlphanumericCharacterRule(1));
+
+                // require at least 1 upper case char
+                charRule.getRules().add(new UppercaseCharacterRule(1));
+
+                // require at least 1 lower case char
+                charRule.getRules().add(new LowercaseCharacterRule(1));
+
+                // require at least 3 of the previous rules be met
+                charRule.setNumberOfCharacteristics(3);
+
+                // don't allow alphabetical sequences
+                AlphabeticalSequenceRule alphaSeqRule = new AlphabeticalSequenceRule();
+
+                // don't allow numerical sequences of length 3
+                //NumericalSequenceRule numSeqRule = new NumericalSequenceRule(3);
+
+                // don't allow qwerty sequences
+                QwertySequenceRule qwertySeqRule = new QwertySequenceRule();
+
+                // don't allow 4 repeat characters
+                RepeatCharacterRegexRule repeatRule = new RepeatCharacterRegexRule(4);
+
+                // group all rules together in a List
+                List<Rule> ruleList = new ArrayList<Rule>();
+                ruleList.add(lengthRule);
+                ruleList.add(whitespaceRule);
+                ruleList.add(charRule);
+                ruleList.add(alphaSeqRule);
+                //ruleList.add(numSeqRule);
+                ruleList.add(qwertySeqRule);
+                ruleList.add(repeatRule);
+
+                PasswordValidator validator = new PasswordValidator(ruleList);
+                PasswordData passwordData = new PasswordData(new Password(passwordReset.getNewPassword()));
+
+                RuleResult result = validator.validate(passwordData);
+                if (!result.isValid()) {
+                    String errorMsg = "";
+                    for (String msg : validator.getMessages(result)) {
+                        errorMsg += msg + "\n";
+                    }
+
+                    responseObject.setMessage("Invalid password.\n" + errorMsg);
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                UserAuth auth = user.getUserAuth();
+                auth.setAuthPassword(AuthManager.encodePassword(user.getEmailAddress().toLowerCase(), passwordReset.getNewPassword()));
+                auth.setResetAuth(false);
+                user.setUserAuth(auth);
+                userRepository.save(user);
+
+                responseObject.setMessage("Your password has been changed successfully. Please logout and login again using your new password");
+                responseObject.setPayload("");
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
 
     public RestResponse getUser(long id) {
         try {
@@ -185,6 +309,7 @@ public class UserService {
         }
         return response;
     }
+
 
     private Sort sortByDateAddedDesc() {
         return new Sort(Sort.Direction.DESC, "createdOn");

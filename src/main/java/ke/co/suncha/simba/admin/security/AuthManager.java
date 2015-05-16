@@ -28,6 +28,7 @@ import java.util.*;
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.ObjectMapper;
 import com.auth0.jwt.internal.org.apache.commons.codec.binary.Base64;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
@@ -95,10 +96,11 @@ public class AuthManager {
                     grant = false;
                 }
 
+                String emailAddress = "";
                 if (grant) {
                     User user;
                     JsonNode jwtPayload = this.decodeAndParse(pieces[1]);
-                    String emailAddress = jwtPayload.get("email_address").asText();
+                    emailAddress = jwtPayload.get("email_address").asText();
                     user = userRepository.findByEmailAddress(emailAddress);
 
                     if (user == null) {
@@ -127,6 +129,17 @@ public class AuthManager {
                             return response;
                         }
 
+                        //check if user needs to change password
+                        if (action.compareToIgnoreCase("users_change_own_password") != 0) {
+                            log.info(user.getEmailAddress() + " change password status:" + user.getUserAuth().getResetAuth());
+                            if (user.getUserAuth().getResetAuth() == true) {
+                                log.error(user.getEmailAddress() + " denied to perform:" + action + ". User needs to change password.");
+                                obj.setMessage("Access to this resource denied. Please change your password.");
+                                response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
+                                return response;
+                            }
+                        }
+
                         log.info(user.getEmailAddress() + " allowed to perform: " + action);
                         obj.setMessage("Ok");
                         response = new RestResponse(obj, HttpStatus.OK);
@@ -138,6 +151,22 @@ public class AuthManager {
             log.error(ex.getMessage());
         }
         return response;
+    }
+
+    public Boolean passwordValid(User user, String password) {
+        Boolean valid = false;
+        // validate password hash
+        BCryptPasswordEncoder passEncoder = new BCryptPasswordEncoder();
+        // passEncoder.
+        if (passEncoder.matches(user.getEmailAddress().toLowerCase() + password, user.getUserAuth().getAuthPassword())) {
+            log.info("Existing password match.");
+            if (!user.isActive()) {
+                valid = false;
+            } else {
+                valid = true;
+            }
+        }
+        return valid;
     }
 
     public RestResponse authenticate(Credential c) {
@@ -155,6 +184,7 @@ public class AuthManager {
 
                 if (passEncoder.matches(user.getEmailAddress().toLowerCase() + c.getPassword(), user.getUserAuth().getAuthPassword())) {
                     if (!user.isActive()) {
+                        log.error(user.getEmailAddress() + " account dissabled");
                         responseObject.setMessage("Your account is dissabled, please contact the administrator");
                         responseObject.setPayload("");
                         response = new RestResponse(responseObject, HttpStatus.UNAUTHORIZED);
@@ -181,12 +211,13 @@ public class AuthManager {
                             }
                         }
                         loginResponse.setPermissions(permissions);
-
+                        log.info(user.getEmailAddress() + " Logged in successfully");
                         responseObject.setMessage("Logged in successfully");
                         responseObject.setPayload(loginResponse);
                         response = new RestResponse(responseObject, HttpStatus.OK);
                     }
                 } else {
+                    log.error(c.getUsername() + " Invalid username/password");
                     responseObject.setMessage("Invalid username/password");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.UNAUTHORIZED);
@@ -262,6 +293,23 @@ public class AuthManager {
         return jwtHeader;
     }
 
+
+    public String getEmailFromToken(String token) {
+        String emailAddress = "";
+        try {
+            if (token != null && !"".equals(token)) {
+                String[] pieces = token.split("\\.");
+                if (pieces.length != 3) {
+                    return "";
+                }
+                JsonNode jwtPayload = this.decodeAndParse(pieces[1]);
+                emailAddress = jwtPayload.get("email_address").asText();
+            }
+        } catch (Exception ex) {
+
+        }
+        return emailAddress;
+    }
 
     public RestResponse tokenValid(String token) {
         RestResponseObject obj = new RestResponseObject();

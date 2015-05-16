@@ -45,6 +45,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public abstract class SimbaBaseEntity {
 
     @NotNull
+    @Column(name = "transaction_id", length = 100)
+    @JsonIgnore
+    private String transationId = UUID.randomUUID().toString();
+
+    @NotNull
     @Column(name = "approval_level", length = 0)
     private Integer approvalLevel = 0;
 
@@ -54,7 +59,6 @@ public abstract class SimbaBaseEntity {
     private Calendar createdOn = Calendar.getInstance();
 
     @LastModifiedDate
-    @NotNull
     @Temporal(TemporalType.TIMESTAMP)
     @JsonIgnore
     private Calendar lastModifiedDate = Calendar.getInstance();
@@ -70,6 +74,14 @@ public abstract class SimbaBaseEntity {
     @JoinColumn
     @JsonIgnore
     private User lastModifiedBy;
+
+    public String getTransationId() {
+        return transationId;
+    }
+
+    public void setTransationId(String transationId) {
+        this.transationId = transationId;
+    }
 
     public Integer getApprovalLevel() {
         return approvalLevel;

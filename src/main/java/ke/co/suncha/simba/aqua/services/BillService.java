@@ -181,6 +181,13 @@ public class BillService {
                 bill.setAmount(billMeta.getAmount());
                 bill.setContent(billMeta.getContent());
 
+                //check billed amount
+                if (bill.getAmount() <= 0) {
+                    responseObject.setMessage("Sorry we could not save the bill. Invalid billing amount.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
                 //set billcode
                 //String billCode =
                 BillingMonth activeBillingMonth = this.getActiveBillingMonth();

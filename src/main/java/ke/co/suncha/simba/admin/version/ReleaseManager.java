@@ -113,7 +113,7 @@ public class ReleaseManager {
      * @return
      */
 
-    @PostConstruct
+//    @PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -199,8 +199,8 @@ public class ReleaseManager {
                             "users_update,\n" +
                             "permissions_update,\n" +
                             "settings_update,\n" +
-                            "permissions_update,\n" +
                             "dashboard_view,\n" +
+                            "users_change_own_password,\n" +
                             "settings_view";
 
                     String[] permissions = content.split(",");
@@ -273,6 +273,7 @@ public class ReleaseManager {
                     user.setActive(true);
 
                     // create auth with default pass 123456
+
                     UserAuth auth = new UserAuth();
                     auth.setAuthPassword(AuthManager.encodePassword(user.getEmailAddress().toLowerCase(), "123456"));
                     user.setUserAuth(auth);
@@ -292,170 +293,169 @@ public class ReleaseManager {
                 }
 
 
-//                try {
-//                    //
-//                    Integer current = 2001;
-//
-//                    Integer last = 2030;
-//
-//                    System.out.println("Last:" + last);
-//                    for (int x = current; x <= last; x++) {
-//
-//                        for (int y = 1; y <= 12; y++) {
-//
-//
-//                            try {
-//                                BillingMonth bm = new BillingMonth();
-//                                //bm.setCode(Integer.valueOf(billingCode));
-//                                Calendar c = Calendar.getInstance();
-//                                c.set(current, y, 24);
-//                                bm.setMonth(c);
-//
-//                                String month = y + "";
-//                                if (month.length() == 1) {
-//                                    month = "0" + month;
-//                                }
-//                                String billingCode = current + "" + month;
-//
-//
-//                                bm.setCode(Integer.valueOf(billingCode));
-//                                billingMonthRepository.save(bm);
-//                            } catch (Exception ex) {
-//                                ex.printStackTrace();
-//                                System.out.println(ex.getLocalizedMessage());
-//                            }
-//                        }
-//                        current++;
-//                    }
-//
-//                } catch (Exception ex) {
-//
-//                }
+                try {
+                    //
+                    Integer current = 2001;
 
-                // Payment sources
-//                try {
-//                    PaymentSource ps = new PaymentSource();
-//                    ps.setName("CASH");
-//                    paymentSourceRepository.save(ps);
-//
-//                    ps = new PaymentSource();
-//                    ps.setName("M-PESA");
-//                    paymentSourceRepository.save(ps);
-//
-//                    ps = new PaymentSource();
-//                    ps.setName("Post Bank");
-//                    paymentSourceRepository.save(ps);
-//                } catch (Exception ex) {
-//
-//                }
+                    Integer last = 2030;
 
-                // Payment types
-//                try {
-//                    PaymentType pt = new PaymentType();
-//                    pt.setIsPrimary(true);
-//                    pt.setName("Water Sale");
-//                    pt.setUnique(true);
-//                    pt.setDescription("Water sale payment");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Credit");
-//                    pt.setDescription("Credit");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Debit");
-//                    pt.setNegative(true);
-//                    pt.setDescription("Debit");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Other");
-//                    pt.setUnique(true);
-//                    pt.setDescription("Other");
-//                    paymentTypeRepository.save(pt);
-//                } catch (Exception ex) {
-//
-//                }
+                    System.out.println("Last:" + last);
+                    for (int x = current; x <= last; x++) {
 
-                // Bill item types
-//                try {
-//                    BillItemType bit = new BillItemType();
-//                    bit.setName("Reconnection Fee");
-//                    bit.setAmount((double) 500);
-//                    bit.setActive(false);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("At Owners Request Fee");
-//                    bit.setAmount((double) 1000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Change Of Account Name");
-//                    bit.setAmount((double) 500);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("By Pass Fee");
-//                    bit.setActive(false);
-//                    bit.setAmount((double) 5000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Bounced Cheque Fee");
-//                    bit.setAmount((double) 400);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Surcharge Irrigation");
-//                    bit.setAmount((double) 5000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Surcharge Missuse");
-//                    bit.setAmount((double) 5000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Meter Servicing");
-//                    bit.setAmount((double) 100);
-//                    billItemTypeRepository.save(bit);
-//
-//                } catch (Exception ex) {
-//
-//                }
+                        for (int y = 1; y <= 12; y++) {
 
-                // Meter sizes
-//                try {
-//                    MeterSize ms = new MeterSize();
-//                    ms.setRentAmount((double) 50);
-//                    ms.setSize("Half INCH");
-//                    meterSizeRepository.save(ms);
-//
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 250);
-//                    ms.setSize("Two & Half INCH");
-//                    meterSizeRepository.save(ms);
-//                } catch (Exception ex) {
-//
-//                }
 
-                // Meter Owners
-//                try {
-//                    MeterOwner mo = new MeterOwner();
-//                    mo.setName("Personal");
-//                    mo.setCharge(false);
-//                    meterOwnerRepository.save(mo);
-//
-//                    mo = new MeterOwner();
-//                    mo.setName("Organization");
-//                    mo.setCharge(true);
-//                    meterOwnerRepository.save(mo);
-//
-//                } catch (Exception ex) {
-//
-//                }
+                            try {
+                                BillingMonth bm = new BillingMonth();
+                                //bm.setCode(Integer.valueOf(billingCode));
+                                Calendar c = Calendar.getInstance();
+                                c.set(current, y, 24);
+                                bm.setMonth(c);
+
+                                String month = y + "";
+                                if (month.length() == 1) {
+                                    month = "0" + month;
+                                }
+                                String billingCode = current + "" + month;
+
+
+                                bm.setCode(Integer.valueOf(billingCode));
+                                billingMonthRepository.save(bm);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                System.out.println(ex.getLocalizedMessage());
+                            }
+                        }
+                        current++;
+                    }
+
+                } catch (Exception ex) {
+
+                }
+                //Payment sources
+                try {
+                    PaymentSource ps = new PaymentSource();
+                    ps.setName("CASH");
+                    paymentSourceRepository.save(ps);
+
+                    ps = new PaymentSource();
+                    ps.setName("M-PESA");
+                    paymentSourceRepository.save(ps);
+
+                    ps = new PaymentSource();
+                    ps.setName("Post Bank");
+                    paymentSourceRepository.save(ps);
+                } catch (Exception ex) {
+
+                }
+
+                //Payment types
+                try {
+                    PaymentType pt = new PaymentType();
+                    pt.setIsPrimary(true);
+                    pt.setName("Water Sale");
+                    pt.setUnique(true);
+                    pt.setDescription("Water sale payment");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Credit");
+                    pt.setDescription("Credit");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Debit");
+                    pt.setNegative(true);
+                    pt.setDescription("Debit");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Other");
+                    pt.setUnique(true);
+                    pt.setDescription("Other");
+                    paymentTypeRepository.save(pt);
+                } catch (Exception ex) {
+
+                }
+
+                //Bill item types
+                try {
+                    BillItemType bit = new BillItemType();
+                    bit.setName("Reconnection Fee");
+                    bit.setAmount((double) 500);
+                    bit.setActive(false);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("At Owners Request Fee");
+                    bit.setAmount((double) 1000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Change Of Account Name");
+                    bit.setAmount((double) 500);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("By Pass Fee");
+                    bit.setActive(false);
+                    bit.setAmount((double) 5000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Bounced Cheque Fee");
+                    bit.setAmount((double) 400);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Surcharge Irrigation");
+                    bit.setAmount((double) 5000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Surcharge Missuse");
+                    bit.setAmount((double) 5000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Meter Servicing");
+                    bit.setAmount((double) 100);
+                    billItemTypeRepository.save(bit);
+
+                } catch (Exception ex) {
+
+                }
+
+                //Meter sizes
+                try {
+                    MeterSize ms = new MeterSize();
+                    ms.setRentAmount((double) 50);
+                    ms.setSize("Half INCH");
+                    meterSizeRepository.save(ms);
+
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 250);
+                    ms.setSize("Two & Half INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
+
+                }
+
+                //Meter Owners
+                try {
+                    MeterOwner mo = new MeterOwner();
+                    mo.setName("Personal");
+                    mo.setCharge(false);
+                    meterOwnerRepository.save(mo);
+
+                    mo = new MeterOwner();
+                    mo.setName("Organization");
+                    mo.setCharge(true);
+                    meterOwnerRepository.save(mo);
+
+                } catch (Exception ex) {
+
+                }
 
             }
         } catch (Exception ex) {

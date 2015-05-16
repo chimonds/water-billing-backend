@@ -73,7 +73,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private Double outstandingBalance = (double) 0;
 
     @NotNull
-    @Column(name = "acc_no", unique = true, length = 9)
+    @Column(name = "acc_no", unique = true, length = 20)
     private String accNo;
 
     @Transient
