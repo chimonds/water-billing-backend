@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ke.co.suncha</groupId>
-    <artifactId>suncha</artifactId>
+    <artifactId>simba</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <name>simba</name>
@@ -55,9 +55,9 @@
         </dependency>
         <!-- spring-test, hamcrest, ... -->
         <!--<dependency>-->
-            <!--<groupId>org.springframework.boot</groupId>-->
-            <!--<artifactId>spring-boot-starter-test</artifactId>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.springframework.boot</groupId>-->
+        <!--<artifactId>spring-boot-starter-test</artifactId>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <!-- Jackson JSON Mapper -->
         <dependency>
@@ -106,6 +106,14 @@
             <artifactId>log4jdbc-log4j2-jdbc4.1</artifactId>
             <version>1.16</version>
         </dependency>
+
+        <dependency>
+            <groupId>edu.vt.middleware</groupId>
+            <artifactId>vt-password</artifactId>
+            <version>3.1.2</version>
+        </dependency>
+
+
     </dependencies>
     <build>
         <resources>
