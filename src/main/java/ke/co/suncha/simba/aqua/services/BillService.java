@@ -495,7 +495,7 @@ public class BillService {
 
                             if (billingMonth == null) {
                                 responseObject.setMessage("Invalid billing month.");
-                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                                 return response;
                             }
 
@@ -503,7 +503,7 @@ public class BillService {
                             log.info("Bills " + bills.size() + " found.");
                             if (bills == null || bills.isEmpty()) {
                                 responseObject.setMessage("No content found");
-                                response = new RestResponse(responseObject, HttpStatus.NO_CONTENT);
+                                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                                 return response;
                             }
                             Integer totalUnits = 0;

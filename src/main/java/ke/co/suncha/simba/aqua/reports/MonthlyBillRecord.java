@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.reports;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -10,7 +11,7 @@ public class MonthlyBillRecord extends BaseRecord {
     private String location;
     private String meterSize;
     private String meterNo;
-    private Calendar billingMonth;
+    private Date billingMonth;
     private Integer currentReading;
     private Integer PreviousReading;
     private Integer unitsBilled;
@@ -21,8 +22,35 @@ public class MonthlyBillRecord extends BaseRecord {
     private String billContent;
     private Calendar payBefore;
     private Double billedAmount;
+    private Double totalBilledAmount;
+    private List<String> billSummaryList;
     private List<PaymentRecord> payments;
     private List<ChargeRecord> charges;
+    private Boolean inArreas=false;
+
+    public Boolean getInArreas() {
+        return inArreas;
+    }
+
+    public void setInArreas(Boolean inArreas) {
+        this.inArreas = inArreas;
+    }
+
+    public List<String> getBillSummaryList() {
+        return billSummaryList;
+    }
+
+    public void setBillSummaryList(List<String> billSummaryList) {
+        this.billSummaryList = billSummaryList;
+    }
+
+    public Double getTotalBilledAmount() {
+        return totalBilledAmount;
+    }
+
+    public void setTotalBilledAmount(Double totalBilledAmount) {
+        this.totalBilledAmount = totalBilledAmount;
+    }
 
     public Double getBilledAmount() {
         return billedAmount;
@@ -56,11 +84,11 @@ public class MonthlyBillRecord extends BaseRecord {
         this.meterNo = meterNo;
     }
 
-    public Calendar getBillingMonth() {
+    public Date getBillingMonth() {
         return billingMonth;
     }
 
-    public void setBillingMonth(Calendar billingMonth) {
+    public void setBillingMonth(Date billingMonth) {
         this.billingMonth = billingMonth;
     }
 

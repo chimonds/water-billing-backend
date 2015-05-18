@@ -157,9 +157,9 @@ public class TariffService {
                     }
 
                     if (tm.getMinimum() == 0) {
-                        content = content + unitsBillable + " Min KES " + tm.getAmount() + " = " + thisAmount + " \\n";
+                        content = content + unitsBillable + " Min KES " + tm.getAmount() + " = " + thisAmount + "#";
                     } else {
-                        content = content + unitsBillable + " @ KES " + tm.getAmount() + " = " + thisAmount + " \\n";
+                        content = content + unitsBillable + " @ KES " + tm.getAmount() + " = " + thisAmount + "#";
                     }
                     log.info("Current Billed Amount:" + amount);
                 }

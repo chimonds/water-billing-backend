@@ -19,7 +19,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import scala.util.regexp.Base;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -95,11 +97,16 @@ public class ReportService {
                 BillingMonth billingMonth;
                 billingMonth = billingMonthRepository.findOne(Long.valueOf(billingMonthId.toString()));
 
+                log.info("Getting bills for billing month:" + billingMonth.getMonth());
                 if (billingMonth == null) {
                     responseObject.setMessage("Invalid billing month.");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
+
+                SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
+                String formatted = format1.format(billingMonth.getMonth().getTime());
+                log.info("Getting bills for billing month:" + formatted);
 
                 //get bills belonging to billing month
                 List<Bill> bills;
@@ -133,30 +140,69 @@ public class ReportService {
                             monthlyBillRecord.setMeterSize(b.getAccount().getMeter().getMeterSize().getSize());
                         }
                         monthlyBillRecord.setLocation(b.getAccount().getLocation().getName());
-                        monthlyBillRecord.setBilledAmount(b.getTotalBilled());
-                        monthlyBillRecord.setBillContent(b.getContent());
+                        monthlyBillRecord.setBilledAmount(b.getAmount());
 
-                        //balance from last bill
-                        Calendar date = billingMonth.getMonth();
-                        date.add(Calendar.MONTH, -1);
-                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), date);
-                        monthlyBillRecord.setBalanceBf(balanceBeforeBill);
 
+                        monthlyBillRecord.setConsumptionType(b.getConsumptionType());
+                        monthlyBillRecord.setPreviousReading(b.getPreviousReading());
+                        monthlyBillRecord.setCurrentReading(b.getCurrentReading());
+                        monthlyBillRecord.setUnitsBilled(b.getUnitsBilled());
+                        monthlyBillRecord.setBillingMonth(billingMonth.getMonth().getTime());
+                        monthlyBillRecord.setTotalBilledAmount(b.getTotalBilled());
+
+                        String[] billContent = b.getContent().split("#");
+                        List<String> list = new ArrayList<>();
+                        if (billContent.length > 0) {
+                            for (String s : billContent) {
+                                if (s.length() > 0) {
+                                    list.add(s);
+                                }
+                            }
+                        }
+                        monthlyBillRecord.setBillSummaryList(list);
                         //payments
+                        Double totalPayments = 0.0;
                         List<Payment> payments = paymentRepository.findByBillingMonthAndAccount(billingMonth, b.getAccount());
                         if (!payments.isEmpty()) {
                             List<PaymentRecord> paymentRecords = new ArrayList<>();
+
                             for (Payment p : payments) {
+                                totalPayments += p.getAmount();
                                 PaymentRecord paymentRecord = new PaymentRecord();
                                 paymentRecord.setTransactionDate(p.getTransactionDate());
                                 paymentRecord.setAmount(p.getAmount());
+                                paymentRecord.setReceiptNo(p.getReceiptNo());
                                 paymentRecords.add(paymentRecord);
                             }
                             monthlyBillRecord.setPayments(paymentRecords);
+
                         }
+                        monthlyBillRecord.setTotalPayments(totalPayments);
+
+
+                        //balance from last bill
+                        Calendar date = billingMonth.getMonth();
+
+                        //date.add(Calendar.MONTH, -1);
+                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), date);
+
+                        monthlyBillRecord.setBalanceBf(balanceBeforeBill + monthlyBillRecord.getTotalPayments());
+
+                        //check if inarreas
+                        if ((monthlyBillRecord.getBalanceBf() - monthlyBillRecord.getTotalPayments()) > 0) {
+                            monthlyBillRecord.setInArreas(true);
+                        }
+                        // bill.balanceBf-bill.totalPayments
 
                         //Charges
                         List<ChargeRecord> chargeRecords = new ArrayList<>();
+                        if (b.getMeterRent() > 0) {
+                            ChargeRecord chargeRecord = new ChargeRecord();
+                            chargeRecord.setName("Meter Rent");
+                            chargeRecord.setAmount(b.getMeterRent());
+                            chargeRecords.add(chargeRecord);
+                        }
+
                         if (!b.getBillItems().isEmpty()) {
                             for (BillItem bi : b.getBillItems()) {
                                 ChargeRecord chargeRecord = new ChargeRecord();
@@ -165,6 +211,7 @@ public class ReportService {
                                 chargeRecords.add(chargeRecord);
                             }
                         }
+
 
                         if (!chargeRecords.isEmpty()) {
                             monthlyBillRecord.setCharges(chargeRecords);
@@ -182,6 +229,12 @@ public class ReportService {
                 report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                 report.setTitle(this.optionService.getOption("REPORT:MONTHLY_BILLS").getValue());
                 report.setContent(records);
+
+                report.setHeading1(this.optionService.getOption("MONTHLY_WATER_BILL:HEADER1").getValue());
+                report.setHeading2(this.optionService.getOption("MONTHLY_WATER_BILL:HEADER2").getValue());
+                report.setHeading3(this.optionService.getOption("MONTHLY_WATER_BILL:HEADER3").getValue());
+                report.setHeading4(this.optionService.getOption("MONTHLY_WATER_BILL:PAY_BEFORE").getValue());
+
 
                 responseObject.setMessage("Fetched data successfully");
                 responseObject.setPayload(report);
@@ -516,7 +569,7 @@ public class ReportService {
                         }
 
                         //get meter rent
-                        if(bill.getMeterRent()>0){
+                        if (bill.getMeterRent() > 0) {
                             billRecord = new StatementRecord();
                             billRecord.setTransactionDate(bill.getTransactionDate());
                             billRecord.setItemType("Meter Rent");
@@ -540,15 +593,14 @@ public class ReportService {
 
                         if (!payment.getPaymentType().isNegative()) {
                             paymentRecord.setAmount(amount * -1);
-                            if(payment.getPaymentType().getName().compareToIgnoreCase("Credit")==0){
+                            if (payment.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
                                 paymentRecord.setItemType("Adjustment");
-                            }
-                            else{
+                            } else {
                                 paymentRecord.setItemType("Payment");
                             }
 
                             //paymentRecord.setItemType(payment.getPaymentType().getName());
-                        }else{
+                        } else {
                             paymentRecord.setItemType("Adjustment");
                         }
 
