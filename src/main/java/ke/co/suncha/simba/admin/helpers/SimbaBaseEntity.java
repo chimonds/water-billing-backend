@@ -44,10 +44,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class SimbaBaseEntity {
 
-    @NotNull
-    @Column(name = "transaction_id", length = 100)
-    @JsonIgnore
-    private String transationId = UUID.randomUUID().toString();
+
+//    @Column(name = "transaction_id", length = 100)
+//    @JsonIgnore
+//    private String transationId = UUID.randomUUID().toString();
 
     @NotNull
     @Column(name = "approval_level", length = 0)
@@ -75,13 +75,13 @@ public abstract class SimbaBaseEntity {
     @JsonIgnore
     private User lastModifiedBy;
 
-    public String getTransationId() {
-        return transationId;
-    }
-
-    public void setTransationId(String transationId) {
-        this.transationId = transationId;
-    }
+//    public String getTransationId() {
+//        return transationId;
+//    }
+//
+//    public void setTransationId(String transationId) {
+//        this.transationId = transationId;
+//    }
 
     public Integer getApprovalLevel() {
         return approvalLevel;

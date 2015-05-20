@@ -131,7 +131,7 @@ public class AuthManager {
 
                         //check if user needs to change password
                         if (action.compareToIgnoreCase("users_change_own_password") != 0) {
-                            log.info(user.getEmailAddress() + " change password status:" + user.getUserAuth().getResetAuth());
+//                            log.info(user.getEmailAddress() + " change password status:" + user.getUserAuth().getResetAuth());
                             if (user.getUserAuth().getResetAuth() == true) {
                                 log.error(user.getEmailAddress() + " denied to perform:" + action + ". User needs to change password.");
                                 obj.setMessage("Access to this resource denied. Please change your password.");
@@ -140,7 +140,7 @@ public class AuthManager {
                             }
                         }
 
-                        log.info(user.getEmailAddress() + " allowed to perform: " + action);
+                        log.info(user.getEmailAddress() + " allowed to perform: " + action.toUpperCase());
                         obj.setMessage("Ok");
                         response = new RestResponse(obj, HttpStatus.OK);
                         return response;

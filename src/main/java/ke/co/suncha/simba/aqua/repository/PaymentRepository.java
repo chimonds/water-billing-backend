@@ -27,6 +27,7 @@ import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.models.Payment;
 
+import ke.co.suncha.simba.aqua.models.PaymentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -49,5 +50,7 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     List<Payment> findByBillingMonth(BillingMonth billingMonth);
     List<Payment> findByBillingMonthAndAccount(BillingMonth billingMonth, Account account);
     List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
+    List<Payment> findByTransactionDateBetween(Calendar from, Calendar to);
+    List<Payment> findByTransactionDateBetweenAndPaymentType(Calendar from, Calendar to, PaymentType paymentType);
 
 }

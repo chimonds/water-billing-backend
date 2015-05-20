@@ -9,16 +9,14 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-/*
- * This is the main Spring Boot application class. It configures Spring Boot, JPA, Swagger
- */
 //Sprint Boot Auto Configuration
 @EnableAutoConfiguration
 @ComponentScan(basePackages = "ke.co.suncha.simba")
 @EnableJpaRepositories("ke.co.suncha.simba")
 @EnableSwagger
-// auto generation of API docs
+@EnableScheduling
 public class Application extends SpringBootServletInitializer {
 
 

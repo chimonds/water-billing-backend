@@ -113,7 +113,7 @@ public class ReleaseManager {
      * @return
      */
 
-//    @PostConstruct
+    @PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -201,6 +201,9 @@ public class ReleaseManager {
                             "settings_update,\n" +
                             "dashboard_view,\n" +
                             "users_change_own_password,\n" +
+                            "stats_view,\n" +
+                            "stats_top,\n" +
+                            "stats_bills_payments_linegraph,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");
@@ -216,31 +219,6 @@ public class ReleaseManager {
                             }
                         }
                     }
-                    // setup default system actions
-//                    SystemAction systemAction = new SystemAction();
-//                    systemAction.setName("users_add");
-//                    systemAction.setDescription("Add users to the system");
-//                    systemActionRepository.save(systemAction);
-
-//                    systemAction = new SystemAction();
-//                    systemAction.setName("users_update");
-//                    systemAction.setDescription("Update users info");
-//                    systemActionRepository.save(systemAction);
-//
-//                    systemAction = new SystemAction();
-//                    systemAction.setName("roles_add");
-//                    systemAction.setDescription("Add user roles to the system");
-//                    systemActionRepository.save(systemAction);
-//
-//                    systemAction = new SystemAction();
-//                    systemAction.setName("roles_update");
-//                    systemAction.setDescription("Update user roles to the system");
-//                    systemActionRepository.save(systemAction);
-//
-//                    systemAction = new SystemAction();
-//                    systemAction.setName("menu_settings");
-//                    systemAction.setDescription("View top application level settings menu");
-//                    systemActionRepository.save(systemAction);
                 } catch (Exception ex) {
 
                 }
