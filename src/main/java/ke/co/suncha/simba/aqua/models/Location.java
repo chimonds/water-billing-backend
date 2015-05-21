@@ -108,4 +108,12 @@ public class Location extends SimbaBaseEntity implements Serializable {
 		this.description = description;
 	}
 
+	@Override
+	public String toString() {
+		return "Location{" +
+				"locationId=" + locationId +
+				", name='" + name + '\'' +
+				", description='" + description + '\'' +
+				'}';
+	}
 }

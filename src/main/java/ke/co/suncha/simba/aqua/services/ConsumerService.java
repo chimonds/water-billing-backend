@@ -23,11 +23,14 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.Consumer;
 import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
 
@@ -63,6 +66,9 @@ public class ConsumerService {
     @Autowired
     GaugeService gaugeService;
 
+    @Autowired
+    private AuditService auditService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -92,6 +98,15 @@ public class ConsumerService {
                     responseObject.setMessage("Consumer created successfully. ");
                     responseObject.setPayload(created);
                     response = new RestResponse(responseObject, HttpStatus.CREATED);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(created.getConsumerId()));
+                    auditRecord.setParentObject("CONSUMERS");
+                    auditRecord.setCurrentData(created.toString());
+                    auditRecord.setNotes("CREATED CONSUMER");
+                    auditService.log(AuditOperation.CREATED, auditRecord);
+                    //End - audit trail
                 }
             }
         } catch (Exception ex) {
@@ -134,6 +149,16 @@ public class ConsumerService {
                     responseObject.setMessage("Consumer  updated successfully");
                     responseObject.setPayload(co);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(co.getConsumerId()));
+                    auditRecord.setParentObject("CONSUMERS");
+                    auditRecord.setCurrentData(co.toString());
+                    auditRecord.setPreviousData(consumer.toString());
+                    auditRecord.setNotes("UPDATED CONSUMER");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
                 }
             }
         } catch (Exception ex) {
@@ -162,6 +187,16 @@ public class ConsumerService {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(consumer);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(consumer.getConsumerId()));
+                    auditRecord.setParentObject("CONSUMERS");
+                    auditRecord.setCurrentData(consumer.toString());
+                    auditRecord.setNotes("VIEW CONSUMER PROFILE");
+                    auditService.log(AuditOperation.VIEWED, auditRecord);
+                    //End - audit trail
+
                 } else {
                     responseObject.setMessage("Your search did not match any records");
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);

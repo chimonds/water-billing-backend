@@ -82,7 +82,6 @@ public class TariffService {
 
     }
 
-
     public RestResponse calculate(RestRequestObject<BillMeta> requestObject, Long accountId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -109,7 +108,6 @@ public class TariffService {
         }
         return response;
     }
-
 
     public BillMeta calculate(BillMeta billMeta, Long accountId) {
         BillMeta result = new BillMeta();

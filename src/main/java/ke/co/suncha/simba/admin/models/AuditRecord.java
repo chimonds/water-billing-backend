@@ -37,7 +37,7 @@ public class AuditRecord extends SimbaBaseEntity implements Serializable {
 
 
     @Column(name = "previous_data", length = 3000)
-    private String previousDate;
+    private String previousData;
 
     @Column(name = "current_data", length = 3000)
     private String currentData;
@@ -88,12 +88,12 @@ public class AuditRecord extends SimbaBaseEntity implements Serializable {
         this.operation = operation;
     }
 
-    public String getPreviousDate() {
-        return previousDate;
+    public String getPreviousData() {
+        return previousData;
     }
 
-    public void setPreviousDate(String previousDate) {
-        this.previousDate = previousDate;
+    public void setPreviousData(String previousDate) {
+        this.previousData = previousDate;
     }
 
     public String getCurrentData() {

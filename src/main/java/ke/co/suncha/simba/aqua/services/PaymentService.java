@@ -26,11 +26,14 @@ package ke.co.suncha.simba.aqua.services;
 import java.util.Calendar;
 import java.util.List;
 
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Bill;
 import ke.co.suncha.simba.aqua.models.BillItem;
@@ -81,6 +84,9 @@ public class PaymentService {
 
     @Autowired
     GaugeService gaugeService;
+
+    @Autowired
+    private AuditService auditService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -266,6 +272,16 @@ public class PaymentService {
                 responseObject.setMessage("Payment created successfully. ");
                 responseObject.setPayload(created);
                 response = new RestResponse(responseObject, HttpStatus.CREATED);
+
+                //Start - audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setParentID(String.valueOf(created.getPaymentid()));
+                auditRecord.setCurrentData(created.toString());
+                auditRecord.setParentObject("Payments");
+                auditRecord.setNotes("CREATED PAYMENT");
+                auditService.log(AuditOperation.CREATED, auditRecord);
+                //End - audit trail
+
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

@@ -23,11 +23,14 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
 
@@ -47,175 +50,196 @@ import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class BillingMonthService {
 
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private BillingMonthRepository billingMonthRepository;
+    @Autowired
+    private BillingMonthRepository billingMonthRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    @Autowired
+    private AuditService auditService;
 
-	public BillingMonthService() {
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	}
+    public BillingMonthService() {
 
-	@Transactional
-	public RestResponse update(RestRequestObject<BillingMonth> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    }
+
+    @Transactional
+    public RestResponse update(RestRequestObject<BillingMonth> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "billing_month_update");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
-				BillingMonth billingMonth = requestObject.getObject();
-				BillingMonth bm = billingMonthRepository.findOne(billingMonth.getBillingMonthId());
-				if (bm == null) {
-					responseObject.setMessage("Billing month not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
+                BillingMonth billingMonth = requestObject.getObject();
+                BillingMonth bm = billingMonthRepository.findOne(billingMonth.getBillingMonthId());
+                if (bm == null) {
+                    responseObject.setMessage("Billing month not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
 
-					if (billingMonth.getCurrent() == 1) {
-						if (billingMonthRepository.countWithCurrent(1) > 0) {
-							responseObject.setMessage("Please close all billing dates before opening a new billing date");
-							response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-						} else {
-							// Open month
-							bm.setCurrent(billingMonth.getCurrent());
-							// save
-							billingMonthRepository.save(bm);
-							responseObject.setMessage("Billing month updated successfully");
-							responseObject.setPayload(bm);
-							response = new RestResponse(responseObject, HttpStatus.OK);
-						}
-					} else {
-						// close month
-						bm.setCurrent(billingMonth.getCurrent());
-						// save
-						billingMonthRepository.save(bm);
-						responseObject.setMessage("Billing month updated successfully");
-						responseObject.setPayload(bm);
-						response = new RestResponse(responseObject, HttpStatus.OK);
-					}
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    if (billingMonth.getCurrent() == 1) {
+                        if (billingMonthRepository.countWithCurrent(1) > 0) {
+                            responseObject.setMessage("Please close all billing dates before opening a new billing date");
+                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        } else {
+                            // Open month
+                            bm.setCurrent(billingMonth.getCurrent());
+                            // save
+                            billingMonthRepository.save(bm);
+                            responseObject.setMessage("Billing month updated successfully");
+                            responseObject.setPayload(bm);
+                            response = new RestResponse(responseObject, HttpStatus.OK);
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "month");
-	}
+                            //Start - audit trail
+                            AuditRecord auditRecord = new AuditRecord();
+                            auditRecord.setParentID(String.valueOf(bm.getBillingMonthId()));
+                            auditRecord.setParentObject("BILLING MONTH");
+                            auditRecord.setCurrentData(bm.toString());
+                            auditRecord.setNotes("CREATED BILLING MONTH");
+                            auditService.log(AuditOperation.CREATED, auditRecord);
+                            //End - audit trail
+                        }
+                    } else {
+                        // close month
+                        bm.setCurrent(billingMonth.getCurrent());
 
-	public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "billing_month_view");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
+                        // save
+                        billingMonthRepository.save(bm);
+                        responseObject.setMessage("Billing month updated successfully");
+                        responseObject.setPayload(bm);
+                        response = new RestResponse(responseObject, HttpStatus.OK);
 
-				RestPageRequest p = requestObject.getObject();
+                        //Start - audit trail
+                        AuditRecord auditRecord = new AuditRecord();
+                        auditRecord.setParentID(String.valueOf(bm.getBillingMonthId()));
+                        auditRecord.setParentObject("BILLING MONTH");
+                        auditRecord.setCurrentData(bm.toString());
+                        auditRecord.setNotes("CLOSED/OPENED BILLING MONTH");
+                        auditService.log(AuditOperation.UPDATED, auditRecord);
+                        //End - audit trail
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-				Page<BillingMonth> pageOfObjects;
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "month");
+    }
 
-				pageOfObjects = billingMonthRepository.findByIsEnabled(1, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+    public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "billing_month_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
-				if (pageOfObjects.hasContent()) {
+                RestPageRequest p = requestObject.getObject();
 
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(pageOfObjects);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                Page<BillingMonth> pageOfObjects;
 
-	public RestResponse getActiveBillingMonth(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "billing_month_get_active");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
+                pageOfObjects = billingMonthRepository.findByIsEnabled(1, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
-				BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
-				if (billingMonth != null) {
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(billingMonth);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                if (pageOfObjects.hasContent()) {
 
-	public RestResponse getAll(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "billing_month_list");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(pageOfObjects);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-				RestPageRequest p = requestObject.getObject();
+    public RestResponse getActiveBillingMonth(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "billing_month_get_active");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
-				List<BillingMonth> billingMonths;
+                BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+                if (billingMonth != null) {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(billingMonth);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-				billingMonths = billingMonthRepository.findAllByIsEnabledOrderByMonthDesc(1);
-				if (!billingMonths.isEmpty()) {
+    public RestResponse getAll(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "billing_month_list");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(billingMonths);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                RestPageRequest p = requestObject.getObject();
+
+                List<BillingMonth> billingMonths;
+
+                billingMonths = billingMonthRepository.findAllByIsEnabledOrderByMonthDesc(1);
+                if (!billingMonths.isEmpty()) {
+
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(billingMonths);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
 }

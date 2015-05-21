@@ -28,6 +28,7 @@ import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.BillItemType;
 import ke.co.suncha.simba.aqua.repository.BillItemTypeRepository;
 
@@ -61,6 +62,9 @@ public class BillItemTypeService {
 
 	@Autowired
 	GaugeService gaugeService;
+
+	@Autowired
+	private AuditService auditService;
 
 	private RestResponse response;
 	private RestResponseObject responseObject = new RestResponseObject();

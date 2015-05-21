@@ -23,11 +23,14 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.repository.ZoneRepository;
 
@@ -64,6 +67,9 @@ public class ZoneService {
 	@Autowired
 	GaugeService gaugeService;
 
+	@Autowired
+	private AuditService auditService;
+
 	private RestResponse response;
 	private RestResponseObject responseObject = new RestResponseObject();
 
@@ -94,6 +100,15 @@ public class ZoneService {
 					responseObject.setMessage("Zone created successfully. ");
 					responseObject.setPayload(created);
 					response = new RestResponse(responseObject, HttpStatus.CREATED);
+
+					//Start - audit trail
+					AuditRecord auditRecord = new AuditRecord();
+					auditRecord.setParentID(String.valueOf(created.getZoneId()));
+					auditRecord.setCurrentData(created.toString());
+					auditRecord.setParentObject("Zones");
+					auditRecord.setNotes("CREATED ZONE");
+					auditService.log(AuditOperation.CREATED, auditRecord);
+					//End - audit trail
 				}
 			}
 		} catch (Exception ex) {

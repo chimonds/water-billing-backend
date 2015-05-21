@@ -23,11 +23,14 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.Location;
 import ke.co.suncha.simba.aqua.repository.LocationRepository;
 
@@ -64,6 +67,9 @@ public class LocationService {
 	@Autowired
 	GaugeService gaugeService;
 
+	@Autowired
+	private AuditService auditService;
+
 	private RestResponse response;
 	private RestResponseObject responseObject = new RestResponseObject();
 
@@ -94,6 +100,14 @@ public class LocationService {
 					responseObject.setMessage("Location created successfully. ");
 					responseObject.setPayload(created);
 					response = new RestResponse(responseObject, HttpStatus.CREATED);
+
+					//Start - audit trail
+					AuditRecord auditRecord = new AuditRecord();
+					auditRecord.setParentID(String.valueOf(created.getLocationId()));
+					auditRecord.setParentObject("Locations");
+					auditRecord.setNotes("CREATED LOCATION");
+					auditService.log(AuditOperation.CREATED, auditRecord);
+					//End - audit trail
 				}
 			}
 		} catch (Exception ex) {
@@ -128,6 +142,16 @@ public class LocationService {
 					responseObject.setMessage("Location  updated successfully");
 					responseObject.setPayload(l);
 					response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(l.getLocationId()));
+                    auditRecord.setCurrentData(l.toString());
+                    auditRecord.setPreviousData(location.toString());
+                    auditRecord.setParentObject("Locations");
+                    auditRecord.setNotes("UPDATED LOCATION");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
 				}
 			}
 		} catch (Exception ex) {

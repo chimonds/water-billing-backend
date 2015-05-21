@@ -24,11 +24,14 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
@@ -88,6 +91,9 @@ public class BillService {
 
     @Autowired
     GaugeService gaugeService;
+
+    @Autowired
+    private AuditService auditService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -232,8 +238,8 @@ public class BillService {
                         totalAmount += account.getMeter().getMeterSize().getRentAmount();
                     }
                 }
-                totalAmount += createdBill.getAmount();
 
+                totalAmount += createdBill.getAmount();
                 if (createdBill.getBillItems() != null) {
                     if (!createdBill.getBillItems().isEmpty()) {
                         for (BillItem bi : createdBill.getBillItems()) {
@@ -256,6 +262,15 @@ public class BillService {
                 responseObject.setMessage("Account billed successfully");
                 responseObject.setPayload(bill);
                 response = new RestResponse(responseObject, HttpStatus.OK);
+
+                //Start - audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setParentID(String.valueOf(bill.getBillId()));
+                auditRecord.setParentObject("BILLS");
+                auditRecord.setCurrentData(bill.toString());
+                auditRecord.setNotes("CREATED BILL FOR:" + bill.getAccount().getAccNo());
+                auditService.log(AuditOperation.CREATED, auditRecord);
+                //End - audit trail
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

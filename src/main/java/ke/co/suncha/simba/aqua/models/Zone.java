@@ -106,4 +106,13 @@ public class Zone extends SimbaBaseEntity implements Serializable {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+
+	@Override
+	public String toString() {
+		return "Zone{" +
+				"zoneId=" + zoneId +
+				", name='" + name + '\'' +
+				", description='" + description + '\'' +
+				'}';
+	}
 }

@@ -335,7 +335,6 @@ public class StatsService {
             billSeries.setData(billValues);
             seriesList.add(billSeries);
         }
-
         return seriesList;
     }
 

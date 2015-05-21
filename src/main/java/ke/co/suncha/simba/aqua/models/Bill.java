@@ -387,9 +387,6 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 				", transactionDate=" + transactionDate +
 				", consumptionType='" + consumptionType + '\'' +
 				", content='" + content + '\'' +
-				", account=" + account +
-				", billingMonth=" + billingMonth +
-				", billItems=" + billItems +
 				'}';
 	}
 }

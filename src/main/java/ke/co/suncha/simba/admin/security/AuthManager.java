@@ -29,6 +29,8 @@ import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.ObjectMapper;
 import com.auth0.jwt.internal.org.apache.commons.codec.binary.Base64;
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
@@ -37,6 +39,7 @@ import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.CurrentUserService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import org.slf4j.Logger;
@@ -73,6 +76,9 @@ public class AuthManager {
 
     @Autowired
     SystemActionRepository systemActionRepository;
+
+    @Autowired
+    private AuditService auditService;
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     private RestResponse response;
@@ -124,6 +130,11 @@ public class AuthManager {
                         if (!user.getUserRole().getSystemActions().contains(systemAction)) {
                             log.error(user.getEmailAddress() + " denied to perform:" + action.toUpperCase());
 
+                            //audit trail
+                            AuditRecord auditRecord = new AuditRecord();
+                            auditRecord.setNotes(action.toUpperCase());
+                            auditService.log(AuditOperation.DENIED, auditRecord);
+
                             obj.setMessage("You are not authorized to perform action, please contact your admin.");
                             response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
                             return response;
@@ -134,11 +145,22 @@ public class AuthManager {
 //                            log.info(user.getEmailAddress() + " change password status:" + user.getUserAuth().getResetAuth());
                             if (user.getUserAuth().getResetAuth() == true) {
                                 log.error(user.getEmailAddress() + " denied to perform:" + action + ". User needs to change password.");
+
+                                //audit trail
+                                AuditRecord auditRecord = new AuditRecord();
+                                auditRecord.setNotes(action.toUpperCase() + " :" + user.getEmailAddress() + " denied to perform:" + action + ". User needs to change password.");
+                                auditService.log(AuditOperation.DENIED, auditRecord);
+
                                 obj.setMessage("Access to this resource denied. Please change your password.");
                                 response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
                                 return response;
                             }
                         }
+
+                        //audit trail
+                        AuditRecord auditRecord = new AuditRecord();
+                        auditRecord.setNotes(action.toUpperCase());
+                        auditService.log(AuditOperation.ACCESSED, auditRecord);
 
                         log.info(user.getEmailAddress() + " allowed to perform: " + action.toUpperCase());
                         obj.setMessage("Ok");
@@ -172,6 +194,11 @@ public class AuthManager {
         try {
             User user = userRepository.findByEmailAddress(c.getUsername());
             if (user == null) {
+                //audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setNotes("Invalid email/password");
+                auditService.log(AuditOperation.DENIED, auditRecord);
+
                 responseObject.setMessage("Invalid email/password");
                 responseObject.setPayload("");
                 response = new RestResponse(responseObject, HttpStatus.UNAUTHORIZED);
@@ -209,6 +236,12 @@ public class AuthManager {
                                 }
                             }
                         }
+
+                        //audit trail
+                        AuditRecord auditRecord = new AuditRecord();
+                        auditRecord.setNotes("Logged in successfully");
+                        auditService.log(AuditOperation.ACCESSED, auditRecord);
+
                         loginResponse.setPermissions(permissions);
                         log.info(user.getEmailAddress() + " Logged in successfully");
                         responseObject.setMessage("Logged in successfully");
@@ -216,6 +249,12 @@ public class AuthManager {
                         response = new RestResponse(responseObject, HttpStatus.OK);
                     }
                 } else {
+
+                    //audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setNotes("Invalid username/password");
+                    auditService.log(AuditOperation.DENIED, auditRecord);
+
                     log.error(c.getUsername() + " Invalid username/password");
                     responseObject.setMessage("Invalid username/password");
                     responseObject.setPayload("");

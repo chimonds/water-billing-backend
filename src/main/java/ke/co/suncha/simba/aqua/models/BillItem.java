@@ -136,4 +136,12 @@ public class BillItem extends SimbaBaseEntity implements Serializable {
 		this.bill = bill;
 	}
 
+	@Override
+	public String toString() {
+		return "BillItem{" +
+				"billItemId=" + billItemId +
+				", amount=" + amount +
+				", billItemType=" + billItemType +
+				'}';
+	}
 }

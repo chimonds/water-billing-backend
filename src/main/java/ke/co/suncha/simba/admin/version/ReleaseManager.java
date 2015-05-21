@@ -143,7 +143,7 @@ public class ReleaseManager {
                 try {
 
                     String content = "account_create,\n" +
-                            "account_view,\n" +
+                            "accounts_view,\n" +
                             "account_view_profile,\n" +
                             "account_update,\n" +
                             "account_transfer,\n" +
@@ -408,56 +408,65 @@ public class ReleaseManager {
                 //Meter sizes
                 MeterSize ms = new MeterSize();
                 try {
-
+                    ms = new MeterSize();
                     ms.setRentAmount((double) 50);
-                    ms.setSize("Half or Three Quarter INCH");
+                    ms.setSize("0.5 INCH");
                     meterSizeRepository.save(ms);
-
-
                 } catch (Exception ex) {
-
                 }
 
                 try {
                     ms = new MeterSize();
-                    ms.setRentAmount((double) 150);
-                    ms.setSize("Two & Half INCH");
+                    ms.setRentAmount((double) 50);
+                    ms.setSize("0.75 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
-
                 }
 
                 try {
                     ms = new MeterSize();
                     ms.setRentAmount((double) 250);
-                    ms.setSize("Two & Half INCH");
+                    ms.setSize("1 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
+                }
 
+                try {
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 250);
+                    ms.setSize("1.5 INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
                 }
 
                 try {
                     ms = new MeterSize();
                     ms.setRentAmount((double) 450);
-                    ms.setSize("Two & Half INCH");
+                    ms.setSize("2.5 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
-
                 }
 
                 try {
                     ms = new MeterSize();
                     ms.setRentAmount((double) 800);
-                    ms.setSize("Four INCH");
+                    ms.setSize("3 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
+                }
 
+                try {
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 800);
+                    ms.setSize("3.5 INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
                 }
 
                 try {
                     ms = new MeterSize();
                     ms.setRentAmount((double) 1500);
-                    ms.setSize("Two & Half INCH");
+                    ms.setSize("4 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
 
@@ -483,7 +492,7 @@ public class ReleaseManager {
             }
         } catch (Exception ex) {
             // ex.printStackTrace();
-            System.out.println(ex.getMessage());
+            //System.out.println(ex.getMessage());
         }
     }
 }

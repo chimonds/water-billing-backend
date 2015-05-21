@@ -55,7 +55,7 @@ public class MeterSize extends SimbaBaseEntity implements Serializable {
 	private long meterSizeId;
 
 	@NotNull
-	@Column(name = "rent_amount", unique = true)
+	@Column(name = "rent_amount")
 	private Double rentAmount = (double) 0;
 
 	@NotNull

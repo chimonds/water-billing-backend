@@ -172,4 +172,16 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
 		}
 		return active;
 	}
+
+	@Override
+	public String toString() {
+		return "BillingMonth{" +
+				"billingMonthId=" + billingMonthId +
+				", month=" + month +
+				", code=" + code +
+				", current=" + current +
+				", isEnabled=" + isEnabled +
+				", active=" + active +
+				'}';
+	}
 }

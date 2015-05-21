@@ -259,15 +259,19 @@ public class Consumer extends SimbaBaseEntity implements Serializable {
 		this.city = city;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString() {
-		return "Consumer [consumerId=" + consumerId + ", firstName=" + firstName + ", middleName=" + middleName + ", lastName=" + lastName + ", identityNo=" + identityNo + ", phoneNumber=" + phoneNumber + ", emailAddress=" + emailAddress + ", postalAddress=" + postalAddress
-				+ ", postalCode=" + postalCode + ", city=" + city + ", createdOn=" + this.getCreatedOn() + "]";
+		return "Consumer{" +
+				"consumerId=" + consumerId +
+				", firstName='" + firstName + '\'' +
+				", middleName='" + middleName + '\'' +
+				", lastName='" + lastName + '\'' +
+				", identityNo='" + identityNo + '\'' +
+				", phoneNumber='" + phoneNumber + '\'' +
+				", emailAddress='" + emailAddress + '\'' +
+				", postalAddress='" + postalAddress + '\'' +
+				", postalCode='" + postalCode + '\'' +
+				", city='" + city + '\'' +
+				'}';
 	}
-
 }

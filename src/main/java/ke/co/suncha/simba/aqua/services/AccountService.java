@@ -26,11 +26,14 @@ package ke.co.suncha.simba.aqua.services;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ke.co.suncha.simba.admin.helpers.AuditOperation;
+import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.AccountRecord;
@@ -81,6 +84,9 @@ public class AccountService {
     @Autowired
     GaugeService gaugeService;
 
+    @Autowired
+    private AuditService auditService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -123,6 +129,15 @@ public class AccountService {
                     created.setTariff(account.getTariff());
                     created.setConsumer(consumer);
                     accountRepository.save(created);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(created.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setCurrentData(created.toString());
+                    auditRecord.setNotes("CREATED ACCOUNT");
+                    auditService.log(AuditOperation.CREATED, auditRecord);
+                    //End - audit trail
 
                     // package response
                     responseObject.setMessage("Account created successfully. ");
@@ -169,6 +184,16 @@ public class AccountService {
                     responseObject.setMessage("Account  updated successfully");
                     responseObject.setPayload(acc);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(acc.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setCurrentData(acc.toString());
+                    auditRecord.setPreviousData(account.toString());
+                    auditRecord.setNotes("UPDATED ACCOUNT");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
                 }
             }
         } catch (org.hibernate.exception.ConstraintViolationException ex) {
@@ -213,6 +238,16 @@ public class AccountService {
                     responseObject.setMessage("Account  updated successfully");
                     responseObject.setPayload(acc);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(acc.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setCurrentData(String.valueOf(acc.getConsumer().getConsumerId()));
+                    auditRecord.setPreviousData(String.valueOf(account.getConsumer().getConsumerId()));
+                    auditRecord.setNotes("TRANSFERRED ACCOUNT");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
                 }
             }
         } catch (org.hibernate.exception.ConstraintViolationException ex) {
@@ -237,7 +272,7 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "account_view");
+                response = authManager.grant(requestObject.getToken(), "accounts_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -318,6 +353,14 @@ public class AccountService {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(account);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(account.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setNotes("ACCOUNT PROFILE VIEW");
+                    auditService.log(AuditOperation.VIEWED, auditRecord);
+                    //End - audit trail
                 }
             }
         } catch (Exception ex) {
@@ -342,7 +385,16 @@ public class AccountService {
                 if (account == null) {
                     responseObject.setMessage("Invalid account number");
                     responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(account.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setNotes("ACCOUNT PROFILE VIEW");
+                    auditService.log(AuditOperation.VIEWED, auditRecord);
+                    //End - audit trail
+
                 } else {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(account);
@@ -470,7 +522,7 @@ public class AccountService {
                                 Calendar calendar = Calendar.getInstance();
                                 Object unixTime = params.get("transactionDate");
                                 if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                                    calendar.setTimeInMillis(Long.valueOf(unixTime.toString())*1000);
+                                    calendar.setTimeInMillis(Long.valueOf(unixTime.toString()) * 1000);
                                 }
 
                                 //update balance on local object
@@ -581,7 +633,7 @@ public class AccountService {
                                 Calendar calendar = Calendar.getInstance();
                                 Object unixTime = params.get("transactionDate");
                                 if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                                    calendar.setTimeInMillis(1000*Long.valueOf(unixTime.toString()));
+                                    calendar.setTimeInMillis(1000 * Long.valueOf(unixTime.toString()));
                                 }
 
                                 //update balance on local object

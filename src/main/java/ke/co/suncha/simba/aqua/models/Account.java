@@ -343,14 +343,17 @@ public class Account extends SimbaBaseEntity implements Serializable {
         this.consumer = consumer;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
-        return "ConsumerConnection [accountId=" + accountId + ", balanceBroughtForward=" + balanceBroughtForward + ", account no=" + accNo + ", consumer=" + consumer +   "]";
+        return "Account{" +
+                "accountId=" + accountId +
+                ", balanceBroughtForward=" + balanceBroughtForward +
+                ", outstandingBalance=" + outstandingBalance +
+                ", accNo='" + accNo + '\'' +
+                ", accName='" + accName + '\'' +
+                ", averageConsumption=" + averageConsumption +
+                ", active=" + active +
+                ", metered=" + metered +
+                '}';
     }
-
 }

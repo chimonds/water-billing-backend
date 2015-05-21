@@ -250,4 +250,15 @@ public class Payment extends SimbaBaseEntity implements Serializable {
 		this.paymentType = paymentType;
 	}
 
+	@Override
+	public String toString() {
+		return "Payment{" +
+				"paymentid=" + paymentid +
+				", amount=" + amount +
+				", transactionDate=" + transactionDate +
+				", receiptNo='" + receiptNo + '\'' +
+				", isVoid=" + isVoid +
+				", notes='" + notes + '\'' +
+				'}';
+	}
 }

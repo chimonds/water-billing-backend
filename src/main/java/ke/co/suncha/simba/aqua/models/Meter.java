@@ -271,4 +271,18 @@ public class Meter extends SimbaBaseEntity implements Serializable {
 	public void setAccount(Account account) {
 		this.account = account;
 	}
+
+	@Override
+	public String toString() {
+		return "Meter{" +
+				"meterId=" + meterId +
+				", meterNo='" + meterNo + '\'' +
+				", active=" + active +
+				", notes='" + notes + '\'' +
+				", initialReading=" + initialReading +
+				", meterOwner=" + meterOwner +
+				", meterSize=" + meterSize +
+				", assigned=" + assigned +
+				'}';
+	}
 }
