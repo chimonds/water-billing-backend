@@ -547,12 +547,15 @@ public class ReportService {
                         //add bill record
                         Calendar billingMonth = bill.getBillingMonth().getMonth();
 
-                        String billingYearMonth = billingMonth.get(Calendar.YEAR) + " " + billingMonth.get(Calendar.MONTH);
+                        //String billingYearMonth = billingMonth.get(Calendar.YEAR) + " " + billingMonth.get(Calendar.MONTH);
+
+                        SimpleDateFormat format1 = new SimpleDateFormat("MMM, yyyy");
+                        String formattedDate = format1.format(billingMonth.getTime());
 
                         StatementRecord billRecord = new StatementRecord();
                         billRecord.setTransactionDate(bill.getTransactionDate());
                         billRecord.setItemType("Bill");
-                        billRecord.setRefNo(billingYearMonth);
+                        billRecord.setRefNo(formattedDate);
                         billRecord.setAmount(bill.getAmount());
                         records.add(billRecord);
 
@@ -562,7 +565,7 @@ public class ReportService {
                                 StatementRecord billItemRecord = new StatementRecord();
                                 billItemRecord.setTransactionDate(bill.getTransactionDate());
                                 billItemRecord.setItemType("Charge");
-                                billItemRecord.setRefNo(billingYearMonth);
+                                billItemRecord.setRefNo(formattedDate);
                                 billItemRecord.setAmount(billItem.getAmount());
                                 records.add(billItemRecord);
                             }
@@ -573,7 +576,7 @@ public class ReportService {
                             billRecord = new StatementRecord();
                             billRecord.setTransactionDate(bill.getTransactionDate());
                             billRecord.setItemType("Meter Rent");
-                            billRecord.setRefNo(billingYearMonth);
+                            billRecord.setRefNo(formattedDate);
                             billRecord.setAmount(bill.getMeterRent());
                             records.add(billRecord);
                         }

@@ -29,15 +29,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface ZoneRepository extends PagingAndSortingRepository<Zone, Long> {
-	Page<Zone> findByNameContains(String name, Pageable pageable);
+    Page<Zone> findByNameContains(String name, Pageable pageable);
 
-	Zone findByName(String name);
+    Zone findByName(String name);
 
-	Page<Zone> findAll(Pageable pageable);
+    Page<Zone> findAll(Pageable pageable);
 
+    List<Zone> findAll();
 }

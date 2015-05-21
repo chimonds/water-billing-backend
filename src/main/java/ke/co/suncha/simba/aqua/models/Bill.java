@@ -370,4 +370,26 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 	public void setConsumptionType(String consumptionType) {
 		this.consumptionType = consumptionType;
 	}
+
+	@Override
+	public String toString() {
+		return "Bill{" +
+				"billId=" + billId +
+				", currentReading=" + currentReading +
+				", previousReading=" + previousReading +
+				", unitsBilled=" + unitsBilled +
+				", averageConsumption=" + averageConsumption +
+				", billCode=" + billCode +
+				", amount=" + amount +
+				", meterRent=" + meterRent +
+				", totalBilled=" + totalBilled +
+				", billed=" + billed +
+				", transactionDate=" + transactionDate +
+				", consumptionType='" + consumptionType + '\'' +
+				", content='" + content + '\'' +
+				", account=" + account +
+				", billingMonth=" + billingMonth +
+				", billItems=" + billItems +
+				'}';
+	}
 }

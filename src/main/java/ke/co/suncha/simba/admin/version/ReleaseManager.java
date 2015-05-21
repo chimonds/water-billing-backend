@@ -113,7 +113,7 @@ public class ReleaseManager {
      * @return
      */
 
-    @PostConstruct
+//    @PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -204,6 +204,7 @@ public class ReleaseManager {
                             "stats_view,\n" +
                             "stats_top,\n" +
                             "stats_bills_payments_linegraph,\n"+
+                            "stats_zones_bargraph,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");

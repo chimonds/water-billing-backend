@@ -122,7 +122,7 @@ public class AuthManager {
                             systemAction = systemActionRepository.save(systemAction);
                         }
                         if (!user.getUserRole().getSystemActions().contains(systemAction)) {
-                            log.error(user.getEmailAddress() + " denied to perform:" + action);
+                            log.error(user.getEmailAddress() + " denied to perform:" + action.toUpperCase());
 
                             obj.setMessage("You are not authorized to perform action, please contact your admin.");
                             response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
@@ -159,7 +159,6 @@ public class AuthManager {
         BCryptPasswordEncoder passEncoder = new BCryptPasswordEncoder();
         // passEncoder.
         if (passEncoder.matches(user.getEmailAddress().toLowerCase() + password, user.getUserAuth().getAuthPassword())) {
-            log.info("Existing password match.");
             if (!user.isActive()) {
                 valid = false;
             } else {

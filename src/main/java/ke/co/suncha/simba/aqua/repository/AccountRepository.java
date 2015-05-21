@@ -35,19 +35,20 @@ import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface AccountRepository extends PagingAndSortingRepository<Account, Long> {
 
-	Account findByaccNo(String accoutNo);
+    Account findByaccNo(String accoutNo);
 
-	Account findByMeter(Meter meter);
+    Account findByMeter(Meter meter);
 
-	@Query("select a from Account a where a.accNo like %?1%")
-	Page<Account> findByAccNoLike(String accNo, Pageable pageable);
+    @Query("select a from Account a where a.accNo like %?1%")
+    Page<Account> findByAccNoLike(String accNo, Pageable pageable);
 
-	Page<Account> findByAccNo(String accNo, Pageable pageable);
+    Page<Account> findByAccNo(String accNo, Pageable pageable);
 
-	List<Account> findAll();
+    List<Account> findAll();
+
+    Long countByActive(Boolean status);
 
 }

@@ -21,13 +21,14 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import scala.Int;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
+
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com> Created by manyala on 5/19/15.
@@ -51,13 +52,18 @@ public class StatsService {
 
     @Autowired
     private BillRepository billRepository;
+
     @Autowired
     private BillingMonthRepository billingMonthRepository;
 
     @Autowired
     private PaymentTypeRepository paymentTypeRepository;
+
     @Autowired
     private SimbaOptionService optionService;
+
+    @Autowired
+    private ZoneRepository zoneRepository;
 
     @Autowired
     private AuthManager authManager;
@@ -70,28 +76,25 @@ public class StatsService {
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
-    private Config cfg = new Config();
-    private HazelcastInstance instance = Hazelcast.newHazelcastInstance(cfg);
     private TopView topView = new TopView();
     private BillsPaymentsLineGraph billsPaymentsLineGraph = new BillsPaymentsLineGraph();
-
+    private ZonesBarGraph zonesBarGraph = new ZonesBarGraph();
 
     @Scheduled(fixedDelay = 5000)
     private void populateAccountsConsumersCount() {
-        log.info("Populating consumers & accounts count stats...");
         try {
             topView.setAccounts(accountRepository.count());
             topView.setConsumers(consumerRepository.count());
+            topView.setActive(accountRepository.countByActive(true));
+            topView.setInactive(accountRepository.countByActive(false));
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
-        log.info("Top view stats..." + topView.toString());
     }
 
     @Scheduled(fixedDelay = 5000)
     private void populatePaidThisMonth() {
         try {
-
             Calendar toDate = this.getFirstDayThisMonth();
             toDate.add(Calendar.MONTH, 1);
             toDate.add(Calendar.DATE, -1);
@@ -154,58 +157,190 @@ public class StatsService {
         return today;
     }
 
+
     @Scheduled(fixedDelay = 5000)
-    private void pupulateXaxis() {
-        XAxisMeta xAxisMeta = new XAxisMeta();
-        xAxisMeta.setName("categories");
-        List<String> items = new ArrayList<>();
+    private void populateXaxis() {
+        try {
+            XAxisMeta xAxisMeta = new XAxisMeta();
+            xAxisMeta.setName("categories");
+            List<String> items = new ArrayList<>();
 
-        //start date should be less 2 years
-        Calendar fromDate = this.getFirstDayThisMonth();
-        fromDate.add(Calendar.MONTH, this.getMonths());
-        Calendar today = Calendar.getInstance();
+            //start date should be less 2 years
+            Calendar fromDate = this.getFirstDayThisMonth();
+            fromDate.add(Calendar.MONTH, this.getMonths());
+            Calendar today = Calendar.getInstance();
 
-        while (fromDate.before(today)) {
+            while (fromDate.before(today)) {
 
-            SimpleDateFormat format1 = new SimpleDateFormat("MMM yyyy");
-            String formatted = format1.format(fromDate.getTime());
-            //log.info("Date:" + formatted);
-            items.add(formatted);
+                SimpleDateFormat format1 = new SimpleDateFormat("MMM yyyy");
+                String formatted = format1.format(fromDate.getTime());
+                //log.info("Date:" + formatted);
+                items.add(formatted);
 
-            fromDate.add(Calendar.MONTH, 1);
+                fromDate.add(Calendar.MONTH, 1);
+            }
+            xAxisMeta.setItems(items);
+            billsPaymentsLineGraph.setxAxisMeta(xAxisMeta);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
         }
-        xAxisMeta.setItems(items);
-        billsPaymentsLineGraph.setxAxisMeta(xAxisMeta);
+
+    }
+
+    @Scheduled(fixedDelay = 3600)
+    private void populateXZonesBarGraph() {
+        try {
+            XAxisMeta xAxisMeta = new XAxisMeta();
+            xAxisMeta.setName("categories");
+            List<String> items = new ArrayList<>();
+
+            List<Zone> zones = zoneRepository.findAll();
+            if (zones.isEmpty()) {
+                return;
+            }
+            for (Zone zone : zones) {
+                items.add(zone.getName().trim());
+            }
+            xAxisMeta.setItems(items);
+            zonesBarGraph.setxAxisMeta(xAxisMeta);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+
+    @Scheduled(fixedDelay = 5000)
+    private void populateZonesBarGraph() {
+        try {
+            log.info("Populating zone bar graph..");
+            List<GraphSeries> seriesList = new ArrayList<>();
+
+            //payments
+            List<GraphSeries> series = this.getZonesBarGraphDataPayments();
+            if (!series.isEmpty()) {
+                seriesList.addAll(series);
+            }
+
+            //bills
+            series = this.getZonesBarGraphData();
+            if (!series.isEmpty()) {
+                seriesList.addAll(series);
+            }
+
+
+            log.info("Done Populating zone bar graph..");
+            zonesBarGraph.setSeries(seriesList);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
     @Scheduled(fixedDelay = 5000)
     private void populateBillsPaymentsLineGraph() {
+        try {
+            log.info("Populating Bills/Payments graph..");
+            List<GraphSeries> seriesList = new ArrayList<>();
+
+            //add payments
+            List<GraphSeries> paymentTypesList = this.getPaymentTypesData();
+
+            if (!paymentTypesList.isEmpty()) {
+                seriesList.addAll(paymentTypesList);
+            }
+
+            //add billed and meter rent
+            List<GraphSeries> billedMeterRentList = this.getBilledMeterRentData();
+            if (!billedMeterRentList.isEmpty()) {
+                seriesList.addAll(billedMeterRentList);
+            }
+
+            //Other charges
+            List<GraphSeries> otherChargesList = this.getOtherChargesData();
+            if (!otherChargesList.isEmpty()) {
+                seriesList.addAll(otherChargesList);
+            }
+            billsPaymentsLineGraph.setSeries(seriesList);
+            log.info("Done Populating Bills/Payments graph..");
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+
+    @Transactional
+    private List<GraphSeries> getZonesBarGraphData() {
 
         List<GraphSeries> seriesList = new ArrayList<>();
 
-        //add payments
-        List<GraphSeries> paymentTypesList = this.getPaymentTypesData();
+        GraphSeries billSeries = new GraphSeries();
+        billSeries.setName("Bills");
+        List<Double> billValues = new ArrayList<>();
 
-        if (!paymentTypesList.isEmpty()) {
-            seriesList.addAll(paymentTypesList);
+        List<Zone> zones = zoneRepository.findAll();
+        if (!zones.isEmpty()) {
+            for (Zone zone : zones) {
+                Calendar today = Calendar.getInstance();
+                Calendar fromDate = this.getFirstDayThisMonth();
+                fromDate.add(Calendar.MONTH, this.getMonths());
+                SimpleDateFormat format1 = new SimpleDateFormat("yyyy-M-dd");
+                String formatted = format1.format(fromDate.getTime());
+
+                Double amountBilled = 0.0;
+                amountBilled = billRepository.findByContent(zone.getName(), format1.format(fromDate.getTime()).toString(), format1.format(today.getTime()).toString());
+                if (amountBilled == null) {
+                    amountBilled = 0.0;
+                }
+                billValues.add(amountBilled);
+            }
+            billSeries.setData(billValues);
+            seriesList.add(billSeries);
+
         }
 
-        //add billed and meter rent
-        List<GraphSeries> billedMeterRentList = this.getBilledMeterRentData();
-        if (!billedMeterRentList.isEmpty()) {
-            seriesList.addAll(billedMeterRentList);
-        }
-
-        //Other charges
-        List<GraphSeries> otherChargesList = this.getOtherChargesData();
-        if (!otherChargesList.isEmpty()) {
-            seriesList.addAll(otherChargesList);
-        }
-
-
-        billsPaymentsLineGraph.setSeries(seriesList);
+        return seriesList;
     }
 
+
+    @Transactional
+    private List<GraphSeries> getZonesBarGraphDataPayments() {
+
+        List<GraphSeries> seriesList = new ArrayList<>();
+
+        GraphSeries billSeries = new GraphSeries();
+        billSeries.setName("Payments");
+        List<Double> billValues = new ArrayList<>();
+
+        List<Zone> zones = zoneRepository.findAll();
+        if (!zones.isEmpty()) {
+            for (Zone zone : zones) {
+                Calendar today = Calendar.getInstance();
+                Calendar fromDate = this.getFirstDayThisMonth();
+                fromDate.add(Calendar.MONTH, this.getMonths());
+
+                SimpleDateFormat format1 = new SimpleDateFormat("yyyy-M-dd");
+                String formatted = format1.format(fromDate.getTime());
+                Double amountBilled = 0.0;
+                try {
+                    amountBilled = paymentRepository.findByAmount(zone.getName(), format1.format(fromDate.getTime()).toString(), format1.format(today.getTime()).toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    log.error(ex.getMessage());
+                }
+                billValues.add(amountBilled);
+            }
+            billSeries.setData(billValues);
+            seriesList.add(billSeries);
+        }
+
+        return seriesList;
+    }
+
+
+    @Transactional
     private List<GraphSeries> getPaymentTypesData() {
 
         List<GraphSeries> seriesList = new ArrayList<>();
@@ -256,6 +391,7 @@ public class StatsService {
         return seriesList;
     }
 
+    @Transactional
     private List<GraphSeries> getBilledMeterRentData() {
 
         List<GraphSeries> seriesList = new ArrayList<>();
@@ -310,59 +446,58 @@ public class StatsService {
         return seriesList;
     }
 
+    @Transactional
     private List<GraphSeries> getOtherChargesData() {
 
         List<GraphSeries> seriesList = new ArrayList<>();
 
         List<BillItemType> billItemTypes = billItemTypeRepository.findAll();
 
-        if (billItemTypes.isEmpty()) {
-            return null;
-        }
+        if (!billItemTypes.isEmpty()) {
+
+            for (BillItemType billItemType : billItemTypes) {
+                //graph details
+                GraphSeries series = new GraphSeries();
+                series.setName(billItemType.getName());
+                List<Double> values = new ArrayList<>();
 
 
-        for (BillItemType billItemType : billItemTypes) {
-            //graph details
-            GraphSeries series = new GraphSeries();
-            series.setName(billItemType.getName());
-            List<Double> values = new ArrayList<>();
+                Calendar today = Calendar.getInstance();
+                Calendar fromDate = this.getFirstDayThisMonth();
+                fromDate.add(Calendar.MONTH, this.getMonths());
+
+                Integer months = this.getMonths();
+                while (fromDate.before(today)) {
+                    Calendar billingMonth = Calendar.getInstance();
+
+                    billingMonth.set(Calendar.DATE, 24);
+                    billingMonth.set(Calendar.MONTH, fromDate.get(Calendar.MONTH));
+                    billingMonth.set(Calendar.YEAR, fromDate.get(Calendar.YEAR));
 
 
-            Calendar today = Calendar.getInstance();
-            Calendar fromDate = this.getFirstDayThisMonth();
-            fromDate.add(Calendar.MONTH, this.getMonths());
-
-            Integer months = this.getMonths();
-            while (fromDate.before(today)) {
-                Calendar billingMonth = Calendar.getInstance();
-
-                billingMonth.set(Calendar.DATE, 24);
-                billingMonth.set(Calendar.MONTH, fromDate.get(Calendar.MONTH));
-                billingMonth.set(Calendar.YEAR, fromDate.get(Calendar.YEAR));
-
-
-                BillingMonth month = billingMonthRepository.findByMonth(billingMonth);
-                if (month == null) {
-                    return null;
-                }
-                Double amount = 0.0;
-                List<Bill> bills = billRepository.findAllByBillingMonth(month);
-                if (!bills.isEmpty()) {
-                    for (Bill bill : bills) {
-                        if (!bill.getBillItems().isEmpty()) {
-                            for (BillItem billItem : bill.getBillItems()) {
-                                if (billItem.getBillItemType().getName().compareToIgnoreCase(billItemType.getName()) ==0 ) {
-                                    amount += billItem.getAmount();
+                    BillingMonth month = billingMonthRepository.findByMonth(billingMonth);
+                    if (month == null) {
+                        return null;
+                    }
+                    Double amount = 0.0;
+                    List<Bill> bills = billRepository.findAllByBillingMonth(month);
+                    if (!bills.isEmpty()) {
+                        for (Bill bill : bills) {
+                            if (!bill.getBillItems().isEmpty()) {
+                                for (BillItem billItem : bill.getBillItems()) {
+                                    if (billItem.getBillItemType().getName().compareToIgnoreCase(billItemType.getName()) == 0) {
+                                        amount += billItem.getAmount();
+                                    }
                                 }
                             }
                         }
+                        values.add(amount);
                     }
-                    values.add(amount);
+                    fromDate.add(Calendar.MONTH, 1);
                 }
-                fromDate.add(Calendar.MONTH, 1);
+                series.setData(values);
+                seriesList.add(series);
             }
-            series.setData(values);
-            seriesList.add(series);
         }
         return seriesList;
     }
@@ -384,6 +519,9 @@ public class StatsService {
 
                 if (authManager.grant(requestObject.getToken(), "stats_bills_payments_linegraph").getStatusCode() == HttpStatus.OK) {
                     statsResponse.setBillsPaymentsLineGraph(billsPaymentsLineGraph);
+                }
+                if (authManager.grant(requestObject.getToken(), "stats_zones_bargraph").getStatusCode() == HttpStatus.OK) {
+                    statsResponse.setZonesBarGraph(zonesBarGraph);
                 }
 
 

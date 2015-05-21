@@ -8,6 +8,24 @@ public class TopView {
     private Long accounts =  0L;
     private Double paidThisMonth = 0.0;
     private Double paidLastMonth = 0.0;
+    private Long active=0L;
+    private Long inactive=0L;
+
+    public Long getActive() {
+        return active;
+    }
+
+    public void setActive(Long active) {
+        this.active = active;
+    }
+
+    public Long getInactive() {
+        return inactive;
+    }
+
+    public void setInactive(Long inactive) {
+        this.inactive = inactive;
+    }
 
     public Long getConsumers() {
         return consumers;
@@ -43,11 +61,13 @@ public class TopView {
 
     @Override
     public String toString() {
-        return "Top View Stats{" +
+        return "TopView{" +
                 "consumers=" + consumers +
                 ", accounts=" + accounts +
                 ", paidThisMonth=" + paidThisMonth +
                 ", paidLastMonth=" + paidLastMonth +
+                ", active=" + active +
+                ", inactive=" + inactive +
                 '}';
     }
 }
