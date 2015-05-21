@@ -113,7 +113,7 @@ public class ReleaseManager {
      * @return
      */
 
-//    @PostConstruct
+    @PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -203,8 +203,8 @@ public class ReleaseManager {
                             "users_change_own_password,\n" +
                             "stats_view,\n" +
                             "stats_top,\n" +
-                            "stats_bills_payments_linegraph,\n"+
-                            "stats_zones_bargraph,\n"+
+                            "stats_bills_payments_linegraph,\n" +
+                            "stats_zones_bargraph,\n" +
                             "settings_view";
 
                     String[] permissions = content.split(",");
@@ -406,12 +406,28 @@ public class ReleaseManager {
                 }
 
                 //Meter sizes
+                MeterSize ms = new MeterSize();
                 try {
-                    MeterSize ms = new MeterSize();
+
                     ms.setRentAmount((double) 50);
-                    ms.setSize("Half INCH");
+                    ms.setSize("Half or Three Quarter INCH");
                     meterSizeRepository.save(ms);
 
+
+                } catch (Exception ex) {
+
+                }
+
+                try {
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 150);
+                    ms.setSize("Two & Half INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
+
+                }
+
+                try {
                     ms = new MeterSize();
                     ms.setRentAmount((double) 250);
                     ms.setSize("Two & Half INCH");
@@ -419,6 +435,34 @@ public class ReleaseManager {
                 } catch (Exception ex) {
 
                 }
+
+                try {
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 450);
+                    ms.setSize("Two & Half INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
+
+                }
+
+                try {
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 800);
+                    ms.setSize("Four INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
+
+                }
+
+                try {
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 1500);
+                    ms.setSize("Two & Half INCH");
+                    meterSizeRepository.save(ms);
+                } catch (Exception ex) {
+
+                }
+
 
                 //Meter Owners
                 try {

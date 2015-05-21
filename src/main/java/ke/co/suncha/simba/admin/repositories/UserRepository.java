@@ -31,11 +31,11 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
-public interface UserRepository extends
- PagingAndSortingRepository<User, Long> {	
-	User findByEmailAddress(String name);
-	Page<User> findAll(Pageable pageable);
-	Page<User> findByEmailAddressContaining(String filter, Pageable pageable);
+public interface UserRepository extends PagingAndSortingRepository<User, Long> {
+    User findByEmailAddress(String name);
+
+    Page<User> findAll(Pageable pageable);
+
+    Page<User> findByEmailAddressContaining(String filter, Pageable pageable);
 }
