@@ -26,15 +26,7 @@ package ke.co.suncha.simba.aqua.models;
 import java.io.Serializable;
 import java.util.Calendar;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -79,6 +71,9 @@ public class Payment extends SimbaBaseEntity implements Serializable {
 	@Column(name = "comments", length = 1000)
 	private String notes = "";
 
+	@Transient
+	private String accNo;
+
 	// payments belong to an account
 	@JsonIgnore
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -99,6 +94,14 @@ public class Payment extends SimbaBaseEntity implements Serializable {
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "payment_source_id")
 	private PaymentSource paymentSource;
+
+	public String getAccNo() {
+		if(this.getAccount()!=null){
+			this.accNo= this.getAccount().getAccNo();
+		}
+		return accNo;
+	}
+
 
 	/**
 	 * @return the paymentSource

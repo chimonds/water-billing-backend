@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.admin.version;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
@@ -205,6 +206,7 @@ public class ReleaseManager {
                             "stats_top,\n" +
                             "stats_bills_payments_linegraph,\n" +
                             "stats_zones_bargraph,\n" +
+                            "account_view,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");
@@ -291,12 +293,9 @@ public class ReleaseManager {
                                 c.set(current, y, 24);
                                 bm.setMonth(c);
 
-                                String month = y + "";
-                                if (month.length() == 1) {
-                                    month = "0" + month;
-                                }
-                                String billingCode = current + "" + month;
 
+                                SimpleDateFormat format1 = new SimpleDateFormat("yyyyMM");
+                                String billingCode = format1.format(c.getTime());
 
                                 bm.setCode(Integer.valueOf(billingCode));
                                 billingMonthRepository.save(bm);

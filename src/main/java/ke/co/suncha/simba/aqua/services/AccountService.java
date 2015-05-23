@@ -387,18 +387,18 @@ public class AccountService {
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-                    //Start - audit trail
-                    AuditRecord auditRecord = new AuditRecord();
-                    auditRecord.setParentID(String.valueOf(account.getAccountId()));
-                    auditRecord.setParentObject("Account");
-                    auditRecord.setNotes("ACCOUNT PROFILE VIEW");
-                    auditService.log(AuditOperation.VIEWED, auditRecord);
-                    //End - audit trail
-
                 } else {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(account);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(account.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setNotes("ACCOUNT SEARCH VIEW");
+                    auditService.log(AuditOperation.VIEWED, auditRecord);
+                    //End - audit trail
                 }
             }
         } catch (Exception ex) {

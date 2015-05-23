@@ -52,6 +52,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -107,22 +108,10 @@ public class BillService {
 
     private BillingMonth getActiveBillingMonth() {
         BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
-
-        if (billingMonth != null) {
-            //set billing code
-            String year = String.valueOf(billingMonth.getMonth().get(Calendar.YEAR));
-            String month = String.valueOf(billingMonth.getMonth().get(Calendar.MONTH));
-            if (month.length() == 1) {
-                month = "0" + month;
-            }
-            String billingCode = year + month;
-            billingMonth.setCode(Integer.valueOf(billingCode));
-            log.info("Billing code:" + billingCode);
-        }
-
         return billingMonth;
     }
 
+    @Transactional
     public RestResponse bill(RestRequestObject<BillRequest> requestObject, Long accountId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -197,8 +186,12 @@ public class BillService {
                 //set billcode
                 //String billCode =
                 BillingMonth activeBillingMonth = this.getActiveBillingMonth();
+                if (activeBillingMonth == null) {
+                    responseObject.setMessage("Sorry we could not save the bill. Invalid billing month.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
                 bill.setBillingMonth(activeBillingMonth);
-
                 bill.setBillCode(activeBillingMonth.getCode());
 
                 //set average
@@ -280,6 +273,7 @@ public class BillService {
         return response;
     }
 
+    @Transactional
     public RestResponse getAllByAccount(RestRequestObject<RestPageRequest> requestObject, Long account_id) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -320,6 +314,7 @@ public class BillService {
         return response;
     }
 
+    @Transactional
     private Bill getAccountLastBill(Long accountId) {
         Bill lastBill = new Bill();
         // get current billing month
@@ -327,6 +322,7 @@ public class BillService {
 
         Account account = accountRepository.findOne(accountId);
 
+        log.info("Getting the most current bill for:" + account.getAccNo());
         Page<Bill> bills;
         bills = billRepository.findByAccountOrderByBillCodeDesc(account, new PageRequest(0, 1));
 
@@ -334,25 +330,39 @@ public class BillService {
             // seems its iniatial bill so check if account is metered
             if (account.isMetered()) {
                 lastBill.setCurrentReading(account.getMeter().getInitialReading());
+                lastBill.setBilled(false);
             } else {
                 // TODO;
+                lastBill.setCurrentReading(0);
+                lastBill.setBilled(false);
             }
         } else {
 
             lastBill = bills.getContent().get(0);
-            log.info("Most current bill:" + lastBill.getBillingMonth().getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
-            log.info("Billing month:" + billingMonth.getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
+            log.info("Most current bill:" + lastBill.toString());
+
+            lastBill.setBilled(true);
+
+            //log.info("Most current bill:" + lastBill.getBillingMonth().getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
+            log.info("Billing month:" + billingMonth.getMonth().get(Calendar.YEAR) + "-" + billingMonth.getMonth().get(Calendar.MONTH));
 
             if (lastBill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
+                log.info("Billed:false");
                 lastBill.setBilled(false);
             } else {
+                log.info("Billed:true");
                 lastBill.setBilled(true);
             }
 
+            if (lastBill.getBillingMonth().getMonth().equals(billingMonth.getMonth())) {
+                lastBill.setBilled(true);
+                log.info("Billed:true");
+            }
         }
         return lastBill;
     }
 
+    @Transactional
     public RestResponse getLastBill(RestRequestObject<RestPageRequest> requestObject, Long accountId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());

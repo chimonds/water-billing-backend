@@ -44,7 +44,6 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Entity
 @Table(name = "billing_months")
@@ -52,136 +51,142 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class BillingMonth extends SimbaBaseEntity implements Serializable {
 
-	private static final long serialVersionUID = -5067080841809492162L;
+    private static final long serialVersionUID = -5067080841809492162L;
 
-	@Id
-	@Column(name = "billing_month_id", nullable = false)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long billingMonthId;
+    @Id
+    @Column(name = "billing_month_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long billingMonthId;
 
-	@NotNull
-	@Column(name = "billing_month", unique = true)
-	@Temporal(TemporalType.DATE)
-	private Calendar month;
+    @NotNull
+    @Column(name = "billing_month", unique = true)
+    @Temporal(TemporalType.DATE)
+    private Calendar month;
 
-	@NotNull
-	@Column(name = "code", unique = true)
-	private Integer code;
+    @NotNull
+    @Column(name = "code", unique = true)
+    private Integer code;
 
-	@Column(name = "is_current")
-	private Integer current = 0;
+    @Column(name = "is_current")
+    private Integer current = 0;
 
-	@Column(name = "is_enabled")
-	private Integer isEnabled = 0;
+    @Column(name = "is_enabled")
+    private Integer isEnabled = 0;
 
-	@Transient
-	private Boolean active;
+    @Transient
+    private Boolean active;
 
-	/**
-	 * @param isActive
-	 *            the isActive to set
-	 */
-	public void setActive(Boolean active) {
-		this.active = active;
-	}
+    /**
+     * @param isActive the isActive to set
+     */
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 
-	/**
-	 * @return the billingMonthId
-	 */
-	public long getBillingMonthId() {
-		return billingMonthId;
-	}
+    /**
+     * @return the billingMonthId
+     */
+    public long getBillingMonthId() {
+        return billingMonthId;
+    }
 
-	/**
-	 * @param billingMonthId
-	 *            the billingMonthId to set
-	 */
-	public void setBillingMonthId(long billingMonthId) {
-		this.billingMonthId = billingMonthId;
-	}
+    /**
+     * @param billingMonthId the billingMonthId to set
+     */
+    public void setBillingMonthId(long billingMonthId) {
+        this.billingMonthId = billingMonthId;
+    }
 
 
+    /**
+     * @return the month
+     */
+    public Calendar getMonth() {
+        return month;
+    }
 
-	/**
-	 * @return the month
-	 */
-	public Calendar getMonth() {
-		return month;
-	}
+    /**
+     * @param month the month to set
+     */
+    public void setMonth(Calendar month) {
+        this.month = month;
+    }
 
-	/**
-	 * @param month the month to set
-	 */
-	public void setMonth(Calendar month) {
-		this.month = month;
-	}
+    /**
+     * @return the code
+     */
+    public Integer getCode() {
+//        Integer bCode = 0;
+//        try {
+//            String year = String.valueOf(this.getMonth().get(Calendar.YEAR));
+//            String month = String.valueOf(this.getMonth().get(Calendar.MONTH));
+//            if (month.length() == 1) {
+//                month = "0" + month;
+//            }
+//            String billingCode = year + month;
+//            bCode = Integer.valueOf(billingCode);
+//        } catch (Exception ex) {
+//        }
+//        this.code = bCode;
+        return code;
+    }
 
-	/**
-	 * @return the code
-	 */
-	public Integer getCode() {
-		return code;
-	}
+    /**
+     * @param code the code to set
+     */
+    public void setCode(Integer code) {
+        this.code = code;
+    }
 
-	/**
-	 * @param code
-	 *            the code to set
-	 */
-	public void setCode(Integer code) {
-		this.code = code;
-	}
+    /**
+     * @return the isCurrent
+     */
+    public Integer getCurrent() {
+        return current;
+    }
 
-	/**
-	 * @return the isCurrent
-	 */
-	public Integer getCurrent() {
-		return current;
-	}
+    /**
+     * @param isCurrent the isCurrent to set
+     */
+    public void setCurrent(Integer current) {
+        this.current = current;
+    }
 
-	/**
-	 * @param isCurrent
-	 *            the isCurrent to set
-	 */
-	public void setCurrent(Integer current) {
-		this.current = current;
-	}
+    /**
+     * @return the isEnabled
+     */
+    public Integer getIsEnabled() {
+        return isEnabled;
+    }
 
-	/**
-	 * @return the isEnabled
-	 */
-	public Integer getIsEnabled() {
-		return isEnabled;
-	}
+    /**
+     * @param isEnabled the isEnabled to set
+     */
+    public void setIsEnabled(Integer isEnabled) {
+        this.isEnabled = isEnabled;
+    }
 
-	/**
-	 * @param isEnabled
-	 *            the isEnabled to set
-	 */
-	public void setIsEnabled(Integer isEnabled) {
-		this.isEnabled = isEnabled;
-	}
+    /**
+     * @return the isActive
+     */
+    public Boolean isActive() {
+        if (this.current == 0) {
+            this.active = false;
+        } else if (this.current == 1) {
+            this.active = true;
+        }
+        return active;
+    }
 
-	/**
-	 * @return the isActive
-	 */
-	public Boolean isActive() {
-		if (this.current == 0) {
-			this.active = false;
-		} else if (this.current == 1) {
-			this.active = true;
-		}
-		return active;
-	}
-
-	@Override
-	public String toString() {
-		return "BillingMonth{" +
-				"billingMonthId=" + billingMonthId +
-				", month=" + month +
-				", code=" + code +
-				", current=" + current +
-				", isEnabled=" + isEnabled +
-				", active=" + active +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "BillingMonth{" +
+                "billingMonthId=" + billingMonthId +
+                ", month=" + month +
+                ", code=" + code +
+                ", current=" + current +
+                ", isEnabled=" + isEnabled +
+                ", active=" + active +
+                '}';
+    }
 }

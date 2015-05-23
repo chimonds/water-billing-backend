@@ -148,25 +148,32 @@ public class PaymentService {
                 }
 
                 Payment payment = requestObject.getObject();
+                if(payment.getBillingMonth()==null){
+                    responseObject.setMessage("Invalid billing month. Kindly contact your admin.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
                 // check if all values are present
                 if (payment.getAmount() == null) {
                     responseObject.setMessage("Invalid amount");
                     responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
                 if (payment.getAmount() == 0) {
                     responseObject.setMessage("Invalid amount");
                     responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
                 if (payment.getTransactionDate() == null) {
                     responseObject.setMessage("Invalid transaction date");
                     responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
@@ -174,7 +181,7 @@ public class PaymentService {
                 if (payment.getTransactionDate().after(calendar)) {
                     responseObject.setMessage("Transaction date can not be greater than now");
                     responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
@@ -182,7 +189,7 @@ public class PaymentService {
                 if (paymentType == null) {
                     responseObject.setMessage("Invalid payment type");
                     responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
@@ -195,35 +202,41 @@ public class PaymentService {
                     if (p != null) {
                         responseObject.setMessage("Duplicate receipt number");
                         responseObject.setPayload("");
-                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                         return response;
                     }
                 }
 
                 if (paymentType.hasComments()) {
+                    response = authManager.grant(requestObject.getToken(), "payments_debit_credit");
+                    if (response.getStatusCode() != HttpStatus.OK) {
+                        return response;
+                    }
+
                     if (payment.getNotes() == null) {
                         responseObject.setMessage("Notes missing");
                         responseObject.setPayload("");
-                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                         return response;
                     }
 
                     if (payment.getNotes().isEmpty()) {
                         responseObject.setMessage("Notes missing");
                         responseObject.setPayload("");
-                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                         return response;
                     }
 
                     if (payment.getNotes().length() <= 10) {
                         responseObject.setMessage("Notes too short");
                         responseObject.setPayload("");
-                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                         return response;
                     }
                 }
 
                 if (paymentType.isNegative()) {
+                    payment.setAmount(Math.abs(payment.getAmount()));
                     payment.setAmount(payment.getAmount() * -1);
                 }
                 // create resource
