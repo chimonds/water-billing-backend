@@ -79,6 +79,9 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @Transient
     private String accName;
 
+    @Transient
+    private String accountStatus;
+
     @Column(name = "average_consumption")
     private Integer averageConsumption = 0;
 
@@ -124,6 +127,16 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Payment> payments;
+
+    public String getAccountStatus() {
+        if (this.isActive()) {
+            this.accountStatus = "Active";
+        } else {
+            this.accountStatus = "Inactive";
+        }
+        return accountStatus;
+    }
+
 
     /**
      * @return the accName

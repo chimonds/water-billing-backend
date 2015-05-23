@@ -167,7 +167,7 @@ public class AccountService {
 
                 if (acc == null) {
                     responseObject.setMessage("Account not found");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                 } else {
                     // setup resource
                     // TODO;
@@ -225,10 +225,10 @@ public class AccountService {
                 Consumer consumer = consumerRepository.findOne(id);
                 if (acc == null) {
                     responseObject.setMessage("Invalid account");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                 } else if (consumer == null) {
                     responseObject.setMessage("Invalid consumer");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                 } else {
                     // set new consumer
                     acc.setConsumer(consumer);
@@ -244,7 +244,7 @@ public class AccountService {
                     auditRecord.setParentID(String.valueOf(acc.getAccountId()));
                     auditRecord.setParentObject("Account");
                     auditRecord.setCurrentData(String.valueOf(acc.getConsumer().getConsumerId()));
-                    auditRecord.setPreviousData(String.valueOf(account.getConsumer().getConsumerId()));
+                    auditRecord.setPreviousData(String.valueOf(consumer.getConsumerId()));
                     auditRecord.setNotes("TRANSFERRED ACCOUNT");
                     auditService.log(AuditOperation.UPDATED, auditRecord);
                     //End - audit trail
