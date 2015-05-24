@@ -76,6 +76,19 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
     @Transient
     private Boolean active;
 
+    @Transient
+    private String open;
+
+    public String getOpen() {
+        if (this.isActive()) {
+            this.open = "Open";
+        } else {
+            this.open = "Closed";
+        }
+        return open;
+    }
+
+
     /**
      * @param isActive the isActive to set
      */
@@ -116,18 +129,6 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
      * @return the code
      */
     public Integer getCode() {
-//        Integer bCode = 0;
-//        try {
-//            String year = String.valueOf(this.getMonth().get(Calendar.YEAR));
-//            String month = String.valueOf(this.getMonth().get(Calendar.MONTH));
-//            if (month.length() == 1) {
-//                month = "0" + month;
-//            }
-//            String billingCode = year + month;
-//            bCode = Integer.valueOf(billingCode);
-//        } catch (Exception ex) {
-//        }
-//        this.code = bCode;
         return code;
     }
 
@@ -177,6 +178,7 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
         }
         return active;
     }
+
 
     @Override
     public String toString() {

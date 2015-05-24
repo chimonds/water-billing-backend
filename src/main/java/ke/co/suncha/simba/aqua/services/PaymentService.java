@@ -364,7 +364,7 @@ public class PaymentService {
                 if (p.getFilter().isEmpty()) {
                     page = paymentRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 } else {
-                    page = paymentRepository.findAllByReceiptNoContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                    page = paymentRepository.findAllByReceiptNoContainsOrAccount_accNoContains(p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
                 }
                 if (page.hasContent()) {

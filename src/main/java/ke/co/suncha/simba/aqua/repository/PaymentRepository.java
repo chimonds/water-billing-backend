@@ -42,7 +42,7 @@ import java.util.List;
 public interface PaymentRepository extends PagingAndSortingRepository<Payment, Long> {
     Page<Payment> findAll(Pageable pageable);
 
-    Page<Payment> findAllByReceiptNoContains(String receiptNo, Pageable pageable);
+    Page<Payment> findAllByReceiptNoContainsOrAccount_accNoContains(String receiptNo, String accNo, Pageable pageable);
 
     Page<Payment> findAllByAccount(Account account, Pageable pageable);
 
