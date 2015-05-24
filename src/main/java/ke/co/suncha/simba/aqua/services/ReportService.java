@@ -109,9 +109,23 @@ public class ReportService {
                 log.info("Getting bills for billing month:" + formatted);
 
                 //get bills belonging to billing month
-                List<Bill> bills;
+                List<Bill> bills = new ArrayList<>();
 
-                bills = billRepository.findAllByBillingMonth(billingMonth);
+                if (params.containsKey("accNo")) {
+                    //Get account number from params
+                    String accNo = params.get("accNo").toString();
+                    if (!accNo.isEmpty() && accNo!=null) {
+                        bills = billRepository.findAllByBillingMonthAndAccount_AccNo(billingMonth, accNo);
+                        if (bills.isEmpty()) {
+                            responseObject.setMessage("No bill found found for account number " + accNo);
+                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                            return response;
+                        }
+                    }
+                } else {
+                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                }
+
                 log.info("Bills " + bills.size() + " found.");
                 if (bills == null || bills.isEmpty()) {
                     responseObject.setMessage("No bills found");

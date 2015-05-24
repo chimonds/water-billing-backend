@@ -47,6 +47,8 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
 
     List<Bill> findAllByBillingMonth(BillingMonth billingMonth);
 
+    List<Bill> findAllByBillingMonthAndAccount_AccNo(BillingMonth billingMonth, String accNo);
+
     @Query(value = "SELECT SUM(amount) FROM(SELECT bills.billing_month_id, (SELECT billing_month FROM billing_months WHERE bills.billing_month_id=billing_months.billing_month_id) AS billing_month, bills.account_id, bills.amount,accounts.zone_id, (SELECT name FROM zones WHERE zones.zone_id=accounts.zone_id) AS zone_code from bills LEFT JOIN (accounts) ON (accounts.account_id= `bills`.account_id)) AS temp WHERE zone_code =?1 AND billing_month>=?2 AND billing_month<=?3", nativeQuery = true)
     Double findByContent(String zoneNo, String from, String to);
 
