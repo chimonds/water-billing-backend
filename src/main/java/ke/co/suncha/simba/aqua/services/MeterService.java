@@ -357,7 +357,8 @@ public class MeterService {
 				if (p.getFilter().isEmpty()) {
 					page = meterRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 				} else {
-					page = meterRepository.findByMeterNoContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
+					page = meterRepository.findByMeterNoContainsOrAccount_AccNoContains(p.getFilter(), p.getFilter(),new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
 				}
 				if (page.hasContent()) {
@@ -367,7 +368,7 @@ public class MeterService {
 					response = new RestResponse(responseObject, HttpStatus.OK);
 				} else {
 					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+					response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 				}
 			}
 		} catch (Exception ex) {

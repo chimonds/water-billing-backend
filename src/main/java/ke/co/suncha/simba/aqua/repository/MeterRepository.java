@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
+import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Meter;
 
 import org.springframework.data.domain.Page;
@@ -35,7 +36,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
  */
 public interface MeterRepository extends PagingAndSortingRepository<Meter, Long> {
 
-	Page<Meter> findByMeterNoContains(String meterNo, Pageable pageable);
+	Page<Meter> findByMeterNoContainsOrAccount_AccNoContains(String meterNo,String accNo, Pageable pageable);
 
 	Meter findByMeterNo(String meterNo);
 
