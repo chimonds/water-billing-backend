@@ -23,13 +23,20 @@
  */
 package ke.co.suncha.simba.admin.request;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.json4s.jackson.Serialization$;
+
+import java.io.Serializable;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
  */
-
+@JsonSerialize
 public class RestResponseObject {
 	private String message;
+
 	private Object payload;
 	
 	public RestResponseObject(String msg, Object payload){
@@ -60,6 +67,9 @@ public class RestResponseObject {
 	 * @return the payload
 	 */
 	public Object getPayload() {
+		if(this.payload==null){
+			this.payload="";
+		}
 		return payload;
 	}
 

@@ -207,6 +207,7 @@ public class ReleaseManager {
                             "stats_bills_payments_linegraph,\n" +
                             "stats_zones_bargraph,\n" +
                             "account_view,\n"+
+                            "bill_delete,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");
@@ -248,9 +249,9 @@ public class ReleaseManager {
                 try {
                     // Setup default user
                     User user = new User();
-                    user.setEmailAddress("maitha.manyala@gmail.com");
-                    user.setFirstName("Maitha");
-                    user.setLastName("Manyala");
+                    user.setEmailAddress("vmutuva@nolturesh.co.ke");
+                    user.setFirstName("Veronica");
+                    user.setLastName("Mutuva");
                     user.setActive(true);
 
                     // create auth with default pass 123456

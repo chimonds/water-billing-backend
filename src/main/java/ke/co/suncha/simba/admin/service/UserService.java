@@ -327,10 +327,11 @@ public class UserService {
 
                 Page<User> pageOfUsers;
                 if (p.getFilter().isEmpty()) {
+                    log.info("Getting user list..");
                     pageOfUsers = userRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                    log.info("users found:"+ pageOfUsers.getTotalElements());
                 } else {
                     pageOfUsers = userRepository.findByEmailAddressContaining(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-
                 }
                 if (pageOfUsers.hasContent()) {
                     responseObject.setMessage("Fetched data successfully");
@@ -342,6 +343,7 @@ public class UserService {
                 }
             }
         } catch (Exception ex) {
+            ex.printStackTrace();
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
             log.error(ex.getLocalizedMessage());

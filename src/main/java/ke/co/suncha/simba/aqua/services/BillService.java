@@ -129,6 +129,13 @@ public class BillService {
                     return response;
                 }
 
+                if(!account.isActive()){
+                    responseObject.setMessage("Sorry we can not complete your request, the account is inactive.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
                 log.info("Billing account:" + account.getAccNo());
 
                 Bill lastBill = this.getAccountLastBill(accountId);
