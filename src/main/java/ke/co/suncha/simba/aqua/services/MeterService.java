@@ -198,12 +198,12 @@ public class MeterService {
 						response = new RestResponse(responseObject, HttpStatus.OK);
 
 						//Start - audit trail
-						AuditRecord auditRecord = new AuditRecord();
-						auditRecord.setParentID(String.valueOf(m.getMeterId()));
-						auditRecord.setCurrentData(m.getAccount().getAccNo());
-						auditRecord.setParentObject("Meters");
-						auditRecord.setNotes("METER DEALLOCATION");
-						auditService.log(AuditOperation.UPDATED, auditRecord);
+//						AuditRecord auditRecord = new AuditRecord();
+//						auditRecord.setParentID(String.valueOf(m.getMeterId()));
+//						auditRecord.setCurrentData(m.getAccount().getAccNo());
+//						auditRecord.setParentObject("Meters");
+//						auditRecord.setNotes("METER DEALLOCATION");
+//						auditService.log(AuditOperation.UPDATED, auditRecord);
 						//End - audit trail
 					}
 				}
@@ -267,12 +267,12 @@ public class MeterService {
 							response = new RestResponse(responseObject, HttpStatus.OK);
 
 							//Start - audit trail
-							AuditRecord auditRecord = new AuditRecord();
-							auditRecord.setParentID(String.valueOf(m.getMeterId()));
-							auditRecord.setCurrentData(m.getAccount().getAccNo());
-							auditRecord.setParentObject("Meters");
-							auditRecord.setNotes("METER ALLOCATION");
-							auditService.log(AuditOperation.UPDATED, auditRecord);
+//							AuditRecord auditRecord = new AuditRecord();
+//							auditRecord.setParentID(String.valueOf(m.getMeterId()));
+//							auditRecord.setCurrentData(m.getAccount().getAccNo());
+//							auditRecord.setParentObject("Meters");
+//							auditRecord.setNotes("METER ALLOCATION");
+//							auditService.log(AuditOperation.UPDATED, auditRecord);
 							//End - audit trail
 						}
 					}
@@ -317,16 +317,6 @@ public class MeterService {
 					responseObject.setMessage("Meter  updated successfully");
 					responseObject.setPayload(m);
 					response = new RestResponse(responseObject, HttpStatus.OK);
-
-                    //Start - audit trail
-                    AuditRecord auditRecord = new AuditRecord();
-                    auditRecord.setParentID(String.valueOf(m.getMeterId()));
-                    auditRecord.setCurrentData(m.toString());
-                    auditRecord.setPreviousData(meter.toString());
-                    auditRecord.setParentObject("Meters");
-                    auditRecord.setNotes("UPDATED METER");
-                    auditService.log(AuditOperation.UPDATED, auditRecord);
-                    //End - audit trail
 				}
 			}
 		} catch (Exception ex) {

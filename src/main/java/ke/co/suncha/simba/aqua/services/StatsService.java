@@ -119,22 +119,36 @@ public class StatsService {
     private void populatePaidLastMonth() {
         try {
             Double total = 0.0;
-
-
-            Calendar fromDate = this.getFirstDayThisMonth();
-            fromDate.add(Calendar.MONTH, -1);
-
-            Calendar toDate = this.getFirstDayThisMonth();
-            toDate.add(Calendar.DATE, -1);
-
-            List<Payment> payments = paymentRepository.findByTransactionDateBetween(fromDate, toDate);
-            if (!payments.isEmpty()) {
-                for (Payment payment : payments) {
-                    if (payment.getPaymentType().isUnique()) {
-                        total += payment.getAmount();
-                    }
-                }
+            BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+            if (billingMonth == null) {
+                return;
             }
+            List<Bill> bills = billRepository.findAllByBillingMonth(billingMonth);
+            if (bills.isEmpty()) {
+                return;
+            }
+
+
+            for(Bill bill: bills){
+                total+=bill.getAmount();
+                total+=bill.getMeterRent();
+            }
+
+
+//            Calendar fromDate = this.getFirstDayThisMonth();
+//            fromDate.add(Calendar.MONTH, -1);
+//
+//            Calendar toDate = this.getFirstDayThisMonth();
+//            toDate.add(Calendar.DATE, -1);
+//
+//            List<Payment> payments = paymentRepository.findByTransactionDateBetween(fromDate, toDate);
+//            if (!payments.isEmpty()) {
+//                for (Payment payment : payments) {
+//                    if (payment.getPaymentType().isUnique()) {
+//                        total += payment.getAmount();
+//                    }
+//                }
+//            }
             topView.setPaidLastMonth(total);
         } catch (Exception ex) {
             log.error(ex.getMessage());

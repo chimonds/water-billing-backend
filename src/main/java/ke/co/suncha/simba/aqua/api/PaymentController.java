@@ -32,6 +32,7 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.models.Payment;
 import ke.co.suncha.simba.aqua.services.PaymentService;
 
+import ke.co.suncha.simba.aqua.utils.BillRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,6 +68,13 @@ public class PaymentController {
 	@ApiOperation(value = "Get a paginated list of all account bills.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
 	public RestResponse getAll(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long account_id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return paymentService.getAllByAccount(requestObject, account_id);
+	}
+
+
+	@RequestMapping(value = "transfer/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+	public RestResponse transferPayment(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return paymentService.transferPayment(requestObject, accountId);
 	}
 
 	@RequestMapping(value = "", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })

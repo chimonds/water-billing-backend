@@ -129,7 +129,7 @@ public class BillService {
                     return response;
                 }
 
-                if(!account.isActive()){
+                if (!account.isActive()) {
                     responseObject.setMessage("Sorry we can not complete your request, the account is inactive.");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
@@ -170,7 +170,7 @@ public class BillService {
 
                 //set meter rent
                 if (account.isMetered()) {
-                    if (account.getMeter().getMeterOwner().isChargable()) {
+                    if (account.getMeter().getMeterOwner().getCharge()) {
                         bill.setMeterRent(account.getMeter().getMeterSize().getRentAmount());
                     }
                 }
@@ -234,7 +234,7 @@ public class BillService {
                 //
                 Double totalAmount = 0.0;
                 if (account.isMetered()) {
-                    if (account.getMeter().getMeterOwner().isChargable()) {
+                    if (account.getMeter().getMeterOwner().getCharge()) {
                         totalAmount += account.getMeter().getMeterSize().getRentAmount();
                     }
                 }
@@ -367,6 +367,68 @@ public class BillService {
             }
         }
         return lastBill;
+    }
+
+    public RestResponse deleteBill(RestRequestObject<RestPageRequest> requestObject, Long billId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "bill_delete");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                Bill bill = billRepository.findOne(billId);
+                Long accountId = bill.getAccount().getAccountId();
+                if (bill == null) {
+                    responseObject.setMessage("Invalid bill.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                Bill lastBill = this.getAccountLastBill(bill.getAccount().getAccountId());
+                if (lastBill == null) {
+                    responseObject.setMessage("Invalid bill.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (bill.getBillId() != lastBill.getBillId()) {
+                    responseObject.setMessage("Sorry we could not complete your request. You can only delete the most current bill.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                //audit trail
+                //Start - audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setParentID(String.valueOf(billId));
+                auditRecord.setParentObject("BILLS");
+                auditRecord.setCurrentData(bill.toString());
+                auditRecord.setNotes("DELETED BILL FOR:" + bill.getAccount().getAccNo());
+                auditService.log(AuditOperation.DELETED, auditRecord);
+                //End - audit trail
+
+                //delete bill
+                billRepository.delete(bill.getBillId());
+
+                //save outstanding balance
+                Account account = accountRepository.findOne(accountId);
+                account.setOutstandingBalance(paymentService.getAccountBalance(account));
+                accountRepository.save(account);
+
+                responseObject.setMessage("Bill deleted successfully.");
+                responseObject.setPayload("");
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
     }
 
     @Transactional

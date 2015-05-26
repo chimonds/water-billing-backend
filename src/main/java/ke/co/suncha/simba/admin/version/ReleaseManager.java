@@ -208,6 +208,7 @@ public class ReleaseManager {
                             "stats_zones_bargraph,\n" +
                             "account_view,\n"+
                             "bill_delete,\n"+
+                            "payment_transfer,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");

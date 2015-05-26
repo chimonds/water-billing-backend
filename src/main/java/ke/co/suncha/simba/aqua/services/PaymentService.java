@@ -148,7 +148,7 @@ public class PaymentService {
                 }
 
                 Payment payment = requestObject.getObject();
-                if(payment.getBillingMonth()==null){
+                if (payment.getBillingMonth() == null) {
                     responseObject.setMessage("Invalid billing month. Kindly contact your admin.");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -375,6 +375,129 @@ public class PaymentService {
                     responseObject.setMessage("Your search did not match any records");
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
                 }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse transferPayment(RestRequestObject<Payment> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "payment_transfer");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                Payment payment = requestObject.getObject();
+
+                Payment p = paymentRepository.findOne(payment.getPaymentid());
+                if (p == null) {
+                    responseObject.setMessage("Invalid payment.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (payment.getNotes().isEmpty()) {
+                    responseObject.setMessage("Please enter a reason for transferring the payment");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                p.setNotes(payment.getNotes());
+
+                Account account = accountRepository.findOne(accountId);
+                if(account==null){
+                    responseObject.setMessage("Invalid account");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if(account.getAccountId()==p.getAccount().getAccountId()){
+                    responseObject.setMessage("You can not transfer payment to the same account.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if(p.getPaymentType().hasComments()){
+                    responseObject.setMessage("You can not transfer this payment type");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                PaymentSource paymentSource = paymentSourceRepository.findByName("CASH");
+
+                //debit source
+                Payment payment1 = new Payment();
+                PaymentType paymentType = paymentTypeRepository.findOne(3L);
+                payment1.setPaymentType(paymentType);
+                payment1.setAmount(p.getAmount());
+                payment1.setAccount(p.getAccount());
+                payment1.setNotes(p.getNotes());
+                payment1.setReceiptNo(p.getReceiptNo());
+                payment1.setBillingMonth(p.getBillingMonth());
+                payment1.setTransactionDate(p.getTransactionDate());
+
+                if (payment1.getPaymentType().isNegative()) {
+                    payment1.setAmount(Math.abs(p.getAmount()));
+                    payment1.setAmount(p.getAmount() * -1);
+                }
+                payment1.setPaymentSource(paymentSource);
+                paymentRepository.save(payment1);
+
+
+                //credit destination
+                Payment payment2 = new Payment();
+                paymentType = paymentTypeRepository.findOne(2L);
+                payment2.setPaymentType(paymentType);
+                payment2.setAmount(p.getAmount());
+                payment2.setAccount(account);
+                payment2.setReceiptNo(p.getReceiptNo());
+                payment2.setBillingMonth(p.getBillingMonth());
+                payment2.setTransactionDate(p.getTransactionDate());
+
+
+                if (payment2.getPaymentType().isNegative()) {
+                    payment2.setAmount(Math.abs(p.getAmount()));
+                    payment2.setAmount(p.getAmount() * -1);
+                }
+                payment2.setPaymentSource(paymentSource);
+                paymentRepository.save(payment2);
+
+                //calculate balances for both accounts
+                Account acc = accountRepository.findOne(accountId);
+                acc.setOutstandingBalance(this.getAccountBalance(acc));
+                accountRepository.save(acc);
+
+                acc = accountRepository.findOne(account.getAccountId());
+                acc.setOutstandingBalance(this.getAccountBalance(acc));
+                accountRepository.save(acc);
+
+
+
+
+                //audit trail
+                //Start - audit trail
+//                AuditRecord auditRecord = new AuditRecord();
+//                auditRecord.setParentID(String.valueOf(billId));
+//                auditRecord.setParentObject("BILLS");
+//                auditRecord.setCurrentData(bill.toString());
+//                auditRecord.setNotes("DELETED BILL FOR:" + bill.getAccount().getAccNo());
+//                auditService.log(AuditOperation.DELETED, auditRecord);
+                //End - audit trail
+
+
+                responseObject.setMessage("Payment transferred successfully.");
+                responseObject.setPayload("");
+                response = new RestResponse(responseObject, HttpStatus.OK);
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());
