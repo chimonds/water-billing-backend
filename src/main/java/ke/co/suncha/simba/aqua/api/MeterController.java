@@ -70,12 +70,14 @@ public class MeterController extends AbstractRestHandler {
 		return meterService.getAllByFilter(requestObject);
 	}
 
-	@RequestMapping(value = "", method = RequestMethod.PUT, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse update(@ApiParam(value = "The ID of the existing zone resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Meter> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return meterService.update(requestObject);
-	}
+
+    @RequestMapping(value = "update/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse update(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Meter> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        log.info("getting meter info");
+        return meterService.update(requestObject, id);
+    }
 
 	@RequestMapping(value = "allocate/{id}", method = RequestMethod.PUT, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
 	@ResponseStatus(HttpStatus.NO_CONTENT)

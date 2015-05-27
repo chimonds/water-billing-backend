@@ -232,7 +232,6 @@ public class StatsService {
     @Scheduled(fixedDelay = 5000)
     private void populateZonesBarGraph() {
         try {
-            log.info("Populating zone bar graph..");
             List<GraphSeries> seriesList = new ArrayList<>();
 
             //payments
@@ -246,9 +245,6 @@ public class StatsService {
             if (!series.isEmpty()) {
                 seriesList.addAll(series);
             }
-
-
-            log.info("Done Populating zone bar graph..");
             zonesBarGraph.setSeries(seriesList);
         } catch (Exception ex) {
             log.error(ex.getMessage());
@@ -259,7 +255,6 @@ public class StatsService {
     @Scheduled(fixedDelay = 5000)
     private void populateBillsPaymentsLineGraph() {
         try {
-            log.info("Populating Bills/Payments graph..");
             List<GraphSeries> seriesList = new ArrayList<>();
 
             //add payments
@@ -281,7 +276,6 @@ public class StatsService {
                 seriesList.addAll(otherChargesList);
             }
             billsPaymentsLineGraph.setSeries(seriesList);
-            log.info("Done Populating Bills/Payments graph..");
         } catch (Exception ex) {
             log.error(ex.getMessage());
             ex.printStackTrace();

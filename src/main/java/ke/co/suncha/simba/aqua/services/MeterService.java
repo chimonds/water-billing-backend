@@ -288,7 +288,7 @@ public class MeterService {
 	}
 
 	@Transactional
-	public RestResponse update(RestRequestObject<Meter> requestObject) {
+	public RestResponse update(RestRequestObject<Meter> requestObject, Long meterId) {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -297,13 +297,14 @@ public class MeterService {
                     return response;
                 }
 
-				Meter meter = requestObject.getObject();
-				Meter m = meterRepository.findOne(meter.getMeterId());
+
+				Meter m = meterRepository.findOne(meterId);
 				if (m == null) {
 					responseObject.setMessage("Meter not found");
 					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
 				} else {
 					// setup resource
+                    Meter meter = requestObject.getObject();
 					m.setMeterNo(meter.getMeterNo());
 					m.setInitialReading(meter.getInitialReading());
 
