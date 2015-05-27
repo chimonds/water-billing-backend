@@ -250,9 +250,9 @@ public class ReleaseManager {
                 try {
                     // Setup default user
                     User user = new User();
-                    user.setEmailAddress("vmutuva@nolturesh.co.ke");
-                    user.setFirstName("Veronica");
-                    user.setLastName("Mutuva");
+                    user.setEmailAddress("maitha.manyala@gmail.com");
+                    user.setFirstName("Maitha");
+                    user.setLastName("Manyala");
                     user.setActive(true);
 
                     // create auth with default pass 123456
@@ -329,9 +329,10 @@ public class ReleaseManager {
 
                 }
 
+                PaymentType pt = new PaymentType();
                 //Payment types
                 try {
-                    PaymentType pt = new PaymentType();
+
                     pt.setIsPrimary(true);
                     pt.setName("Water Sale");
                     pt.setUnique(true);
@@ -354,7 +355,26 @@ public class ReleaseManager {
                     pt.setUnique(true);
                     pt.setDescription("Other");
                     paymentTypeRepository.save(pt);
+
+
+
                 } catch (Exception ex) {
+
+                }
+
+                try{
+                    pt = new PaymentType();
+                    pt.setName("Meter Rent");
+                    pt.setUnique(true);
+                    pt.setDescription("Meter Rent");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Fine");
+                    pt.setUnique(true);
+                    pt.setDescription("Fine");
+                    paymentTypeRepository.save(pt);
+                }catch (Exception ex){
 
                 }
 

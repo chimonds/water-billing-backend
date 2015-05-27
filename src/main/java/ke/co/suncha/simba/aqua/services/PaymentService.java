@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
@@ -34,16 +35,8 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.Bill;
-import ke.co.suncha.simba.aqua.models.BillItem;
-import ke.co.suncha.simba.aqua.models.Payment;
-import ke.co.suncha.simba.aqua.models.PaymentSource;
-import ke.co.suncha.simba.aqua.models.PaymentType;
-import ke.co.suncha.simba.aqua.repository.AccountRepository;
-import ke.co.suncha.simba.aqua.repository.PaymentRepository;
-import ke.co.suncha.simba.aqua.repository.PaymentSourceRepository;
-import ke.co.suncha.simba.aqua.repository.PaymentTypeRepository;
+import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.repository.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +80,9 @@ public class PaymentService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private SMSRepository smsRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -245,6 +241,7 @@ public class PaymentService {
                 payment.setPaymentSource(paymentSource);
                 Payment created = paymentRepository.save(payment);
 
+
                 // update balances
                 account = accountRepository.findOne(accountId);
                 Double balance = 0d;
@@ -277,6 +274,24 @@ public class PaymentService {
                 }
                 // update account outstanding balance
                 account.setOutstandingBalance(balance);
+
+                //send sms
+                try{
+                    if(!account.getConsumer().getPhoneNumber().isEmpty()) {
+                        SMS sms = new SMS();
+                        sms.setMobileNumber(account.getConsumer().getPhoneNumber());
+
+                        SimpleDateFormat format1 = new SimpleDateFormat("MMM dd, yyyy");
+                        String today = format1.format(Calendar.getInstance().getTime());
+                        //TODO; set this in config
+                        String message ="Dear "+ account.getConsumer().getFirstName()+", you paid KES "+ payment.getAmount() +" on "+ today+". New Water balance is KES "+ balance;
+                        sms.setMessage(message);
+                        smsRepository.save(sms);
+                    }
+                }catch (Exception ex){
+
+                }
+
 
 
                 accountRepository.save(account);

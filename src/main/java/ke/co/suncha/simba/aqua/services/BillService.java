@@ -35,10 +35,7 @@ import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
-import ke.co.suncha.simba.aqua.repository.AccountRepository;
-import ke.co.suncha.simba.aqua.repository.BillItemRepository;
-import ke.co.suncha.simba.aqua.repository.BillRepository;
-import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
+import ke.co.suncha.simba.aqua.repository.*;
 
 import ke.co.suncha.simba.aqua.utils.BillMeta;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
@@ -54,6 +51,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -92,6 +90,9 @@ public class BillService {
 
     @Autowired
     GaugeService gaugeService;
+
+    @Autowired
+    private SMSRepository smsRepository;
 
     @Autowired
     private AuditService auditService;
@@ -256,6 +257,25 @@ public class BillService {
                 account = accountRepository.findOne(accountId);
                 account.setOutstandingBalance(paymentService.getAccountBalance(account));
                 accountRepository.save(account);
+
+
+                //send sms
+                try{
+                    if(!account.getConsumer().getPhoneNumber().isEmpty()) {
+                        SMS sms = new SMS();
+                        sms.setMobileNumber(account.getConsumer().getPhoneNumber());
+
+                        SimpleDateFormat format1 = new SimpleDateFormat("MMM dd, yyyy");
+                        String today = format1.format(Calendar.getInstance().getTime());
+                        //TODO; set this in config
+                        String message ="Dear "+ account.getConsumer().getFirstName()+", your "+today+ " bill is "+ totalAmount +". New Water balance is KES "+ account.getOutstandingBalance();
+                        sms.setMessage(message);
+                        smsRepository.save(sms);
+                    }
+                }catch (Exception ex){
+
+                }
+
 
                 log.info("Account billed successfully:" + account.getAccNo());
 

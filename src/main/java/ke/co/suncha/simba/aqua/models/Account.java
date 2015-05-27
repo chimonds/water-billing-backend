@@ -86,7 +86,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private Integer averageConsumption = 0;
 
     @Column(name = "cut_off")
-    private Boolean active;
+    private Boolean active=true;
 
     @Transient
     private Boolean metered = false;
@@ -129,10 +129,12 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private List<Payment> payments;
 
     public String getAccountStatus() {
-        if (this.isActive()) {
-            this.accountStatus = "Active";
-        } else {
-            this.accountStatus = "Inactive";
+        if (this.active != null) {
+            if (this.isActive()) {
+                this.accountStatus = "Active";
+            } else {
+                this.accountStatus = "Inactive";
+            }
         }
         return accountStatus;
     }

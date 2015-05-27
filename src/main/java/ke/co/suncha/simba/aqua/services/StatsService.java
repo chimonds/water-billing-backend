@@ -74,6 +74,9 @@ public class StatsService {
     @Autowired
     GaugeService gaugeService;
 
+    @Autowired
+    private SMSService smsService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
     private TopView topView = new TopView();
@@ -91,6 +94,7 @@ public class StatsService {
             log.error(ex.getMessage());
         }
     }
+
 
     @Scheduled(fixedDelay = 5000)
     private void populatePaidThisMonth() {
@@ -129,9 +133,9 @@ public class StatsService {
             }
 
 
-            for(Bill bill: bills){
-                total+=bill.getAmount();
-                total+=bill.getMeterRent();
+            for (Bill bill : bills) {
+                total += bill.getAmount();
+                total += bill.getMeterRent();
             }
 
 

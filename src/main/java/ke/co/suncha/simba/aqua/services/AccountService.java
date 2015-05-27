@@ -118,8 +118,8 @@ public class AccountService {
                 } else {
                     // create resource
                     acc = new Account();
-
                     acc.setAccNo(account.getAccNo());
+                    acc.setActive(true);
                     acc.setAverageConsumption(account.getAverageConsumption());
                     acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
                     Account created = accountRepository.save(acc);
