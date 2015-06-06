@@ -279,10 +279,7 @@ public class ReleaseManager {
                 try {
                     //
                     Integer current = 2001;
-
                     Integer last = 2030;
-
-                    System.out.println("Last:" + last);
                     for (int x = current; x <= last; x++) {
 
                         for (int y = 1; y <= 12; y++) {
@@ -341,11 +338,13 @@ public class ReleaseManager {
 
                     pt = new PaymentType();
                     pt.setName("Credit");
+                    pt.setComment(true);
                     pt.setDescription("Credit");
                     paymentTypeRepository.save(pt);
 
                     pt = new PaymentType();
                     pt.setName("Debit");
+                    pt.setComment(true);
                     pt.setNegative(true);
                     pt.setDescription("Debit");
                     paymentTypeRepository.save(pt);
@@ -421,7 +420,6 @@ public class ReleaseManager {
                     bit.setName("Meter Servicing");
                     bit.setAmount((double) 100);
                     billItemTypeRepository.save(bit);
-
                 } catch (Exception ex) {
 
                 }
@@ -507,7 +505,6 @@ public class ReleaseManager {
                     meterOwnerRepository.save(mo);
 
                 } catch (Exception ex) {
-
                 }
 
             }

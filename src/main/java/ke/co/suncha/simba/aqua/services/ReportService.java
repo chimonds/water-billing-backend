@@ -114,7 +114,7 @@ public class ReportService {
                 if (params.containsKey("accNo")) {
                     //Get account number from params
                     String accNo = params.get("accNo").toString();
-                    if (!accNo.isEmpty() && accNo!=null) {
+                    if (!accNo.isEmpty() && accNo != null) {
                         bills = billRepository.findAllByBillingMonthAndAccount_AccNo(billingMonth, accNo);
                         if (bills.isEmpty()) {
                             responseObject.setMessage("No bill found found for account number " + accNo);
@@ -604,22 +604,37 @@ public class ReportService {
                         paymentRecord.setTransactionDate(payment.getTransactionDate());
 
                         paymentRecord.setRefNo(payment.getReceiptNo() + "-" + payment.getPaymentType().getName());
-                        paymentRecord.setAmount(payment.getAmount());
 
-                        Double amount = Math.abs(payment.getAmount());
 
-                        if (!payment.getPaymentType().isNegative()) {
-                            paymentRecord.setAmount(amount * -1);
-                            if (payment.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
-                                paymentRecord.setItemType("Adjustment");
-                            } else {
-                                paymentRecord.setItemType("Payment");
-                            }
+                        Double amount = Math.abs(payment.getAmount()) * -1;
 
-                            //paymentRecord.setItemType(payment.getPaymentType().getName());
-                        } else {
-                            paymentRecord.setItemType("Adjustment");
+                        if (payment.getPaymentType().isNegative()) {
+                            amount = Math.abs(payment.getAmount());
                         }
+
+                        paymentRecord.setAmount(amount);
+
+                        if (payment.getPaymentType().hasComments()) {
+                            paymentRecord.setItemType("Adjustment");
+                        } else {
+                            paymentRecord.setItemType("Payment");
+                        }
+
+//                        if (!payment.getPaymentType().isNegative()) {
+//                            paymentRecord.setAmount(amount * -1);
+//
+//                            if (payment.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
+//                                paymentRecord.setItemType("Adjustment");
+//                            } else {
+//                                paymentRecord.setItemType("Payment");
+//                            }
+//
+//                            //paymentRecord.setItemType(payment.getPaymentType().getName());
+//                        } else {
+//                            //
+//                            paymentRecord.setItemType("Adjustment");
+//
+//                        }
 
                         records.add(paymentRecord);
                     }

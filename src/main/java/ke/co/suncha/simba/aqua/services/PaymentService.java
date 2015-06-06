@@ -119,7 +119,7 @@ public class PaymentService {
         List<Payment> payments = account.getPayments();
         if (payments != null) {
             for (Payment p : payments) {
-                balance -= p.getAmount();
+                balance = (balance - p.getAmount());
             }
         }
         return balance;
@@ -244,54 +244,26 @@ public class PaymentService {
 
                 // update balances
                 account = accountRepository.findOne(accountId);
-                Double balance = 0d;
 
-                // add balance b/f
-                balance += account.getBalanceBroughtForward();
-
-                List<Bill> bills = account.getBills();
-                if (bills != null) {
-                    for (Bill bill : bills) {
-                        balance += bill.getAmount();
-                        balance += bill.getMeterRent();
-
-                        // get bill items
-                        List<BillItem> billItems = bill.getBillItems();
-                        if (billItems != null) {
-                            for (BillItem billItem : billItems) {
-                                balance += billItem.getAmount();
-                            }
-                        }
-                    }
-                }
-
-                // get payments
-                List<Payment> payments = account.getPayments();
-                if (payments != null) {
-                    for (Payment p : payments) {
-                        balance -= p.getAmount();
-                    }
-                }
                 // update account outstanding balance
-                account.setOutstandingBalance(balance);
+                account.setOutstandingBalance(this.getAccountBalance(account));
 
                 //send sms
-                try{
-                    if(!account.getConsumer().getPhoneNumber().isEmpty()) {
+                try {
+                    if (!account.getConsumer().getPhoneNumber().isEmpty()) {
                         SMS sms = new SMS();
                         sms.setMobileNumber(account.getConsumer().getPhoneNumber());
 
                         SimpleDateFormat format1 = new SimpleDateFormat("MMM dd, yyyy");
                         String today = format1.format(Calendar.getInstance().getTime());
                         //TODO; set this in config
-                        String message ="Dear "+ account.getConsumer().getFirstName()+", you paid KES "+ payment.getAmount() +" on "+ today+". New Water balance is KES "+ balance;
+                        String message = "Dear " + account.getConsumer().getFirstName() + ", you paid KES " + payment.getAmount() + " on " + today + ". New Water balance is KES " + account.getOutstandingBalance();
                         sms.setMessage(message);
                         smsRepository.save(sms);
                     }
-                }catch (Exception ex){
+                } catch (Exception ex) {
 
                 }
-
 
 
                 accountRepository.save(account);
@@ -427,21 +399,21 @@ public class PaymentService {
                 p.setNotes(payment.getNotes());
 
                 Account account = accountRepository.findOne(accountId);
-                if(account==null){
+                if (account == null) {
                     responseObject.setMessage("Invalid account");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
-                if(account.getAccountId()==p.getAccount().getAccountId()){
+                if (account.getAccountId() == p.getAccount().getAccountId()) {
                     responseObject.setMessage("You can not transfer payment to the same account.");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
-                if(p.getPaymentType().hasComments()){
+                if (p.getPaymentType().hasComments()) {
                     responseObject.setMessage("You can not transfer this payment type");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -495,8 +467,6 @@ public class PaymentService {
                 acc = accountRepository.findOne(account.getAccountId());
                 acc.setOutstandingBalance(this.getAccountBalance(acc));
                 accountRepository.save(acc);
-
-
 
 
                 //audit trail

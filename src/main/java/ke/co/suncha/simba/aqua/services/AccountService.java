@@ -41,6 +41,7 @@ import ke.co.suncha.simba.aqua.reports.BalancesReport;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
+import ke.co.suncha.simba.aqua.repository.AccountStatusHistoryRepository;
 import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
 
 import org.slf4j.Logger;
@@ -86,6 +87,9 @@ public class AccountService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private AccountStatusHistoryRepository accountStatusHistoryRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -209,6 +213,81 @@ public class AccountService {
         }
         return response;
     }
+
+    @Transactional
+    public RestResponse updateStatus(RestRequestObject<AccountStatusHistory> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                Account account = accountRepository.findOne(accountId);
+
+                if (account == null) {
+                    responseObject.setMessage("Account not found");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return  response;
+                } else {
+                    AccountStatusHistory accountStatusHistory = requestObject.getObject();
+                    if (accountStatusHistory.getNotes().isEmpty()) {
+                        responseObject.setMessage("Notes missing");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return  response;
+                    }
+
+                    accountStatusHistory.setAccount(account);
+
+                    if (account.isActive()) {
+                        response = authManager.grant(requestObject.getToken(), "account_deactivate");
+                        if (response.getStatusCode() != HttpStatus.OK) {
+                            return response;
+                        }
+                        accountStatusHistory.setStatusType("DEACTIVATED");
+                        account.setActive(false);
+                    } else {
+                        response = authManager.grant(requestObject.getToken(), "account_activate");
+                        if (response.getStatusCode() != HttpStatus.OK) {
+                            return response;
+                        }
+                        accountStatusHistory.setStatusType("ACTIVATED");
+                        account.setActive(true);
+                    }
+
+                    // save
+                    accountRepository.save(account);
+
+                    //save history
+                    accountStatusHistoryRepository.save(accountStatusHistory);
+
+                    //send back payload
+                    responseObject.setMessage("Account  updated successfully");
+                    responseObject.setPayload(account);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(account.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setCurrentData(account.toString());
+                    auditRecord.setNotes("UPDATED ACCOUNT");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
+                }
+            }
+        }  catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            responseObject.setPayload("");
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
 
     @Transactional
     public RestResponse transfer(RestRequestObject<Account> requestObject, Long id) {

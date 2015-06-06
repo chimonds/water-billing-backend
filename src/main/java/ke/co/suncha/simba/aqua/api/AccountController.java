@@ -31,6 +31,7 @@ import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.models.AccountStatusHistory;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.services.AccountService;
 
@@ -78,11 +79,20 @@ public class AccountController extends AbstractRestHandler {
         return accountService.getOne(requestObject);
     }
 
+
     @RequestMapping(value = "one/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiOperation(value = "Update a billing month resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
     public RestResponse findOne(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return accountService.getById(requestObject, id);
+    }
+
+
+    @RequestMapping(value = "status/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update account status.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse updateStatus(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<AccountStatusHistory> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.updateStatus(requestObject, accountId);
     }
 
 

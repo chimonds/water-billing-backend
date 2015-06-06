@@ -128,6 +128,18 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Payment> payments;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<AccountStatusHistory> accountStatusHistoryList;
+
+    public List<AccountStatusHistory> getAccountStatusHistoryList() {
+        return accountStatusHistoryList;
+    }
+
+    public void setAccountStatusHistoryList(List<AccountStatusHistory> accountStatusHistoryList) {
+        this.accountStatusHistoryList = accountStatusHistoryList;
+    }
+
     public String getAccountStatus() {
         if (this.active != null) {
             if (this.isActive()) {

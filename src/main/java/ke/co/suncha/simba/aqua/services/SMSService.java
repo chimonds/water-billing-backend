@@ -5,6 +5,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.SMS;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
@@ -70,6 +71,69 @@ public class SMSService {
         sendSMS();
     }
 
+    private String parseSMS(String sms, Long accountId) {
+        Account account = accountRepository.findOne(accountId);
+        if (account == null) {
+            return sms;
+        }
+
+        //balance
+        if (sms.contains("$balance")) {
+            sms = sms.replace("$balance", account.getOutstandingBalance().toString());
+        }
+
+        //account number
+        if (sms.contains("$account_no")) {
+            sms = sms.replace("$account_no", account.getAccNo());
+        }
+
+        //Billing month
+
+        //Transaction date
+
+        //consumer details
+        if(account.getConsumer()==null){
+            return sms;
+        }
+        //firstname
+        if (sms.contains("$firstname")) {
+            sms = sms.replace("$firstname", account.getOutstandingBalance().toString());
+        }
+
+        //middlename
+
+        //lastname
+
+
+
+        return sms;
+    }
+
+    public void save(Long accountId) {
+        SMS sms = new SMS();
+        Account account = accountRepository.findOne(accountId);
+        if (account.getConsumer() == null) {
+            return;
+        }
+
+        if (account.getConsumer().getPhoneNumber().isEmpty()) {
+            return;
+        }
+
+        if (account.getConsumer().getPhoneNumber().length() != 10) {
+            log.error("Invalid account notification number:" + account.getConsumer().getPhoneNumber());
+        }
+
+        //set mobile number
+        sms.setMobileNumber("254" + account.getConsumer().getPhoneNumber().substring(1));
+
+        //set message
+
+
+        //save sms
+        smsRepository.save(sms);
+    }
+
     private void sendSMS() {
         try {
             List<SMS> smsList = smsRepository.findAllBySend(false);
@@ -77,11 +141,9 @@ public class SMSService {
                 return;
             }
             log.info("Processing:" + smsList.size() + " SMSs");
-
             String sms_username = optionService.getOption("SMS_USERNAME").getValue();
             String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
             AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
-
             for (SMS sms : smsList) {
                 try {
                     log.info("Sending SMS to:" + sms.getMobileNumber());
