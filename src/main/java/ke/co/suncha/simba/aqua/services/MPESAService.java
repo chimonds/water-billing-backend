@@ -87,6 +87,7 @@ public class MPESAService {
     }
 
     @Scheduled(fixedDelay = 5000)
+    @Transactional
     private void pollTransactions() {
         try {
             RestTemplate restTemplate = new RestTemplate();
@@ -130,6 +131,7 @@ public class MPESAService {
 
         } catch (Exception ex) {
             log.error(ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
@@ -138,85 +140,87 @@ public class MPESAService {
     private void allocateTransactions() {
         try {
             List<MPESATransaction> mpesaTransactions = mpesaRepository.findAllByAssigned(false);
-            if (mpesaTransactions.isEmpty()) {
-                return;
-            }
+            if (!mpesaTransactions.isEmpty()) {
 
-            log.info("Assigning " + mpesaTransactions.size() + " M-PESA transactions to accounts");
-            for (MPESATransaction mpesaTransaction : mpesaTransactions) {
-                try {
+                log.info("Assigning " + mpesaTransactions.size() + " M-PESA transactions to accounts");
+                for (MPESATransaction mpesaTransaction : mpesaTransactions) {
+                    try {
 
-                    if (mpesaTransaction.getMpesaAcc().isEmpty()) {
-                        mpesaTransaction.setMpesaCode("");
-                    }
-
-                    //get account
-                    Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaAcc().trim());
-
-                    if (account == null) {
-                        log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
-                    }
-
-                    if (account != null) {
-                        Payment payment = new Payment();
-                        payment.setAccount(account);
-                        payment.setReceiptNo(mpesaTransaction.getMpesaCode());
-                        payment.setAmount(mpesaTransaction.getAmount());
-
-                        //transaction date
-                        payment.setTransactionDate(Calendar.getInstance());
-
-                        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
-                        if (billingMonth != null) {
-                            payment.setBillingMonth(billingMonth);
+                        if (mpesaTransaction.getMpesaAcc()==null) {
+                            mpesaTransaction.setMpesaAcc("");
                         }
 
 
-                        PaymentType paymentType = paymentTypeRepository.findByName("Water Sale");
-                        if (paymentType != null) {
-                            payment.setPaymentType(paymentType);
+
+
+                        //get account
+                        Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaAcc().trim());
+
+                        if (account == null) {
+                            log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
                         }
 
-                        PaymentSource paymentSource = paymentSourceRepository.findByName("M-PESA");
-                        if (paymentSource != null) {
-                            payment.setPaymentSource(paymentSource);
-                        }
+                        if (account != null) {
+                            Payment payment = new Payment();
+                            payment.setAccount(account);
+                            payment.setReceiptNo(mpesaTransaction.getMpesaCode());
+                            payment.setAmount(mpesaTransaction.getAmount());
 
-                        payment.setNotes(mpesaTransaction.getText());
+                            //transaction date
+                            payment.setTransactionDate(Calendar.getInstance());
 
-                        //check if receipt exists
-
-                        //check if amount is >0, payment type !=null, billing month !=null, account !=null
-                        if (payment.getAccount() != null && payment.getBillingMonth() != null && payment.getPaymentType() != null & payment.getPaymentSource() != null && payment.getAmount() > 0) {
-                            //check if receipt no exists
-                            Payment payment1 = paymentRepository.findByreceiptNo(payment.getReceiptNo());
-                            if (payment1 != null) {
-                                log.error("MPESA transaction " + payment.getReceiptNo() + " already exists");
-                            } else if (payment1 == null) {
-
-                                Payment created = paymentRepository.save(payment);
-                                log.info("Assigned M-PESA payment " + payment.getReceiptNo() + " to " + account.getAccNo());
-
-                                // update account balance
-                                account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
-                                accountRepository.save(account);
-
-                                //TODO;
-                                //send message to customer if real account found
+                            BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+                            if (billingMonth != null) {
+                                payment.setBillingMonth(billingMonth);
                             }
 
-                            //Mark MPESA transaction as assigned
-                            mpesaTransaction.setAssigned(true);
-                            mpesaTransaction.setAllocated(1);
-                            mpesaTransaction.setDateAssigned(Calendar.getInstance());
-                            mpesaTransaction.setAccount(account);
-                            mpesaRepository.save(mpesaTransaction);
-                        }
-                    }
 
-                } catch (Exception ex) {
-                    log.error(ex.getMessage());
-                    ex.printStackTrace();
+                            PaymentType paymentType = paymentTypeRepository.findByName("Water Sale");
+                            if (paymentType != null) {
+                                payment.setPaymentType(paymentType);
+                            }
+
+                            PaymentSource paymentSource = paymentSourceRepository.findByName("M-PESA");
+                            if (paymentSource != null) {
+                                payment.setPaymentSource(paymentSource);
+                            }
+
+                            payment.setNotes(mpesaTransaction.getText());
+
+                            //check if receipt exists
+
+                            //check if amount is >0, payment type !=null, billing month !=null, account !=null
+                            if (payment.getAccount() != null && payment.getBillingMonth() != null && payment.getPaymentType() != null & payment.getPaymentSource() != null && payment.getAmount() > 0) {
+                                //check if receipt no exists
+                                Payment payment1 = paymentRepository.findByreceiptNo(payment.getReceiptNo());
+                                if (payment1 != null) {
+                                    log.error("MPESA transaction " + payment.getReceiptNo() + " already exists");
+                                } else if (payment1 == null) {
+
+                                    Payment created = paymentRepository.save(payment);
+                                    log.info("Assigned M-PESA payment " + payment.getReceiptNo() + " to " + account.getAccNo());
+
+                                    // update account balance
+                                    account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
+                                    accountRepository.save(account);
+
+                                    //TODO;
+                                    //send message to customer if real account found
+                                }
+
+                                //Mark MPESA transaction as assigned
+                                mpesaTransaction.setAssigned(true);
+                                mpesaTransaction.setAllocated(1);
+                                mpesaTransaction.setDateAssigned(Calendar.getInstance());
+                                mpesaTransaction.setAccount(account);
+                                mpesaRepository.save(mpesaTransaction);
+                            }
+                        }
+
+                    } catch (Exception ex) {
+                        log.error(ex.getMessage());
+                        ex.printStackTrace();
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -256,6 +260,61 @@ public class MPESAService {
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+
+    public RestResponse allocate(RestRequestObject<MPESATransaction> requestObject, Long id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "mpesa_allocate");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                MPESATransaction mpesaTransaction = mpesaRepository.findOne(id);
+
+                if (mpesaTransaction == null) {
+                    responseObject.setMessage("Transaction not found");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else {
+                    // setup resource
+                    if (mpesaTransaction.getAccount() != null) {
+                        responseObject.setMessage("Transaction already allocated to " + mpesaTransaction.getAccount().getAccNo() + ".");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+
+                    } else {
+                        // update account info
+                        MPESATransaction transaction = requestObject.getObject();
+
+                        // set account
+                        Account acc = accountRepository.findByaccNo(transaction.getMpesaAcc());
+                        if (acc == null) {
+                            responseObject.setMessage("Invalid account number.");
+                            responseObject.setPayload("");
+                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                            return response;
+                        }
+
+                        mpesaTransaction.setMpesaAcc(acc.getAccNo());
+                        mpesaTransaction.setNotes(transaction.getNotes());
+                        mpesaRepository.save(mpesaTransaction);
+
+                        responseObject.setMessage("Transaction  allocation updated successfully");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.OK);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+
             log.error(ex.getLocalizedMessage());
         }
         return response;

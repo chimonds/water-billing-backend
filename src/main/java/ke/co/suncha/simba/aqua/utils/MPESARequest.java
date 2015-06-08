@@ -4,9 +4,9 @@ package ke.co.suncha.simba.aqua.utils;
  * Created by manyala on 6/6/15.
  */
 public class MPESARequest {
-    private String pay_bill;
-    private String key;
-    private String record_id;
+    private String pay_bill="";
+    private String key="";
+    private String record_id="";
 
     public String getPay_bill() {
         return pay_bill;

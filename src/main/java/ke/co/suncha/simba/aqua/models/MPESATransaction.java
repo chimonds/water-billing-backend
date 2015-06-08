@@ -85,6 +85,9 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     @Column(name = "assigned")
     private Boolean assigned = false;
 
+    @Column(name = "notes", length = 1000)
+    private String notes="";
+
     @Column(name = "date_assigned")
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar dateAssigned= Calendar.getInstance();
@@ -94,6 +97,7 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
     private Account account;
+
 
     public long getRecordId() {
         return recordId;
@@ -253,6 +257,14 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
 
     public void setAssigned(Boolean assigned) {
         this.assigned = assigned;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 
     public Calendar getDateAssigned() {

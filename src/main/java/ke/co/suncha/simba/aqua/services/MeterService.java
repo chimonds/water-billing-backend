@@ -265,15 +265,6 @@ public class MeterService {
 							responseObject.setMessage("Meter  allocation updated successfully");
 							responseObject.setPayload(m);
 							response = new RestResponse(responseObject, HttpStatus.OK);
-
-							//Start - audit trail
-//							AuditRecord auditRecord = new AuditRecord();
-//							auditRecord.setParentID(String.valueOf(m.getMeterId()));
-//							auditRecord.setCurrentData(m.getAccount().getAccNo());
-//							auditRecord.setParentObject("Meters");
-//							auditRecord.setNotes("METER ALLOCATION");
-//							auditService.log(AuditOperation.UPDATED, auditRecord);
-							//End - audit trail
 						}
 					}
 				}
