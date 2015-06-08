@@ -1,5 +1,6 @@
 package ke.co.suncha.simba.aqua.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
@@ -9,6 +10,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.Calendar;
 
 /**
  * Created by manyala on 6/6/15.
@@ -57,7 +59,7 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     private String mpesa_trx_time;
 
     @Column(name = "mpesa_amt")
-    private Double mpesa_amt=0d;
+    private Double mpesa_amt = 0d;
 
     @Column(name = "mpesa_sender", length = 50)
     private String mpesa_sender;
@@ -75,10 +77,48 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     private String business_number;
 
     @Column(name = "allocated")
-    Integer allocated = 0;
+    private Integer allocated = 0;
 
     @Column(name = "notified")
-    Boolean notified = false;
+    private Boolean notified = false;
+
+    @Column(name = "assigned")
+    private Boolean assigned = false;
+
+    @Column(name = "date_assigned")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar dateAssigned= Calendar.getInstance();
+
+    // a payment has a payment type
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "account_id")
+    private Account account;
+
+
+    public Calendar getDateAssigned() {
+        return dateAssigned;
+    }
+
+    public void setDateAssigned(Calendar dateAssigned) {
+        this.dateAssigned = dateAssigned;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    public Boolean getAssigned() {
+        return assigned;
+    }
+
+    public void setAssigned(Boolean assigned) {
+        this.assigned = assigned;
+    }
 
     public String getMpesaCode() {
         return mpesaCode;

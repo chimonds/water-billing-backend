@@ -33,10 +33,11 @@ import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface PaymentTypeRepository extends PagingAndSortingRepository<PaymentType, Long> {
-	Page<PaymentType> findAll(Pageable pageable);
+    Page<PaymentType> findAll(Pageable pageable);
 
-	List<PaymentType> findAll();
+    PaymentType findByName(String name);
+
+    List<PaymentType> findAll();
 }

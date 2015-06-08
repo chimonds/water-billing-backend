@@ -6,11 +6,8 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.aqua.models.MPESATransaction;
-import ke.co.suncha.simba.aqua.repository.AccountRepository;
-import ke.co.suncha.simba.aqua.repository.AccountStatusHistoryRepository;
-import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
-import ke.co.suncha.simba.aqua.repository.MPESARepository;
+import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MPESARequest;
 import ke.co.suncha.simba.aqua.utils.MPESAResponse;
 import org.slf4j.Logger;
@@ -19,12 +16,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URL;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +40,21 @@ public class MPESAService {
 
     @Autowired
     private MPESARepository mpesaRepository;
+
+    @Autowired
+    private PaymentTypeRepository paymentTypeRepository;
+
+    @Autowired
+    private BillingMonthRepository billingMonthRepository;
+
+    @Autowired
+    private PaymentSourceRepository paymentSourceRepository;
+
+    @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Autowired
     private SimbaOptionService optionService;
@@ -66,7 +82,7 @@ public class MPESAService {
     }
 
     @Scheduled(fixedDelay = 5000)
-    private void getTransactions() {
+    private void pollTransactions() {
         try {
             RestTemplate restTemplate = new RestTemplate();
             MPESARequest mpesaRequest = new MPESARequest();
@@ -107,6 +123,97 @@ public class MPESAService {
                 }
             }
 
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    @Transactional
+    private void allocateTransactions() {
+        try {
+            List<MPESATransaction> mpesaTransactions = mpesaRepository.findAllByAssigned(false);
+            if (mpesaTransactions.isEmpty()) {
+                return;
+            }
+
+            log.info("Assigning " + mpesaTransactions.size() + " M-PESA transactions to accounts");
+            for (MPESATransaction mpesaTransaction : mpesaTransactions) {
+                try {
+
+                    if (mpesaTransaction.getMpesa_acc().isEmpty()) {
+                        mpesaTransaction.setMpesa_acc("");
+                    }
+
+                    //get account
+                    Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesa_acc().trim());
+
+                    if (account == null) {
+                        log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
+                    }
+
+                    if (account != null) {
+                        Payment payment = new Payment();
+                        payment.setAccount(account);
+                        payment.setReceiptNo(mpesaTransaction.getMpesa_code());
+                        payment.setAmount(mpesaTransaction.getMpesa_amt());
+
+                        //transaction date
+                        payment.setTransactionDate(Calendar.getInstance());
+
+                        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+                        if (billingMonth != null) {
+                            payment.setBillingMonth(billingMonth);
+                        }
+
+
+                        PaymentType paymentType = paymentTypeRepository.findByName("Water Sale");
+                        if (paymentType != null) {
+                            payment.setPaymentType(paymentType);
+                        }
+
+                        PaymentSource paymentSource = paymentSourceRepository.findByName("M-PESA");
+                        if (paymentSource != null) {
+                            payment.setPaymentSource(paymentSource);
+                        }
+
+                        payment.setNotes(mpesaTransaction.getText());
+
+                        //check if receipt exists
+
+                        //check if amount is >0, payment type !=null, billing month !=null, account !=null
+                        if (payment.getAccount() != null && payment.getBillingMonth() != null && payment.getPaymentType() != null & payment.getPaymentSource() != null && payment.getAmount() > 0) {
+                            //check if receipt no exists
+                            Payment payment1 = paymentRepository.findByreceiptNo(payment.getReceiptNo());
+                            if (payment1 != null) {
+                                log.error("MPESA transaction " + payment.getReceiptNo() + " already exists");
+                            } else if (payment1 == null) {
+
+                                Payment created = paymentRepository.save(payment);
+                                log.info("Assigned M-PESA payment " + payment.getReceiptNo() + " to " + account.getAccNo());
+
+                                // update account balance
+                                account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
+                                accountRepository.save(account);
+
+                                //TODO;
+                                //send message to customer if real account found
+                            }
+
+                            //Mark MPESA transaction as assigned
+                            mpesaTransaction.setAssigned(true);
+                            mpesaTransaction.setAllocated(1);
+                            mpesaTransaction.setDateAssigned(Calendar.getInstance());
+                            mpesaTransaction.setAccount(account);
+                            mpesaRepository.save(mpesaTransaction);
+                        }
+                    }
+
+                } catch (Exception ex) {
+                    log.error(ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }

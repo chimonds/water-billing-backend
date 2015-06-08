@@ -91,9 +91,11 @@ public class PaymentService {
 
     }
 
-    public Double getAccountBalance(Account account) {
-        // update balances
+    @Transactional
+    public Double getAccountBalance(Long accountId) {
 
+        // update balances
+        Account account = accountRepository.findOne(accountId);
         Double balance = 0d;
 
         // add balance b/f
@@ -246,7 +248,7 @@ public class PaymentService {
                 account = accountRepository.findOne(accountId);
 
                 // update account outstanding balance
-                account.setOutstandingBalance(this.getAccountBalance(account));
+                account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
 
                 //send sms
                 try {
@@ -461,11 +463,11 @@ public class PaymentService {
 
                 //calculate balances for both accounts
                 Account acc = accountRepository.findOne(accountId);
-                acc.setOutstandingBalance(this.getAccountBalance(acc));
+                acc.setOutstandingBalance(this.getAccountBalance(acc.getAccountId()));
                 accountRepository.save(acc);
 
                 acc = accountRepository.findOne(account.getAccountId());
-                acc.setOutstandingBalance(this.getAccountBalance(acc));
+                acc.setOutstandingBalance(this.getAccountBalance(acc.getAccountId()));
                 accountRepository.save(acc);
 
 

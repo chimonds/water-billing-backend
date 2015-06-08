@@ -255,7 +255,7 @@ public class BillService {
 
                 //save outsatanding balance
                 account = accountRepository.findOne(accountId);
-                account.setOutstandingBalance(paymentService.getAccountBalance(account));
+                account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
                 accountRepository.save(account);
 
 
@@ -436,7 +436,7 @@ public class BillService {
 
                 //save outstanding balance
                 Account account = accountRepository.findOne(accountId);
-                account.setOutstandingBalance(paymentService.getAccountBalance(account));
+                account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
                 accountRepository.save(account);
 
                 responseObject.setMessage("Bill deleted successfully.");
