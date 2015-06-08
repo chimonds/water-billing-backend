@@ -1,6 +1,8 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ke.co.suncha.simba.admin.request.RestPageRequest;
+import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
@@ -16,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -102,7 +107,7 @@ public class MPESAService {
                     for (MPESATransaction mpesaTransaction : mpesaResponse.getPayload()) {
                         try {
                             //save transaction
-                            MPESATransaction mpesaTransaction1 = mpesaRepository.findByMpesaCode(mpesaTransaction.getMpesa_code());
+                            MPESATransaction mpesaTransaction1 = mpesaRepository.findByMpesaCode(mpesaTransaction.getMpesaCode());
                             if (mpesaTransaction1 == null) {
                                 mpesaTransaction = mpesaRepository.save(mpesaTransaction);
                             }
@@ -141,12 +146,12 @@ public class MPESAService {
             for (MPESATransaction mpesaTransaction : mpesaTransactions) {
                 try {
 
-                    if (mpesaTransaction.getMpesa_acc().isEmpty()) {
-                        mpesaTransaction.setMpesa_acc("");
+                    if (mpesaTransaction.getMpesaAcc().isEmpty()) {
+                        mpesaTransaction.setMpesaCode("");
                     }
 
                     //get account
-                    Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesa_acc().trim());
+                    Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaAcc().trim());
 
                     if (account == null) {
                         log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
@@ -155,8 +160,8 @@ public class MPESAService {
                     if (account != null) {
                         Payment payment = new Payment();
                         payment.setAccount(account);
-                        payment.setReceiptNo(mpesaTransaction.getMpesa_code());
-                        payment.setAmount(mpesaTransaction.getMpesa_amt());
+                        payment.setReceiptNo(mpesaTransaction.getMpesaCode());
+                        payment.setAmount(mpesaTransaction.getAmount());
 
                         //transaction date
                         payment.setTransactionDate(Calendar.getInstance());
@@ -218,4 +223,42 @@ public class MPESAService {
             log.error(ex.getMessage());
         }
     }
+
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
+
+    public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "MPESA_transactions_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                RestPageRequest p = requestObject.getObject();
+                Page<MPESATransaction> page;
+                if (p.getFilter().isEmpty()) {
+                    page = mpesaRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
+                    page = mpesaRepository.findByMpesaAccContainsOrAccount_AccNoContainsOrMpesaCodeContains(p.getFilter(), p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                }
+                if (page.hasContent()) {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(page);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
 }

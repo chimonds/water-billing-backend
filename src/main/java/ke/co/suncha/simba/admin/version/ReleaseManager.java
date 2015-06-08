@@ -209,6 +209,7 @@ public class ReleaseManager {
                             "account_view,\n"+
                             "bill_delete,\n"+
                             "payment_transfer,\n"+
+                            "MPESA_transactions_view,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");
