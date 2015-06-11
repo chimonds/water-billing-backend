@@ -143,11 +143,13 @@ public class SMSService {
             log.info("Processing:" + smsList.size() + " SMSs");
             String sms_username = optionService.getOption("SMS_USERNAME").getValue();
             String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
+            String sms_sender_id = optionService.getOption("SMS_SENDER_ID").getValue();
             AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
             for (SMS sms : smsList) {
                 try {
                     log.info("Sending SMS to:" + sms.getMobileNumber());
-                    JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage());
+
+                    JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(),sms_sender_id,1);
                     JSONObject result = results.getJSONObject(0);
                     String status = result.getString("status");
                     if (status.compareTo("Success") == 0) {
@@ -164,7 +166,7 @@ public class SMSService {
             }
         } catch (Exception ex) {
             log.error(ex.getMessage());
-            ex.printStackTrace();
+            //ex.printStackTrace();
         }
     }
 }

@@ -321,7 +321,7 @@ public class ReleaseManager {
                     paymentSourceRepository.save(ps);
 
                     ps = new PaymentSource();
-                    ps.setName("Post Bank");
+                    ps.setName("PostBank");
                     paymentSourceRepository.save(ps);
                 } catch (Exception ex) {
 
