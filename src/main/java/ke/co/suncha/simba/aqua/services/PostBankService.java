@@ -149,7 +149,7 @@ public class PostBankService {
                         }
 
                         //get account
-                        Account account = accountRepository.findByaccNo(postBankTransaction.getACCT_NO().trim());
+                        Account account = accountRepository.findByaccNo(postBankTransaction.getAccNo().trim());
                         if (account == null) {
                             log.error("Invalid PostBank account no for transaction:" + postBankTransaction.getSeqNo());
                         }
@@ -158,7 +158,7 @@ public class PostBankService {
                             Payment payment = new Payment();
                             payment.setAccount(account);
                             payment.setReceiptNo(postBankTransaction.getSeqNo());
-                            payment.setAmount(postBankTransaction.getPAID_AMT()); //TODO; confirm if this is the right amount
+                            payment.setAmount(postBankTransaction.getPaidAmount()); //TODO; confirm if this is the right amount
 
                             //transaction date
                             payment.setTransactionDate(Calendar.getInstance());
@@ -289,7 +289,7 @@ public class PostBankService {
                         PostBankTransaction transaction = requestObject.getObject();
 
                         // set account
-                        Account acc = accountRepository.findByaccNo(transaction.getACCT_NO());
+                        Account acc = accountRepository.findByaccNo(transaction.getAccNo());
                         if (acc == null) {
                             responseObject.setMessage("Invalid account number.");
                             responseObject.setPayload("");
@@ -297,7 +297,7 @@ public class PostBankService {
                             return response;
                         }
 
-                        postBankTransaction.setACCT_NO(acc.getAccNo());
+                        postBankTransaction.setAccNo(acc.getAccNo());
                         postBankTransaction.setNotes(transaction.getNotes());
                         postBankRepository.save(postBankTransaction);
 

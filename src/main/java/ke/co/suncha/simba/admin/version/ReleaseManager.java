@@ -210,6 +210,7 @@ public class ReleaseManager {
                             "bill_delete,\n"+
                             "payment_transfer,\n"+
                             "MPESA_transactions_view,\n"+
+                            "postbank_transactions_view,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");

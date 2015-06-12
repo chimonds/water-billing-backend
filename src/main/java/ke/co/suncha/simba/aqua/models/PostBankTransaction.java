@@ -21,20 +21,37 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
     @Id
     @Column(name = "postbank_transaction_id", nullable = false)
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long postbank_transaction_id;
+    private long postbankTransactionId;
 
     @Column(name = "SEQ_NO", unique = true)
     private String seqNo;
 
-    private String ACCT_NO;
-    private String TXNDATETIME;
-    private String BRANCH;
-    private Double BILL_AMT = 0d;
-    private Double CHARGED_AMT;
-    private Double PAID_AMT;
-    private Double RUNNING_BAL;
-    private String PAYERACCT;
-    private String PAYEE_NAMES;
+    @Column(name = "ACCT_NO")
+    private String accNo;
+
+    @Column(name = "TXNDATETIME")
+    private String txndatetime;
+
+    @Column(name = "BRANCH")
+    private String branch;
+
+    @Column(name = "BILL_AMT")
+    private Double billAmount = 0d;
+
+    @Column(name = "CHARGED_AMT")
+    private Double chargedAmount;
+
+    @Column(name = "PAID_AMT")
+    private Double paidAmount;
+
+    @Column(name = "RUNNING_BAL")
+    private Double runningBalance;
+
+    @Column(name = "PAYERACCT")
+    private String payersAccount;
+
+    @Column(name = "PAYEE_NAMES")
+    private String payeeNames;
 
     @Column(name = "allocated")
     private Integer allocated = 0;
@@ -58,12 +75,12 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
     @JoinColumn(name = "account_id")
     private Account account;
 
-    public long getPostbank_transaction_id() {
-        return postbank_transaction_id;
+    public long getPostbankTransactionId() {
+        return postbankTransactionId;
     }
 
-    public void setPostbank_transaction_id(long postbank_transaction_id) {
-        this.postbank_transaction_id = postbank_transaction_id;
+    public void setPostbankTransactionId(long postbankTransactionId) {
+        this.postbankTransactionId = postbankTransactionId;
     }
 
     public String getSeqNo() {
@@ -74,76 +91,76 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
         this.seqNo = seqNo;
     }
 
-    public String getACCT_NO() {
-        return ACCT_NO;
+    public String getAccNo() {
+        return accNo;
     }
 
-    public void setACCT_NO(String ACCT_NO) {
-        this.ACCT_NO = ACCT_NO;
+    public void setAccNo(String accNo) {
+        this.accNo = accNo;
     }
 
-    public String getTXNDATETIME() {
-        return TXNDATETIME;
+    public String getTxndatetime() {
+        return txndatetime;
     }
 
-    public void setTXNDATETIME(String TXNDATETIME) {
-        this.TXNDATETIME = TXNDATETIME;
+    public void setTxndatetime(String txndatetime) {
+        this.txndatetime = txndatetime;
     }
 
-    public String getBRANCH() {
-        return BRANCH;
+    public String getBranch() {
+        return branch;
     }
 
-    public void setBRANCH(String BRANCH) {
-        this.BRANCH = BRANCH;
+    public void setBranch(String branch) {
+        this.branch = branch;
     }
 
-    public Double getBILL_AMT() {
-        return BILL_AMT;
+    public Double getBillAmount() {
+        return billAmount;
     }
 
-    public void setBILL_AMT(Double BILL_AMT) {
-        this.BILL_AMT = BILL_AMT;
+    public void setBillAmount(Double billAmount) {
+        this.billAmount = billAmount;
     }
 
-    public Double getCHARGED_AMT() {
-        return CHARGED_AMT;
+    public Double getChargedAmount() {
+        return chargedAmount;
     }
 
-    public void setCHARGED_AMT(Double CHARGED_AMT) {
-        this.CHARGED_AMT = CHARGED_AMT;
+    public void setChargedAmount(Double chargedAmount) {
+        this.chargedAmount = chargedAmount;
     }
 
-    public Double getPAID_AMT() {
-        return PAID_AMT;
+    public Double getPaidAmount() {
+        return paidAmount;
     }
 
-    public void setPAID_AMT(Double PAID_AMT) {
-        this.PAID_AMT = PAID_AMT;
+    public void setPaidAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
     }
 
-    public Double getRUNNING_BAL() {
-        return RUNNING_BAL;
+    public Double getRunningBalance() {
+        return runningBalance;
     }
 
-    public void setRUNNING_BAL(Double RUNNING_BAL) {
-        this.RUNNING_BAL = RUNNING_BAL;
+    public void setRunningBalance(Double runningBalance) {
+        this.runningBalance = runningBalance;
     }
 
-    public String getPAYERACCT() {
-        return PAYERACCT;
+    public String getPayersAccount() {
+        return payersAccount;
     }
 
-    public void setPAYERACCT(String PAYERACCT) {
-        this.PAYERACCT = PAYERACCT;
+    public void setPayersAccount(String payersAccount) {
+        this.payersAccount = payersAccount;
     }
 
-    public String getPAYEE_NAMES() {
-        return PAYEE_NAMES;
+    public String getPayeeNames() {
+        return payeeNames;
     }
 
-    public void setPAYEE_NAMES(String PAYEE_NAMES) {
-        this.PAYEE_NAMES = PAYEE_NAMES;
+    public void setPayeeNames(String payeeNames) {
+        this.payeeNames = payeeNames;
     }
 
     public Integer getAllocated() {
