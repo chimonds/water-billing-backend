@@ -131,7 +131,6 @@ public class MPESAService {
 
         } catch (Exception ex) {
             log.error(ex.getMessage());
-            ex.printStackTrace();
         }
     }
 
@@ -219,7 +218,6 @@ public class MPESAService {
 
                     } catch (Exception ex) {
                         log.error(ex.getMessage());
-                        ex.printStackTrace();
                     }
                 }
             }

@@ -5,11 +5,29 @@ package ke.co.suncha.simba.aqua.stats;
  */
 public class TopView {
     private Long consumers = 0L;
-    private Long accounts =  0L;
+    private Long accounts = 0L;
     private Double paidThisMonth = 0.0;
     private Double paidLastMonth = 0.0;
-    private Long active=0L;
-    private Long inactive=0L;
+    private Double paidToday = 0d;
+    private Double notAllocated = 0d;
+    private Long active = 0L;
+    private Long inactive = 0L;
+
+    public Double getPaidToday() {
+        return paidToday;
+    }
+
+    public void setPaidToday(Double paidToday) {
+        this.paidToday = paidToday;
+    }
+
+    public Double getNotAllocated() {
+        return notAllocated;
+    }
+
+    public void setNotAllocated(Double notAllocated) {
+        this.notAllocated = notAllocated;
+    }
 
     public Long getActive() {
         return active;

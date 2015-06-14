@@ -92,7 +92,7 @@ public class SMSService {
         //Transaction date
 
         //consumer details
-        if(account.getConsumer()==null){
+        if (account.getConsumer() == null) {
             return sms;
         }
         //firstname
@@ -103,7 +103,6 @@ public class SMSService {
         //middlename
 
         //lastname
-
 
 
         return sms;
@@ -136,10 +135,21 @@ public class SMSService {
 
     private void sendSMS() {
         try {
+            Boolean sendMSgs = false;
+            try {
+                sendMSgs = Boolean.parseBoolean(optionService.getOption("SMS_ENABLE").getValue());
+            } catch (Exception ex) {
+
+            }
+            if (!sendMSgs) {
+                return;
+            }
+
             List<SMS> smsList = smsRepository.findAllBySend(false);
             if (smsList.isEmpty()) {
                 return;
             }
+
             log.info("Processing:" + smsList.size() + " SMSs");
             String sms_username = optionService.getOption("SMS_USERNAME").getValue();
             String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
@@ -149,7 +159,7 @@ public class SMSService {
                 try {
                     log.info("Sending SMS to:" + sms.getMobileNumber());
 
-                    JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(),sms_sender_id,1);
+                    JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
                     JSONObject result = results.getJSONObject(0);
                     String status = result.getString("status");
                     if (status.compareTo("Success") == 0) {
@@ -158,6 +168,7 @@ public class SMSService {
                         smsRepository.save(sms);
                     } else {
                         log.error("Unable to send SMS to:" + sms.getMobileNumber());
+                        log.error(status);
                         //smsRepository.save(sms);
                     }
                 } catch (Exception ex) {

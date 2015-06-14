@@ -265,10 +265,12 @@ public class BillService {
                         SMS sms = new SMS();
                         sms.setMobileNumber(account.getConsumer().getPhoneNumber());
 
-                        SimpleDateFormat format1 = new SimpleDateFormat("MMM dd, yyyy");
-                        String today = format1.format(Calendar.getInstance().getTime());
+                        SimpleDateFormat format1 = new SimpleDateFormat("MMM, yyyy");
+                        String billMonthYear = format1.format(activeBillingMonth.getMonth().getTime());
+
+
                         //TODO; set this in config
-                        String message ="Dear "+ account.getConsumer().getFirstName()+", your "+today+ " bill is "+ totalAmount +". New Water balance is KES "+ account.getOutstandingBalance();
+                        String message ="Dear "+ account.getConsumer().getFirstName()+", your "+billMonthYear+ " bill for a/c "+account.getAccNo() +" is KES " + totalAmount +". New Water balance is KES "+ account.getOutstandingBalance()+". Pay via MPESA paybill no 887800 to avoid disconnection.";
                         sms.setMessage(message);
                         smsRepository.save(sms);
                     }

@@ -119,6 +119,34 @@ public class StatsService {
         }
     }
 
+
+    @Scheduled(fixedDelay = 5000)
+    private void populatePaidToday() {
+        try {
+            Calendar toDate =Calendar.getInstance();
+            toDate.add(Calendar.DATE, 1);
+
+            Calendar fromDate = Calendar.getInstance();
+            fromDate.set(Calendar.HOUR_OF_DAY, 0);
+            fromDate.set(Calendar.MINUTE, 0);
+            fromDate.set(Calendar.SECOND, 0);
+            fromDate.set(Calendar.MILLISECOND, 0);
+
+            List<Payment> payments = paymentRepository.findByTransactionDateBetween(fromDate, toDate);
+            Double total = 0.0;
+            if (!payments.isEmpty()) {
+                for (Payment payment : payments) {
+                    if (payment.getPaymentType().isUnique()) {
+                        total += payment.getAmount();
+                    }
+                }
+            }
+            topView.setPaidToday(total);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
     @Scheduled(fixedDelay = 5000)
     private void populatePaidLastMonth() {
         try {
