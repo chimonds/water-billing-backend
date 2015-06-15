@@ -26,6 +26,42 @@ public class SMSTemplate extends SimbaBaseEntity implements Serializable {
     @Column(name = "name", unique = true, length = 100)
     private String name;
 
+    @NotNull
     @Column(name = "message", length = 500)
     private String message;
+
+    @Column(name = "needs_approval")
+    private Boolean needsApproval = false;
+
+    public Boolean getNeedsApproval() {
+        return needsApproval;
+    }
+
+    public void setNeedsApproval(Boolean needsApproval) {
+        this.needsApproval = needsApproval;
+    }
+
+    public long getSmsTemplateId() {
+        return smsTemplateId;
+    }
+
+    public void setSmsTemplateId(long smsTemplateId) {
+        this.smsTemplateId = smsTemplateId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }
