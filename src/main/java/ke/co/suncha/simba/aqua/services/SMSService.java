@@ -124,7 +124,7 @@ public class SMSService {
         }
 
         //set mobile number
-        sms.setMobileNumber("254" + account.getConsumer().getPhoneNumber().substring(1));
+        sms.setMobileNumber(account.getConsumer().getPhoneNumber());
 
         //set message
 

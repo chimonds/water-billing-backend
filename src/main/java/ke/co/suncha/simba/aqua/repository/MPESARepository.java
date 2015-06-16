@@ -12,11 +12,11 @@ import java.util.List;
  * Created by manyala on 6/6/15.
  */
 public interface MPESARepository extends PagingAndSortingRepository<MPESATransaction, Long> {
-    MPESATransaction findByMpesaCode(String mpesaCode);
+    MPESATransaction findByMpesacode(String mpesaCode);
 
     List<MPESATransaction> findAllByAssigned(Boolean assigned);
 
-    Page<MPESATransaction> findByMpesaAccContainsOrAccount_AccNoContainsOrMpesaCodeContains(String mpesaAcc, String accNo, String mpesaCode, Pageable pageable);
+    Page<MPESATransaction> findByMpesaaccContainsOrAccount_AccNoContainsOrMpesacodeContains(String mpesaAcc, String accNo, String mpesaCode, Pageable pageable);
 
     Page<MPESATransaction> findAll(Pageable pageable);
 }

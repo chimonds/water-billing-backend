@@ -44,10 +44,10 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     private String text;
 
     @Column(name = "mpesa_code", length = 50)
-    private String mpesaCode;
+    private String mpesacode;
 
     @Column(name = "mpesa_acc", length = 50)
-    private String mpesaAcc;
+    private String mpesaacc;
 
     @Column(name = "mpesa_msisdn", length = 50)
     private String mpesa_msisdn;
@@ -59,10 +59,10 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     private String mpesa_trx_time;
 
     @Column(name = "mpesa_amt")
-    private Double amount = 0d;
+    private Double mpesaamt = 0d;
 
     @Column(name = "mpesa_sender", length = 50)
-    private String sender;
+    private String mpesa_sender;
 
     @Column(name = "ipadd", length = 20)
     private String ipadd;
@@ -74,7 +74,7 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     private String customer_id;
 
     @Column(name = "business_number", length = 10)
-    private String businessNumber;
+    private String business_number;
 
     @Column(name = "allocated")
     private Integer allocated = 0;
@@ -97,7 +97,6 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
     private Account account;
-
 
     public long getRecordId() {
         return recordId;
@@ -147,20 +146,20 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
         this.text = text;
     }
 
-    public String getMpesaCode() {
-        return mpesaCode;
+    public String getMpesacode() {
+        return mpesacode;
     }
 
-    public void setMpesaCode(String mpesaCode) {
-        this.mpesaCode = mpesaCode;
+    public void setMpesacode(String mpesacode) {
+        this.mpesacode = mpesacode;
     }
 
-    public String getMpesaAcc() {
-        return mpesaAcc;
+    public String getMpesaacc() {
+        return mpesaacc;
     }
 
-    public void setMpesaAcc(String mpesaAcc) {
-        this.mpesaAcc = mpesaAcc;
+    public void setMpesaacc(String mpesaacc) {
+        this.mpesaacc = mpesaacc;
     }
 
     public String getMpesa_msisdn() {
@@ -187,20 +186,20 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
         this.mpesa_trx_time = mpesa_trx_time;
     }
 
-    public Double getAmount() {
-        return amount;
+    public Double getMpesaamt() {
+        return mpesaamt;
     }
 
-    public void setAmount(Double amount) {
-        this.amount = amount;
+    public void setMpesaamt(Double mpesaamt) {
+        this.mpesaamt = mpesaamt;
     }
 
-    public String getSender() {
-        return sender;
+    public String getMpesa_sender() {
+        return mpesa_sender;
     }
 
-    public void setSender(String sender) {
-        this.sender = sender;
+    public void setMpesa_sender(String mpesa_sender) {
+        this.mpesa_sender = mpesa_sender;
     }
 
     public String getIpadd() {
@@ -227,12 +226,12 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
         this.customer_id = customer_id;
     }
 
-    public String getBusinessNumber() {
-        return businessNumber;
+    public String getBusiness_number() {
+        return business_number;
     }
 
-    public void setBusinessNumber(String businessNumber) {
-        this.businessNumber = businessNumber;
+    public void setBusiness_number(String business_number) {
+        this.business_number = business_number;
     }
 
     public Integer getAllocated() {

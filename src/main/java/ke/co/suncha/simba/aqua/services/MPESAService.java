@@ -108,7 +108,7 @@ public class MPESAService {
                     for (MPESATransaction mpesaTransaction : mpesaResponse.getPayload()) {
                         try {
                             //save transaction
-                            MPESATransaction mpesaTransaction1 = mpesaRepository.findByMpesaCode(mpesaTransaction.getMpesaCode());
+                            MPESATransaction mpesaTransaction1 = mpesaRepository.findByMpesacode(mpesaTransaction.getMpesacode());
                             if (mpesaTransaction1 == null) {
                                 mpesaTransaction = mpesaRepository.save(mpesaTransaction);
                             }
@@ -145,15 +145,15 @@ public class MPESAService {
                 for (MPESATransaction mpesaTransaction : mpesaTransactions) {
                     try {
 
-                        if (mpesaTransaction.getMpesaAcc()==null) {
-                            mpesaTransaction.setMpesaAcc("");
+                        if (mpesaTransaction.getMpesaacc()==null) {
+                            mpesaTransaction.setMpesaacc("");
                         }
 
 
 
 
                         //get account
-                        Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaAcc().trim());
+                        Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaacc().trim());
 
                         if (account == null) {
                             log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
@@ -162,8 +162,8 @@ public class MPESAService {
                         if (account != null) {
                             Payment payment = new Payment();
                             payment.setAccount(account);
-                            payment.setReceiptNo(mpesaTransaction.getMpesaCode());
-                            payment.setAmount(mpesaTransaction.getAmount());
+                            payment.setReceiptNo(mpesaTransaction.getMpesacode());
+                            payment.setAmount(mpesaTransaction.getMpesaamt());
 
                             //transaction date
                             payment.setTransactionDate(Calendar.getInstance());
@@ -244,7 +244,7 @@ public class MPESAService {
                 if (p.getFilter().isEmpty()) {
                     page = mpesaRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 } else {
-                    page = mpesaRepository.findByMpesaAccContainsOrAccount_AccNoContainsOrMpesaCodeContains(p.getFilter(), p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                    page = mpesaRepository.findByMpesaaccContainsOrAccount_AccNoContainsOrMpesacodeContains(p.getFilter(), p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 }
                 if (page.hasContent()) {
                     responseObject.setMessage("Fetched data successfully");
@@ -291,7 +291,7 @@ public class MPESAService {
                         MPESATransaction transaction = requestObject.getObject();
 
                         // set account
-                        Account acc = accountRepository.findByaccNo(transaction.getMpesaAcc());
+                        Account acc = accountRepository.findByaccNo(transaction.getMpesaacc());
                         if (acc == null) {
                             responseObject.setMessage("Invalid account number.");
                             responseObject.setPayload("");
@@ -299,7 +299,7 @@ public class MPESAService {
                             return response;
                         }
 
-                        mpesaTransaction.setMpesaAcc(acc.getAccNo());
+                        mpesaTransaction.setMpesaacc(acc.getAccNo());
                         mpesaTransaction.setNotes(transaction.getNotes());
                         mpesaRepository.save(mpesaTransaction);
 
