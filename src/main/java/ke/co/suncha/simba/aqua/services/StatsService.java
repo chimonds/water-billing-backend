@@ -66,6 +66,9 @@ public class StatsService {
     private ZoneRepository zoneRepository;
 
     @Autowired
+    private MPESARepository mpesaRepository;
+
+    @Autowired
     private AuthManager authManager;
 
     @Autowired
@@ -123,7 +126,7 @@ public class StatsService {
     @Scheduled(fixedDelay = 5000)
     private void populatePaidToday() {
         try {
-            Calendar toDate =Calendar.getInstance();
+            Calendar toDate = Calendar.getInstance();
             toDate.add(Calendar.DATE, 1);
 
             Calendar fromDate = Calendar.getInstance();
@@ -145,6 +148,17 @@ public class StatsService {
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
+
+        //populate not allocated
+        try {
+            Double notAllocated = 0d;
+            //get mpesa transactions not allocated
+            notAllocated = mpesaRepository.findSumAllocated(0);
+            topView.setNotAllocated(notAllocated);
+        } catch (Exception ex) {
+
+        }
+
     }
 
     @Scheduled(fixedDelay = 5000)

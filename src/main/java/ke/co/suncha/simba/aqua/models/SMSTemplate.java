@@ -23,7 +23,7 @@ public class SMSTemplate extends SimbaBaseEntity implements Serializable {
     private long smsTemplateId;
 
     @NotNull
-    @Column(name = "name", unique = true, length = 100)
+    @Column(name = "name", unique = true)
     private String name;
 
     @NotNull
@@ -31,7 +31,7 @@ public class SMSTemplate extends SimbaBaseEntity implements Serializable {
     private String message;
 
     @Column(name = "needs_approval")
-    private Boolean needsApproval = false;
+    private Boolean needsApproval = true;
 
     public Boolean getNeedsApproval() {
         return needsApproval;

@@ -29,6 +29,8 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -42,18 +44,6 @@ import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.repositories.UserRoleRepository;
 import ke.co.suncha.simba.admin.security.AuthManager;
-import ke.co.suncha.simba.aqua.models.BillItemType;
-import ke.co.suncha.simba.aqua.models.BillingMonth;
-import ke.co.suncha.simba.aqua.models.MeterOwner;
-import ke.co.suncha.simba.aqua.models.MeterSize;
-import ke.co.suncha.simba.aqua.models.PaymentSource;
-import ke.co.suncha.simba.aqua.models.PaymentType;
-import ke.co.suncha.simba.aqua.repository.BillItemTypeRepository;
-import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
-import ke.co.suncha.simba.aqua.repository.MeterOwnerRepository;
-import ke.co.suncha.simba.aqua.repository.MeterSizeRepository;
-import ke.co.suncha.simba.aqua.repository.PaymentSourceRepository;
-import ke.co.suncha.simba.aqua.repository.PaymentTypeRepository;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -89,6 +79,10 @@ public class ReleaseManager {
 
     @Autowired
     private BillItemTypeRepository billItemTypeRepository;
+
+    @Autowired
+    private SMSTemplateRepository smsTemplateRepository;
+
 
     public static int APP_VERSION = 1;
     public static int PROGRESS = 0;
@@ -211,6 +205,7 @@ public class ReleaseManager {
                             "payment_transfer,\n"+
                             "MPESA_transactions_view,\n"+
                             "postbank_transactions_view,\n"+
+                            "sms_template_update,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");
@@ -508,6 +503,52 @@ public class ReleaseManager {
 
                 } catch (Exception ex) {
                 }
+
+                //Default sms templates
+                SMSTemplate smsTemplate = new SMSTemplate();
+                try {
+                    smsTemplate.setName("PAYMENT_ACCOUNT_WITH_BALANCE");
+                    smsTemplate.setMessage("Thank you for your payment of KES $amount to a/c $account (txn id $receiptno). Your new water balance is KES $balance.");
+                    smsTemplate.setNeedsApproval(false);
+                    smsTemplateRepository.save(smsTemplate);
+                }
+                catch (Exception ex){
+
+                }
+
+                try {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName("PAYMENT_ACCOUNT_WITHOUT_BALANCE");
+                    smsTemplate.setMessage("Thank you for your payment of KES $amount to a/c $account (txn id $receiptno). Your new water balance is KES $balance.");
+                    smsTemplate.setNeedsApproval(false);
+                    smsTemplateRepository.save(smsTemplate);
+                }
+                catch (Exception ex){
+
+                }
+
+                try {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName("MONTHLY_BILL_ACCOUNT_IN_ARREARS");
+                    smsTemplate.setMessage("Dear Customer, your $billing_month bill for a/c $account is KES $bill_amount. New Water balance is KES $balance. Pay via MPESA paybill no $paybill to avoid disconnection.");
+                    smsTemplate.setNeedsApproval(true);
+                    smsTemplateRepository.save(smsTemplate);
+                }
+                catch (Exception ex){
+
+                }
+
+                try {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName("MONTHLY_BILL_ACCOUNT_NOT_IN_ARREARS");
+                    smsTemplate.setMessage("Dear Customer, your $billing_month bill for a/c $account is KES $bill_amount. New Water balance is KES $balance. Pay via MPESA paybill no $paybill to avoid disconnection.");
+                    smsTemplate.setNeedsApproval(true);
+                    smsTemplateRepository.save(smsTemplate);
+                }
+                catch (Exception ex){
+
+                }
+
 
             }
         } catch (Exception ex) {

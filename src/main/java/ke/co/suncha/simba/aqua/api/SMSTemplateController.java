@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletResponse;
  * Created by manyala on 6/15/15.
  */
 @RestController
-@RequestMapping(value = "/api/v1/smstemplate")
+@RequestMapping(value = "/api/v1/smstemplates")
 @Api(value = "SMS templates", description = "Connection zone API")
 public class SMSTemplateController extends AbstractRestHandler {
     @Autowired
