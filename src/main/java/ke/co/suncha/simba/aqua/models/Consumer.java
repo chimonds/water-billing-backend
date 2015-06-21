@@ -63,13 +63,13 @@ public class Consumer extends SimbaBaseEntity implements Serializable {
 
 	@NotNull
 	@Column(name = "firstname", length = 200)
-	private String firstName;
+	private String firstName="";
 
 	@Column(name = "middlename")
-	private String middleName;
+	private String middleName="";
 
 	@Column(name = "lastname")
-	private String lastName;
+	private String lastName="";
 
 	@Column(name = "identity_no", length = 25)
 	private String identityNo;

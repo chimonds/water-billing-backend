@@ -206,6 +206,7 @@ public class ReleaseManager {
                             "MPESA_transactions_view,\n"+
                             "postbank_transactions_view,\n"+
                             "sms_template_update,\n"+
+                            "report_ageing,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");

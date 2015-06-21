@@ -459,6 +459,7 @@ public class AccountService {
                     return response;
                 }
                 Account acc = requestObject.getObject();
+                log.info("Find account by account no:"+ acc.getAccNo());
                 Account account = accountRepository.findByaccNo(acc.getAccNo());
 
                 if (account == null) {

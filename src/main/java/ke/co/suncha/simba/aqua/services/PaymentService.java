@@ -91,6 +91,22 @@ public class PaymentService {
 
     }
 
+
+    @Transactional
+    public Double getAccountTotalPayments(Long accountId) {
+        Double amount = 0d;
+        Account account = accountRepository.findOne(accountId);
+        // get payments
+        List<Payment> payments = account.getPayments();
+        if (payments != null) {
+            for (Payment p : payments) {
+                amount = (amount + p.getAmount());
+            }
+        }
+        return amount;
+    }
+
+
     @Transactional
     public Double getAccountBalance(Long accountId) {
 
@@ -126,6 +142,7 @@ public class PaymentService {
         }
         return balance;
     }
+
 
     @Transactional
     public RestResponse createByAccount(RestRequestObject<Payment> requestObject, Long accountId) {

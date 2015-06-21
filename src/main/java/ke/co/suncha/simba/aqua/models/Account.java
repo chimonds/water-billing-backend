@@ -47,6 +47,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -155,8 +156,9 @@ public class Account extends SimbaBaseEntity implements Serializable {
     /**
      * @return the accName
      */
+
     public String getAccName() {
-        if (this.consumer != null) {
+        if (this.getConsumer() != null) {
 
             String fullName = "";
             if (this.getConsumer().getFirstName() != null) {

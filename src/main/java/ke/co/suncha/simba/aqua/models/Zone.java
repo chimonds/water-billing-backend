@@ -25,12 +25,7 @@ package ke.co.suncha.simba.aqua.models;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -61,6 +56,8 @@ public class Zone extends SimbaBaseEntity implements Serializable {
 	@NotNull
 	@Column(name = "description")
 	private String description;
+
+
 
 	/**
 	 * @return the zoneId

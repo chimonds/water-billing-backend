@@ -24,6 +24,6 @@ public class TaskExecutorConfig {
 
     @Bean(destroyMethod = "shutdown")
     public Executor taskScheduler() {
-        return Executors.newScheduledThreadPool(6);
+        return Executors.newScheduledThreadPool(10);
     }
 }

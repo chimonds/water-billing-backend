@@ -260,8 +260,8 @@ public class BillService {
 
 
                 //send sms
-                try{
-                    if(!account.getConsumer().getPhoneNumber().isEmpty()) {
+                try {
+                    if (!account.getConsumer().getPhoneNumber().isEmpty()) {
                         SMS sms = new SMS();
                         sms.setMobileNumber(account.getConsumer().getPhoneNumber());
 
@@ -270,11 +270,11 @@ public class BillService {
 
 
                         //TODO; set this in config
-                        String message ="Dear "+ account.getConsumer().getFirstName()+", your "+billMonthYear+ " bill for a/c "+account.getAccNo() +" is KES " + totalAmount +". New Water balance is KES "+ account.getOutstandingBalance()+". Pay via MPESA paybill no 887800 to avoid disconnection.";
+                        String message = "Dear " + account.getConsumer().getFirstName() + ", your " + billMonthYear + " bill for a/c " + account.getAccNo() + " is KES " + totalAmount + ". New Water balance is KES " + account.getOutstandingBalance() + ". Pay via MPESA paybill no 887800 to avoid disconnection.";
                         sms.setMessage(message);
                         smsRepository.save(sms);
                     }
-                }catch (Exception ex){
+                } catch (Exception ex) {
 
                 }
 
@@ -474,6 +474,43 @@ public class BillService {
         }
         return response;
     }
+
+    @Transactional
+    public Double getAccountBillsByDate(Long  accountId, Calendar calendar) {
+
+        SimpleDateFormat format1 = new SimpleDateFormat("dd MMM, yyyy");
+        String formatted = format1.format(calendar.getTime());
+        //log.info("Get bills by:"+formatted);
+
+
+        Account account = accountRepository.findOne(accountId);
+        // update balances
+        Double amount = 0d;
+
+        // add balance b/f
+        amount += account.getBalanceBroughtForward();
+
+        List<Bill> bills = account.getBills();
+        if (bills != null) {
+            for (Bill bill : bills) {
+//                if (bill.getTransactionDate().before(calendar)) {
+                if (bill.getBillingMonth().getMonth().before(calendar)) {
+                    amount += bill.getAmount();
+                    amount += bill.getMeterRent();
+
+                    // get bill items
+                    List<BillItem> billItems = bill.getBillItems();
+                    if (billItems != null) {
+                        for (BillItem billItem : billItems) {
+                            amount += billItem.getAmount();
+                        }
+                    }
+                }
+            }
+        }
+        return amount;
+    }
+
 
     public RestResponse getMeterReadingsReport(RestRequestObject<ReportsParam> requestObject) {
         try {

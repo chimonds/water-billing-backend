@@ -90,6 +90,16 @@ public class MPESAService {
     @Transactional
     private void pollTransactions() {
         try {
+            Boolean pollMpesaTransactions = false;
+            try {
+                pollMpesaTransactions = Boolean.parseBoolean(optionService.getOption("MPESA_ENABLE").getValue());
+            } catch (Exception ex) {
+
+            }
+            if (!pollMpesaTransactions) {
+                return;
+            }
+
             RestTemplate restTemplate = new RestTemplate();
             MPESARequest mpesaRequest = new MPESARequest();
             mpesaRequest.setPay_bill(optionService.getOption("MPESA_PAYBILL").getValue());
@@ -145,18 +155,15 @@ public class MPESAService {
                 for (MPESATransaction mpesaTransaction : mpesaTransactions) {
                     try {
 
-                        if (mpesaTransaction.getMpesaacc()==null) {
+                        if (mpesaTransaction.getMpesaacc() == null) {
                             mpesaTransaction.setMpesaacc("");
                         }
-
-
-
 
                         //get account
                         Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaacc().trim());
 
                         if (account == null) {
-                            log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
+                            // log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
                         }
 
                         if (account != null) {
@@ -262,7 +269,6 @@ public class MPESAService {
         }
         return response;
     }
-
 
     public RestResponse allocate(RestRequestObject<MPESATransaction> requestObject, Long id) {
         try {
