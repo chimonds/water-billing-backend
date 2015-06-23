@@ -207,6 +207,8 @@ public class ReleaseManager {
                             "postbank_transactions_view,\n"+
                             "sms_template_update,\n"+
                             "report_ageing,\n"+
+                            "sms_create,\n"+
+                            "sms_approve,\n"+
                             "settings_view";
 
                     String[] permissions = content.split(",");

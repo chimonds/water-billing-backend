@@ -1,6 +1,9 @@
 package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.SMS;
+import ke.co.suncha.simba.aqua.models.SMSGroup;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.List;
@@ -10,4 +13,9 @@ import java.util.List;
  */
 public interface SMSRepository extends PagingAndSortingRepository<SMS, Long> {
     List<SMS> findAllBySend(Boolean send);
+
+    Page<SMS> findAll(Pageable pageable);
+
+    Page<SMS> findAllByMessageContains(String name, Pageable pageable);
+
 }

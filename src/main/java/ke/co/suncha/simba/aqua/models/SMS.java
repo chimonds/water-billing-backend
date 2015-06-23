@@ -1,5 +1,6 @@
 package ke.co.suncha.simba.aqua.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 import javax.persistence.*;
@@ -23,7 +24,6 @@ public class SMS extends SimbaBaseEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long smsId;
 
-    @NotNull
     @Column(name = "message", length = 255)
     private String message;
 
@@ -40,6 +40,20 @@ public class SMS extends SimbaBaseEntity implements Serializable {
 
     @Column(name = "response")
     private String response="";
+
+    //sms belongs to a sms group
+    @JsonIgnore
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "sms_group_id")
+    private SMSGroup smsGroup;
+
+    public SMSGroup getSmsGroup() {
+        return smsGroup;
+    }
+
+    public void setSmsGroup(SMSGroup smsGroup) {
+        this.smsGroup = smsGroup;
+    }
 
     public long getSmsId() {
         return smsId;

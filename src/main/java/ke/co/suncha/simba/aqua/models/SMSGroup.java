@@ -31,24 +31,90 @@ public class SMSGroup extends SimbaBaseEntity implements Serializable {
     @Column(name = "notes", length = 255)
     private String notes;
 
-    @Column(name = "contacts", length = 1000)
-    private String contacts;
+    @Column(name = "messages_sent")
+    private Integer messagesSent = 0;
 
-    @JsonIgnore
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Column(name = "all_messages")
+    private Integer messages = 0;
+
+
+    @Column(name = "approved")
+    private Boolean approved = false;
+
+    @Column(name = "approval_status")
+    private String status = "Pending Approval";
+
+    @Column(name = "sms_populated")
+    private Boolean exploded = false;
+
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "sms_group_zones")
     private List<Zone> zones;
 
-    @JsonIgnore
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "smsGroup", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Contact> contacts;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "sms_template_id")
     private SMSTemplate smsTemplate;
 
-    public String getContacts() {
+    @JsonIgnore
+    @OneToMany(mappedBy = "smsGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<SMS> smsList;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getMessagesSent() {
+        return messagesSent;
+    }
+
+    public void setMessagesSent(Integer messagesSent) {
+        this.messagesSent = messagesSent;
+    }
+
+    public Integer getMessages() {
+        return messages;
+    }
+
+    public void setMessages(Integer messages) {
+        this.messages = messages;
+    }
+
+    public Boolean getApproved() {
+        return approved;
+    }
+
+    public void setApproved(Boolean approved) {
+        this.approved = approved;
+    }
+
+    public Boolean getExploded() {
+        return exploded;
+    }
+
+    public void setExploded(Boolean exploded) {
+        this.exploded = exploded;
+    }
+
+    public List<SMS> getSmsList() {
+        return smsList;
+    }
+
+    public void setSmsList(List<SMS> smsList) {
+        this.smsList = smsList;
+    }
+
+    public List<Contact> getContacts() {
         return contacts;
     }
 
-    public void setContacts(String contacts) {
+    public void setContacts(List<Contact> contacts) {
         this.contacts = contacts;
     }
 
@@ -90,5 +156,17 @@ public class SMSGroup extends SimbaBaseEntity implements Serializable {
 
     public void setSmsTemplate(SMSTemplate smsTemplate) {
         this.smsTemplate = smsTemplate;
+    }
+
+    @Override
+    public String toString() {
+        return "SMSGroup{" +
+                "smsGroupId=" + smsGroupId +
+                ", name='" + name + '\'' +
+                ", notes='" + notes + '\'' +
+                ", zones=" + zones +
+                ", contacts=" + contacts +
+                ", smsTemplate=" + smsTemplate +
+                '}';
     }
 }

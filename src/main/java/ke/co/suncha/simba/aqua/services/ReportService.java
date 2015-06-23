@@ -288,7 +288,7 @@ public class ReportService {
 
             for (Account acc : accounts) {
                 AgeingRecord ageingRecord = new AgeingRecord();
-                log.info("Populating ageing report for:" + acc.getAccNo());
+                //log.info("Populating ageing report for:" + acc.getAccNo());
 
                 ageingRecord.setAccNo(acc.getAccNo());
 

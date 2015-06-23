@@ -26,6 +26,7 @@ package ke.co.suncha.simba.aqua.repository;
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Meter;
 
+import ke.co.suncha.simba.aqua.models.Zone;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -48,6 +49,8 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     Page<Account> findByAccNo(String accNo, Pageable pageable);
 
     List<Account> findAll();
+
+    List<Account> findAllByZone(Zone zone);
 
     Long countByActive(Boolean status);
 
