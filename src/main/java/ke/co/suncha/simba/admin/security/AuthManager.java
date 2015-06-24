@@ -158,11 +158,13 @@ public class AuthManager {
                         }
 
                         //audit trail
-                        AuditRecord auditRecord = new AuditRecord();
-                        auditRecord.setNotes(action.toUpperCase());
-                        auditService.log(AuditOperation.ACCESSED, auditRecord);
+                        if (!action.toUpperCase().contains("VIEW")) {
+                            AuditRecord auditRecord = new AuditRecord();
+                            auditRecord.setNotes(action.toUpperCase());
+                            auditService.log(AuditOperation.ACCESSED, auditRecord);
+                            log.info(user.getEmailAddress() + " allowed to perform: " + action.toUpperCase());
+                        }
 
-                        log.info(user.getEmailAddress() + " allowed to perform: " + action.toUpperCase());
                         obj.setMessage("Ok");
                         response = new RestResponse(obj, HttpStatus.OK);
                         return response;
@@ -388,6 +390,7 @@ public class AuthManager {
                     obj.setMessage("Ok");
                     response = new RestResponse(obj, HttpStatus.OK);
                     // save last access
+
                     UserAuth auth = user.getUserAuth();
                     auth.setLastAccess(Calendar.getInstance());
                     user.setUserAuth(auth);

@@ -507,52 +507,6 @@ public class ReleaseManager {
                 } catch (Exception ex) {
                 }
 
-                //Default sms templates
-                SMSTemplate smsTemplate = new SMSTemplate();
-                try {
-                    smsTemplate.setName("PAYMENT_ACCOUNT_WITH_BALANCE");
-                    smsTemplate.setMessage("Thank you for your payment of KES $amount to a/c $account (txn id $receiptno). Your new water balance is KES $balance.");
-                    smsTemplate.setNeedsApproval(false);
-                    smsTemplateRepository.save(smsTemplate);
-                }
-                catch (Exception ex){
-
-                }
-
-                try {
-                    smsTemplate = new SMSTemplate();
-                    smsTemplate.setName("PAYMENT_ACCOUNT_WITHOUT_BALANCE");
-                    smsTemplate.setMessage("Thank you for your payment of KES $amount to a/c $account (txn id $receiptno). Your new water balance is KES $balance.");
-                    smsTemplate.setNeedsApproval(false);
-                    smsTemplateRepository.save(smsTemplate);
-                }
-                catch (Exception ex){
-
-                }
-
-                try {
-                    smsTemplate = new SMSTemplate();
-                    smsTemplate.setName("MONTHLY_BILL_ACCOUNT_IN_ARREARS");
-                    smsTemplate.setMessage("Dear Customer, your $billing_month bill for a/c $account is KES $bill_amount. New Water balance is KES $balance. Pay via MPESA paybill no $paybill to avoid disconnection.");
-                    smsTemplate.setNeedsApproval(true);
-                    smsTemplateRepository.save(smsTemplate);
-                }
-                catch (Exception ex){
-
-                }
-
-                try {
-                    smsTemplate = new SMSTemplate();
-                    smsTemplate.setName("MONTHLY_BILL_ACCOUNT_NOT_IN_ARREARS");
-                    smsTemplate.setMessage("Dear Customer, your $billing_month bill for a/c $account is KES $bill_amount. New Water balance is KES $balance. Pay via MPESA paybill no $paybill to avoid disconnection.");
-                    smsTemplate.setNeedsApproval(true);
-                    smsTemplateRepository.save(smsTemplate);
-                }
-                catch (Exception ex){
-
-                }
-
-
             }
         } catch (Exception ex) {
             // ex.printStackTrace();

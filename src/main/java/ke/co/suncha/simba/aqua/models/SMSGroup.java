@@ -37,6 +37,9 @@ public class SMSGroup extends SimbaBaseEntity implements Serializable {
     @Column(name = "all_messages")
     private Integer messages = 0;
 
+    @Column(name = "from_system")
+    private Boolean fromSystem=false;
+
 
     @Column(name = "approved")
     private Boolean approved = false;
@@ -61,6 +64,14 @@ public class SMSGroup extends SimbaBaseEntity implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "smsGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SMS> smsList;
+
+    public Boolean getFromSystem() {
+        return fromSystem;
+    }
+
+    public void setFromSystem(Boolean fromSystem) {
+        this.fromSystem = fromSystem;
+    }
 
     public String getStatus() {
         return status;

@@ -9,15 +9,16 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.admin.utils.Config;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
+import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
 import org.json.*;
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -26,19 +27,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.Processor;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by manyala on 5/26/15.
  */
 @Service
-//@Scope("singleton")
 public class SMSService {
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -95,6 +92,12 @@ public class SMSService {
         //ge
     }
 
+    public String getMonthYear() {
+        SimpleDateFormat format1 = new SimpleDateFormat("MMM_yyyy_");
+        String bmonth = format1.format(Calendar.getInstance().getTime());
+        return bmonth.toUpperCase();
+    }
+
     //send payment summary reports @8 oclock & 4 oclock
     @Scheduled(fixedDelay = 3000)
     @Transactional
@@ -114,7 +117,7 @@ public class SMSService {
     public void explode() {
 
         try {
-            List<SMSGroup> smsGroups = smsGroupRepository.findAllByApprovedAndExploded(true, false);
+            List<SMSGroup> smsGroups = smsGroupRepository.findAllByApprovedAndExplodedAndFromSystem(true, false, false);
             if (smsGroups.isEmpty()) {
                 return;
             }
@@ -177,6 +180,12 @@ public class SMSService {
         }
     }
 
+    public String formatNumber(Double value) {
+        NumberFormat formatter = new DecimalFormat("###,###.###");
+        return formatter.format(value);
+    }
+
+    @Transactional
     private String parseSMS(String message, Long accountId, Long paymentId, Long billId) {
         //$account_no
         //$balance
@@ -198,7 +207,7 @@ public class SMSService {
 
         //$balance
         if (message.contains("$balance")) {
-            message = message.replace("$balance", account.getOutstandingBalance().toString());
+            message = message.replace("$balance", this.formatNumber(account.getOutstandingBalance()));
         }
 
         //Payment placeholders
@@ -207,10 +216,10 @@ public class SMSService {
         Payment payment = paymentRepository.findOne(paymentId);
         if (payment != null) {
             if (message.contains("$receipt_no")) {
-                message = message.replace("$receipt_no", payment.getReceiptNo());
+                message = message.replace("$receipt_no", payment.getReceiptNo().toUpperCase());
             }
             if (message.contains("$receipt_amount")) {
-                message = message.replace("$receipt_amount", payment.getAmount().toString());
+                message = message.replace("$receipt_amount", this.formatNumber(payment.getAmount()));
             }
         }
 
@@ -224,9 +233,10 @@ public class SMSService {
 
         //$bill_amount
         Bill bill = billRepository.findOne(billId);
+
         if (bill != null) {
             if (message.contains("$bill_amount")) {
-                message = message.replace("$bill_amount", bill.getTotalBilled().toString());
+                message = message.replace("$bill_amount", this.formatNumber(bill.getTotalBilled()));
             }
         }
 
@@ -238,7 +248,10 @@ public class SMSService {
         return message;
     }
 
-    public void save(Long accountId) {
+    @Transactional
+    public void saveNotification(Long accountId, Long paymentId, Long billId, SMSNotificationType smsNotificationType) {
+
+
         SMS sms = new SMS();
         Account account = accountRepository.findOne(accountId);
         if (account.getConsumer() == null) {
@@ -256,11 +269,44 @@ public class SMSService {
         //set mobile number
         sms.setMobileNumber(account.getConsumer().getPhoneNumber());
 
-        //set message
 
+        String notification = "";
+        if (smsNotificationType == SMSNotificationType.BILL) {
+            if (account.getOutstandingBalance() == 0) {
+                notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_ZERO_BALANCE;
+            } else if (account.getOutstandingBalance() > 0) {
+                notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_BALANCE;
+            } else if (account.getOutstandingBalance() < 0) {
+                notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_CREDIT_BALANCE;
+            }
+        } else if (smsNotificationType == SMSNotificationType.PAYMENT) {
+            if (account.getOutstandingBalance() == 0) {
+                notification = Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_ZERO_BALANCE;
+            } else if (account.getOutstandingBalance() > 0) {
+                notification = Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_BALANCE;
+            } else if (account.getOutstandingBalance() < 0) {
+                notification = Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_CREDIT_BALANCE;
+            }
+        }
+
+        notification = this.getMonthYear() + notification;
+
+
+        //set sms group
+        SMSGroup smsGroup = smsGroupRepository.findByName(notification);
+        if (smsGroup == null) {
+            return;
+        }
+
+        String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), accountId, paymentId, billId);
+
+        //set message
+        sms.setMessage(message);
 
         //save sms
-        smsRepository.save(sms);
+        sms = smsRepository.save(sms);
+        sms.setSmsGroup(smsGroup);
+        sms = smsRepository.save(sms);
     }
 
     /**
@@ -289,22 +335,24 @@ public class SMSService {
             String sms_sender_id = optionService.getOption("SMS_SENDER_ID").getValue();
             AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
             for (SMS sms : smsList) {
-                try {
-                    log.info("Sending SMS to:" + sms.getMobileNumber());
+                if (sms.getSmsGroup().getApproved()) {
+                    try {
+                        log.info("Sending SMS to:" + sms.getMobileNumber());
 
-                    JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
-                    JSONObject result = results.getJSONObject(0);
-                    String status = result.getString("status");
-                    if (status.compareTo("Success") == 0) {
-                        sms.setDateSend(Calendar.getInstance());
-                        sms.setSend(true);
-                        smsRepository.save(sms);
-                    } else {
-                        log.error("Unable to send SMS to:" + sms.getMobileNumber());
-                        log.error(status);
+                        JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
+                        JSONObject result = results.getJSONObject(0);
+                        String status = result.getString("status");
+                        if (status.compareTo("Success") == 0) {
+                            sms.setDateSend(Calendar.getInstance());
+                            sms.setSend(true);
+                            smsRepository.save(sms);
+                        } else {
+                            log.error("Unable to send SMS to:" + sms.getMobileNumber());
+                            log.error(status);
+                        }
+                    } catch (Exception ex) {
+                        log.error(ex.getMessage());
                     }
-                } catch (Exception ex) {
-                    log.error(ex.getMessage());
                 }
             }
         } catch (Exception ex) {
@@ -585,6 +633,201 @@ public class SMSService {
             log.error(ex.getLocalizedMessage());
         }
         return response;
+    }
+
+
+    @Scheduled(fixedDelay = 3000)
+    @Transactional
+    public void populateDefaultPaymentNotifications() {
+        try {
+            //SMS notification account with balances
+            try {
+                SMSGroup smsGroup = smsGroupRepository.findByName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_BALANCE);
+                if (smsGroup == null) {
+                    smsGroup = new SMSGroup();
+                    smsGroup.setName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_BALANCE);
+                    smsGroup.setApproved(false);
+                    smsGroup.setStatus("Approved");
+                    smsGroup.setFromSystem(true);
+                    smsGroup.setExploded(true);
+                    smsGroup = smsGroupRepository.save(smsGroup);
+
+                    smsGroup.setApproved(true);
+
+                    //create template
+                    SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_BALANCE);
+                    if (smsTemplate == null) {
+                        smsTemplate = new SMSTemplate();
+                        smsTemplate.setName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_BALANCE);
+                        smsTemplate.setMessage(Config.SMS_NOTIFICATION_PAYMENT_DEFAULT);
+                        smsTemplate = smsTemplateRepository.save(smsTemplate);
+                    }
+                    smsGroup.setSmsTemplate(smsTemplate);
+                    smsGroup = smsGroupRepository.save(smsGroup);
+                }
+            } catch (Exception ex) {
+
+            }
+
+            //payment notification account with zero balance
+            try {
+                SMSGroup smsGroup = smsGroupRepository.findByName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_ZERO_BALANCE);
+                if (smsGroup == null) {
+                    smsGroup = new SMSGroup();
+                    smsGroup.setName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_ZERO_BALANCE);
+                    smsGroup.setApproved(false);
+                    smsGroup.setStatus("Approved");
+                    smsGroup.setFromSystem(true);
+                    smsGroup.setExploded(true);
+                    smsGroup = smsGroupRepository.save(smsGroup);
+
+                    smsGroup.setApproved(true);
+
+
+                    //create template
+                    SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_ZERO_BALANCE);
+                    if (smsTemplate == null) {
+                        smsTemplate = new SMSTemplate();
+                        smsTemplate.setName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_ZERO_BALANCE);
+                        smsTemplate.setMessage(Config.SMS_NOTIFICATION_PAYMENT_DEFAULT);
+                        smsTemplate = smsTemplateRepository.save(smsTemplate);
+                    }
+                    smsGroup.setSmsTemplate(smsTemplate);
+                    smsGroup = smsGroupRepository.save(smsGroup);
+
+                }
+            } catch (Exception ex) {
+
+            }
+
+            //payment notification account with credit balance
+            try {
+                SMSGroup smsGroup = smsGroupRepository.findByName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_CREDIT_BALANCE);
+                if (smsGroup == null) {
+                    smsGroup = new SMSGroup();
+                    smsGroup.setName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_CREDIT_BALANCE);
+                    smsGroup.setApproved(false);
+                    smsGroup.setStatus("Approved");
+                    smsGroup.setFromSystem(true);
+                    smsGroup.setExploded(true);
+                    smsGroup.setApproved(true);
+                    smsGroup = smsGroupRepository.save(smsGroup);
+
+
+                    //create template
+                    SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_CREDIT_BALANCE);
+                    if (smsTemplate == null) {
+                        smsTemplate = new SMSTemplate();
+                        smsTemplate.setName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_CREDIT_BALANCE);
+                        smsTemplate.setMessage(Config.SMS_NOTIFICATION_PAYMENT_DEFAULT);
+                        smsTemplate = smsTemplateRepository.save(smsTemplate);
+                    }
+                    smsGroup.setSmsTemplate(smsTemplate);
+                    smsGroup = smsGroupRepository.save(smsGroup);
+                }
+            } catch (Exception ex) {
+
+            }
+
+        } catch (Exception ex) {
+        }
+    }
+
+    @Scheduled(fixedDelay = 3000)
+    @Transactional
+    public void populateDefaultBillingNotifications() {
+        try {
+            List<Zone> zones = zoneRepository.findAll();
+            if (!zones.isEmpty()) {
+                for (Zone zone : zones) {
+                    String monthYear = this.getMonthYear() + zone.getName() + "_";
+                    try {
+                        SMSGroup smsGroup = smsGroupRepository.findByName(monthYear + Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_BALANCE);
+                        if (smsGroup == null) {
+                            smsGroup = new SMSGroup();
+                            smsGroup.setName(monthYear + Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_BALANCE);
+                            smsGroup.setApproved(false);
+                            //smsGroup.setStatus("Approved");
+                            //smsGroup.setFromSystem(true);
+                            //smsGroup.setExploded(true);
+                            smsGroup = smsGroupRepository.save(smsGroup);
+
+                            //create template
+                            SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_BILL_ACCOUNT_WITH_BALANCE);
+                            if (smsTemplate == null) {
+                                smsTemplate = new SMSTemplate();
+                                smsTemplate.setName(Config.SMS_TEMPLATE_BILL_ACCOUNT_WITH_BALANCE);
+                                smsTemplate.setMessage(Config.SMS_NOTIFICATION_BILL_DEFAULT);
+                                smsTemplate = smsTemplateRepository.save(smsTemplate);
+                            }
+                            smsGroup.setSmsTemplate(smsTemplate);
+                            smsGroup = smsGroupRepository.save(smsGroup);
+                        }
+                    } catch (Exception ex) {
+
+                    }
+
+
+                    try {
+                        SMSGroup smsGroup = smsGroupRepository.findByName(monthYear + Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_ZERO_BALANCE);
+                        if (smsGroup == null) {
+                            smsGroup = new SMSGroup();
+                            smsGroup.setName(monthYear + Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_ZERO_BALANCE);
+//                    smsGroup.setApproved(false);
+//                    smsGroup.setStatus("Approved");
+//                    smsGroup.setFromSystem(true);
+//                    smsGroup.setExploded(true);
+                            smsGroup = smsGroupRepository.save(smsGroup);
+
+                            //smsGroup.setApproved(true);
+
+
+                            //create template
+                            SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_BILL_ACCOUNT_WITH_ZERO_BALANCE);
+                            if (smsTemplate == null) {
+                                smsTemplate = new SMSTemplate();
+                                smsTemplate.setName(Config.SMS_TEMPLATE_BILL_ACCOUNT_WITH_ZERO_BALANCE);
+                                smsTemplate.setMessage(Config.SMS_NOTIFICATION_BILL_DEFAULT);
+                                smsTemplate = smsTemplateRepository.save(smsTemplate);
+                            }
+                            smsGroup.setSmsTemplate(smsTemplate);
+                            smsGroup = smsGroupRepository.save(smsGroup);
+                        }
+                    } catch (Exception ex) {
+
+                    }
+
+                    try {
+                        SMSGroup smsGroup = smsGroupRepository.findByName(monthYear + Config.SMS_NOTIFICATION_BILL_ACCOUNT_CREDIT_BALANCE);
+                        if (smsGroup == null) {
+                            smsGroup = new SMSGroup();
+                            smsGroup.setName(monthYear + Config.SMS_NOTIFICATION_BILL_ACCOUNT_CREDIT_BALANCE);
+//                    smsGroup.setApproved(false);
+//                    smsGroup.setStatus("Approved");
+//                    smsGroup.setFromSystem(true);
+//                    smsGroup.setExploded(true);
+                            smsGroup = smsGroupRepository.save(smsGroup);
+
+                            //smsGroup.setApproved(true);
+
+                            //create template
+                            SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_BILL_ACCOUNT_WITH_CREDIT_BALANCE);
+                            if (smsTemplate == null) {
+                                smsTemplate = new SMSTemplate();
+                                smsTemplate.setName(Config.SMS_TEMPLATE_BILL_ACCOUNT_WITH_CREDIT_BALANCE);
+                                smsTemplate.setMessage(Config.SMS_NOTIFICATION_BILL_DEFAULT);
+                                smsTemplate = smsTemplateRepository.save(smsTemplate);
+                            }
+                            smsGroup.setSmsTemplate(smsTemplate);
+                            smsGroup = smsGroupRepository.save(smsGroup);
+                        }
+                    } catch (Exception ex) {
+
+                    }
+                }
+            }
+        } catch (Exception ex) {
+        }
     }
 
 }

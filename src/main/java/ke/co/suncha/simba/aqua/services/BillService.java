@@ -39,6 +39,7 @@ import ke.co.suncha.simba.aqua.repository.*;
 
 import ke.co.suncha.simba.aqua.utils.BillMeta;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
+import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +97,9 @@ public class BillService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private SMSService smsService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -258,25 +262,8 @@ public class BillService {
                 account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
                 accountRepository.save(account);
 
-
                 //send sms
-                try {
-                    if (!account.getConsumer().getPhoneNumber().isEmpty()) {
-                        SMS sms = new SMS();
-                        sms.setMobileNumber(account.getConsumer().getPhoneNumber());
-
-                        SimpleDateFormat format1 = new SimpleDateFormat("MMM, yyyy");
-                        String billMonthYear = format1.format(activeBillingMonth.getMonth().getTime());
-
-
-                        //TODO; set this in config
-                        String message = "Dear " + account.getConsumer().getFirstName() + ", your " + billMonthYear + " bill for a/c " + account.getAccNo() + " is KES " + totalAmount + ". New Water balance is KES " + account.getOutstandingBalance() + ". Pay via MPESA paybill no 887800 to avoid disconnection.";
-                        sms.setMessage(message);
-                        smsRepository.save(sms);
-                    }
-                } catch (Exception ex) {
-
-                }
+                smsService.saveNotification(account.getAccountId(), 0L, createdBill.getBillId(), SMSNotificationType.BILL);
 
 
                 log.info("Account billed successfully:" + account.getAccNo());
@@ -476,7 +463,7 @@ public class BillService {
     }
 
     @Transactional
-    public Double getAccountBillsByDate(Long  accountId, Calendar calendar) {
+    public Double getAccountBillsByDate(Long accountId, Calendar calendar) {
 
         SimpleDateFormat format1 = new SimpleDateFormat("dd MMM, yyyy");
         String formatted = format1.format(calendar.getTime());

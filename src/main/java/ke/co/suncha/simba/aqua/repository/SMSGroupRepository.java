@@ -24,5 +24,5 @@ public interface SMSGroupRepository extends PagingAndSortingRepository<SMSGroup,
 
     List<SMSGroup> findAllByExploded(Boolean exploded);
 
-    List<SMSGroup> findAllByApprovedAndExploded(Boolean approved, Boolean exploded);
+    List<SMSGroup> findAllByApprovedAndExplodedAndFromSystem(Boolean approved, Boolean exploded, Boolean fromSystem);
 }

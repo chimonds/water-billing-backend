@@ -8,10 +8,12 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.admin.utils.Config;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MPESARequest;
 import ke.co.suncha.simba.aqua.utils.MPESAResponse;
+import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +66,8 @@ public class MPESAService {
     @Autowired
     private SimbaOptionService optionService;
 
+    @Autowired
+    private SMSService smsService;
     @Autowired
     private AuthManager authManager;
 
@@ -208,10 +212,12 @@ public class MPESAService {
 
                                     // update account balance
                                     account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
-                                    accountRepository.save(account);
+                                    account = accountRepository.save(account);
 
                                     //TODO;
                                     //send message to customer if real account found
+                                    smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
+
                                 }
 
                                 //Mark MPESA transaction as assigned

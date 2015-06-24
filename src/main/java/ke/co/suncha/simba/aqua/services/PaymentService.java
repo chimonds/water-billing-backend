@@ -38,6 +38,7 @@ import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 
+import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +69,9 @@ public class PaymentService {
 
     @Autowired
     private PaymentSourceRepository paymentSourceRepository;
+
+    @Autowired
+    private SMSService smsService;
 
     @Autowired
     private AuthManager authManager;
@@ -268,21 +272,7 @@ public class PaymentService {
                 account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
 
                 //send sms
-                try {
-                    if (!account.getConsumer().getPhoneNumber().isEmpty()) {
-                        SMS sms = new SMS();
-                        sms.setMobileNumber(account.getConsumer().getPhoneNumber());
-
-                        SimpleDateFormat format1 = new SimpleDateFormat("MMM dd, yyyy");
-                        String today = format1.format(Calendar.getInstance().getTime());
-                        //TODO; set this in config
-                        String message = "Dear " + account.getConsumer().getFirstName() + ", you paid KES " + payment.getAmount() + " on " + today + ". New Water balance is KES " + account.getOutstandingBalance();
-                        sms.setMessage(message);
-                        smsRepository.save(sms);
-                    }
-                } catch (Exception ex) {
-
-                }
+                smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
 
 
                 accountRepository.save(account);
