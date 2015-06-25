@@ -559,16 +559,49 @@ public class StatsService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "stats_view");
+                response = authManager.grant(requestObject.getToken(), "dashboard_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
                 StatsResponse statsResponse = new StatsResponse();
 
-                if (authManager.grant(requestObject.getToken(), "stats_top").getStatusCode() == HttpStatus.OK) {
-                    statsResponse.setTopView(this.topView);
+//                if (authManager.grant(requestObject.getToken(), "stats_top").getStatusCode() == HttpStatus.OK) {
+//                    statsResponse.setTopView(this.topView);
+//                }
+                TopView topView1 = new TopView();
+                if (authManager.grant(requestObject.getToken(), "stats_consumer_count").getStatusCode() == HttpStatus.OK) {
+                    topView1.setConsumers(this.topView.getConsumers());
                 }
+
+                if (authManager.grant(requestObject.getToken(), "stats_accounts_count").getStatusCode() == HttpStatus.OK) {
+                    topView1.setAccounts(this.topView.getAccounts());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_accounts_active_count").getStatusCode() == HttpStatus.OK) {
+                    topView1.setActive(this.topView.getActive());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_accounts_inactive_count").getStatusCode() == HttpStatus.OK) {
+                    topView1.setInactive(this.topView.getInactive());
+                }
+                if (authManager.grant(requestObject.getToken(), "stats_billed_this_month").getStatusCode() == HttpStatus.OK) {
+                    topView1.setPaidLastMonth(this.topView.getPaidLastMonth());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_paid_this_month").getStatusCode() == HttpStatus.OK) {
+                    topView1.setPaidThisMonth(this.topView.getPaidThisMonth());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_paid_today").getStatusCode() == HttpStatus.OK) {
+                    topView1.setPaidToday(this.topView.getPaidToday());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_payments_not_allocated").getStatusCode() == HttpStatus.OK) {
+                    topView1.setNotAllocated(this.topView.getNotAllocated());
+                }
+                //statsResponse.setTopView(this.topView);
+                statsResponse.setTopView(topView1);
 
                 if (authManager.grant(requestObject.getToken(), "stats_bills_payments_linegraph").getStatusCode() == HttpStatus.OK) {
                     statsResponse.setBillsPaymentsLineGraph(billsPaymentsLineGraph);

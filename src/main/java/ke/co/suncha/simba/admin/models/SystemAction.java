@@ -67,14 +67,14 @@ public class SystemAction  extends SimbaBaseEntity {
 	@NotNull
 	@Column(name = "is_active")
 	private Boolean active=true;
-	
+
 //	@ManyToMany(cascade = CascadeType.ALL,targetEntity = UserRole.class, fetch = FetchType.LAZY)
 //	private List<UserRole> userRoles;
 
-	
+
 	//@ManyToMany(mappedBy="phones")
-	
-	
+
+
 	/**
 	 * @return the systemActionId
 	 */

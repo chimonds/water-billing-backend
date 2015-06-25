@@ -72,7 +72,7 @@ public class PaymentTypeService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "payments_types_list");
+				response = authManager.grant(requestObject.getToken(), "payments_view");
 				if (response.getStatusCode() != HttpStatus.OK) {
 					return response;
 				}

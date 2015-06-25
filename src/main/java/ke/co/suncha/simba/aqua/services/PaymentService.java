@@ -153,7 +153,7 @@ public class PaymentService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "payments_create");
+                response = authManager.grant(requestObject.getToken(), "payment_create");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -309,7 +309,7 @@ public class PaymentService {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-                response = authManager.grant(requestObject.getToken(), "account_payments_list");
+                response = authManager.grant(requestObject.getToken(), "payments_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

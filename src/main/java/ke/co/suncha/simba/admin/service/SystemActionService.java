@@ -101,14 +101,14 @@ public class SystemActionService {
 				UserRole ur = userRoleRepository.findOne(id);
 				if (ur == null) {
 					responseBody = new RestResponseObject("Invalid user role", "");
-					response = new RestResponse(responseBody, HttpStatus.NOT_FOUND);
+					response = new RestResponse(responseBody, HttpStatus.EXPECTATION_FAILED);
 				} else {
 					// get available system actions here
 					available = systemActionRepository.findAll();
 
 					if (available.isEmpty()) {
 						responseBody = new RestResponseObject("Your search did not match any records", "");
-						response = new RestResponse(responseBody, HttpStatus.NOT_FOUND);
+						response = new RestResponse(responseBody, HttpStatus.EXPECTATION_FAILED);
 					} else {
 
 						//

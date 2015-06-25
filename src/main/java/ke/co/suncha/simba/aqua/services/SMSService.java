@@ -646,13 +646,12 @@ public class SMSService {
                 if (smsGroup == null) {
                     smsGroup = new SMSGroup();
                     smsGroup.setName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_BALANCE);
-                    smsGroup.setApproved(false);
+                    smsGroup.setApproved(true);
                     smsGroup.setStatus("Approved");
                     smsGroup.setFromSystem(true);
                     smsGroup.setExploded(true);
                     smsGroup = smsGroupRepository.save(smsGroup);
 
-                    smsGroup.setApproved(true);
 
                     //create template
                     SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_PAYMENT_ACCOUNT_WITH_BALANCE);
@@ -675,13 +674,11 @@ public class SMSService {
                 if (smsGroup == null) {
                     smsGroup = new SMSGroup();
                     smsGroup.setName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_WITH_ZERO_BALANCE);
-                    smsGroup.setApproved(false);
+                    smsGroup.setApproved(true);
                     smsGroup.setStatus("Approved");
                     smsGroup.setFromSystem(true);
                     smsGroup.setExploded(true);
                     smsGroup = smsGroupRepository.save(smsGroup);
-
-                    smsGroup.setApproved(true);
 
 
                     //create template
@@ -706,7 +703,6 @@ public class SMSService {
                 if (smsGroup == null) {
                     smsGroup = new SMSGroup();
                     smsGroup.setName(getMonthYear() + Config.SMS_NOTIFICATION_PAYMENT_ACCOUNT_CREDIT_BALANCE);
-                    smsGroup.setApproved(false);
                     smsGroup.setStatus("Approved");
                     smsGroup.setFromSystem(true);
                     smsGroup.setExploded(true);

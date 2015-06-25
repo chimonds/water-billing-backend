@@ -178,7 +178,7 @@ public class ConsumerService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "consumers_view_profile");
+                response = authManager.grant(requestObject.getToken(), "consumers_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

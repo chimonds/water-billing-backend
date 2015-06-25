@@ -231,7 +231,7 @@ public class PostBankService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "postbank_transactions_view");
+                response = authManager.grant(requestObject.getToken(), "postbank_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

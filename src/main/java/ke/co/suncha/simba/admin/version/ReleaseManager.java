@@ -139,28 +139,20 @@ public class ReleaseManager {
 
                     String content = "account_create,\n" +
                             "accounts_view,\n" +
-                            "account_view_profile,\n" +
                             "account_update,\n" +
                             "account_transfer,\n" +
                             "report_account_receivable,\n" +
                             "report_credit_balances,\n" +
                             "report_field_report,\n" +
-                            "account_bills,\n" +
-                            "bills_last,\n" +
-                            "account_bill,\n" +
                             "report_negative_readings,\n" +
                             "report_meter_stops,\n" +
                             "report_meter_readings,\n" +
                             "report_billed_amount,\n" +
                             "report_billing_checklist,\n" +
                             "billing_month_view,\n" +
-                            "billing_month_list,\n" +
-                            "billing_month_get_active,\n" +
                             "billing_month_update,\n" +
-                            "bill_item_type_list,\n" +
                             "consumers_create,\n" +
                             "consumers_view,\n" +
-                            "consumers_view_profile,\n" +
                             "consumers_update,\n" +
                             "location_create,\n" +
                             "location_view,\n" +
@@ -170,19 +162,13 @@ public class ReleaseManager {
                             "meter_update,\n" +
                             "meter_allocate,\n" +
                             "meter_deallocate,\n" +
-                            "meter_owners_list,\n" +
-                            "meter_sizes_list,\n" +
-                            "payments_create,\n" +
-                            "account_payments_list,\n" +
+                            "payment_create,\n" +
                             "payments_view,\n" +
-                            "payments_types_list,\n" +
                             "report_payments,\n" +
                             "account_statement,\n" +
                             "report_billing_summary,\n" +
                             "report_potential_cut_off,\n" +
                             "report_monthly_bills,\n" +
-                            "tariff_list,\n" +
-                            "tariff_calculate,\n" +
                             "zones_create,\n" +
                             "zones_view,\n" +
                             "zones_update,\n" +
@@ -196,21 +182,28 @@ public class ReleaseManager {
                             "settings_update,\n" +
                             "dashboard_view,\n" +
                             "users_change_own_password,\n" +
-                            "stats_view,\n" +
-                            "stats_top,\n" +
+
+                            "stats_consumer_count,\n" +
+                            "stats_accounts_count,\n" +
+                            "stats_accounts_active_count,\n" +
+                            "stats_accounts_inactive_count,\n" +
+                            "stats_billed_this_month,\n" +
+                            "stats_paid_this_month,\n" +
+                            "stats_paid_today,\n" +
+                            "stats_payments_not_allocated,\n" +
                             "stats_bills_payments_linegraph,\n" +
                             "stats_zones_bargraph,\n" +
+
                             "account_view,\n"+
                             "bill_delete,\n"+
                             "payment_transfer,\n"+
-                            "MPESA_transactions_view,\n"+
-                            "postbank_transactions_view,\n"+
+                            "mpesa_view,\n"+
+                            "postbank_view,\n"+
                             "sms_template_update,\n"+
                             "report_ageing,\n"+
                             "sms_create,\n"+
                             "sms_approve,\n"+
                             "settings_view";
-
                     String[] permissions = content.split(",");
                     if (permissions.length > 0) {
                         for (String permission : permissions) {

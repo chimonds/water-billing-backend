@@ -121,7 +121,7 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "account_bill");
+                response = authManager.grant(requestObject.getToken(), "bill_account");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -294,7 +294,7 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "account_bills");
+                response = authManager.grant(requestObject.getToken(), "account_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -445,7 +445,7 @@ public class BillService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "bills_last");
+                response = authManager.grant(requestObject.getToken(), "bill_account");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

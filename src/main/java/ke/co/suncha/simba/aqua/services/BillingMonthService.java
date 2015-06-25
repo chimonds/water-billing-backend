@@ -187,7 +187,7 @@ public class BillingMonthService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "billing_month_get_active");
+                response = authManager.grant(requestObject.getToken(), "billing_month_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -214,7 +214,7 @@ public class BillingMonthService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "billing_month_list");
+                response = authManager.grant(requestObject.getToken(), "billing_month_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

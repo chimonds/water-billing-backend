@@ -247,7 +247,7 @@ public class MPESAService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "MPESA_transactions_view");
+                response = authManager.grant(requestObject.getToken(), "mpesa_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

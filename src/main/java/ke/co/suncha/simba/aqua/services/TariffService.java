@@ -86,7 +86,7 @@ public class TariffService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "tariff_calculate");
+                response = authManager.grant(requestObject.getToken(), "bill_account");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -180,7 +180,7 @@ public class TariffService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "tariff_list");
+                response = authManager.grant(requestObject.getToken(), "account_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

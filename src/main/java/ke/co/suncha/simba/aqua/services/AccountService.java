@@ -419,7 +419,7 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "account_view_profile");
+                response = authManager.grant(requestObject.getToken(), "account_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
@@ -454,7 +454,7 @@ public class AccountService {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "account_view_profile");
+                response = authManager.grant(requestObject.getToken(), "account_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }

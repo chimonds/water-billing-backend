@@ -77,7 +77,7 @@ public class MeterSizeService {
 		try {
 			response = authManager.tokenValid(requestObject.getToken());
 			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "meter_sizes_list");
+				response = authManager.grant(requestObject.getToken(), "meter_view");
 				if (response.getStatusCode() != HttpStatus.OK) {
 					return response;
 				}
