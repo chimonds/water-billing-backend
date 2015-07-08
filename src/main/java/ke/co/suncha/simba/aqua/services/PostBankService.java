@@ -84,7 +84,7 @@ public class PostBankService {
 
     }
 
-    @Scheduled(fixedDelay = 5000)
+    //@Scheduled(fixedDelay = 5000)
     @Transactional
     private void pollTransactions() {
         try {
@@ -134,7 +134,7 @@ public class PostBankService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
+    //@Scheduled(fixedDelay = 5000)
     @Transactional
     private void allocateTransactions() {
         try {

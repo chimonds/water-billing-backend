@@ -108,7 +108,7 @@ public class ReleaseManager {
      * @return
      */
 
-    @PostConstruct
+    //@PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -193,13 +193,18 @@ public class ReleaseManager {
                             "stats_payments_not_allocated,\n" +
                             "stats_bills_payments_linegraph,\n" +
                             "stats_zones_bargraph,\n" +
+                            "stats_zones_account_balances,\n"+
 
                             "account_view,\n"+
+                            "bill_account,\n"+
                             "bill_delete,\n"+
                             "payment_transfer,\n"+
                             "mpesa_view,\n"+
                             "postbank_view,\n"+
                             "sms_template_update,\n"+
+                            "sms_view,\n"+
+
+                            "location_view,\n"+
                             "report_ageing,\n"+
                             "sms_create,\n"+
                             "sms_approve,\n"+

@@ -31,12 +31,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
+@Transactional
 public interface AccountRepository extends PagingAndSortingRepository<Account, Long> {
 
     Account findByaccNo(String accoutNo);
@@ -53,5 +55,9 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     List<Account> findAllByZone(Zone zone);
 
     Long countByActive(Boolean status);
+
+    @Transactional
+    @Query(value = "SELECT consumer_id FROM accounts WHERE account_id =?1", nativeQuery = true)
+    Long findConsumerIdByAccountId(Long accountId);
 
 }

@@ -18,4 +18,6 @@ public interface SMSRepository extends PagingAndSortingRepository<SMS, Long> {
 
     Page<SMS> findAllByMessageContains(String name, Pageable pageable);
 
+    SMS findBySmsGroupAndMobileNumber(SMSGroup smsGroup, String mobileNumber);
+
 }

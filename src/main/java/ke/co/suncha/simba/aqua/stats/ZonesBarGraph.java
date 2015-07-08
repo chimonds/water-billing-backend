@@ -1,4 +1,4 @@
-package ke.co.suncha.simba.aqua.services;
+package ke.co.suncha.simba.aqua.stats;
 
 import ke.co.suncha.simba.aqua.stats.BillsPaymentsLineGraph;
 

@@ -289,7 +289,25 @@ public class ReportService {
             for (Account acc : accounts) {
                 AgeingRecord ageingRecord = new AgeingRecord();
                 //log.info("Populating ageing report for:" + acc.getAccNo());
-
+                try {
+                    Long consumerId = accountRepository.findConsumerIdByAccountId(acc.getAccountId());
+                    if (consumerId != null) {
+                        Consumer consumer = consumerRepository.findOne(consumerId);
+                        String fullName = "";
+                        if (consumer.getFirstName() != null) {
+                            fullName += consumer.getFirstName().toUpperCase() + " ";
+                        }
+                        if (consumer.getMiddleName() != null) {
+                            fullName += consumer.getMiddleName().toUpperCase() + " ";
+                        }
+                        if (consumer.getLastName() != null) {
+                            fullName += consumer.getLastName().toUpperCase() + " ";
+                        }
+                        ageingRecord.setName(fullName);
+                    }
+                } catch (Exception ex) {
+                    log.info(ex.getMessage());
+                }
                 ageingRecord.setAccNo(acc.getAccNo());
 
                 //set

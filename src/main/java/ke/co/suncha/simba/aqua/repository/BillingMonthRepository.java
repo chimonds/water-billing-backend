@@ -43,6 +43,7 @@ public interface BillingMonthRepository extends PagingAndSortingRepository<Billi
 
 	List<BillingMonth> findAllByIsEnabledOrderByMonthDesc(Integer isEnabled);
 
+
 	BillingMonth findByCurrent(Integer isCurrent);
 
 	@Query("select count(u) from BillingMonth u where u.current = ?1")

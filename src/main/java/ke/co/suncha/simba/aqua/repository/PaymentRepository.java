@@ -49,9 +49,13 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     Payment findByreceiptNo(String receiptNo);
 
     List<Payment> findByBillingMonth(BillingMonth billingMonth);
+
     List<Payment> findByBillingMonthAndAccount(BillingMonth billingMonth, Account account);
+
     List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
+
     List<Payment> findByTransactionDateBetween(Calendar from, Calendar to);
+
     List<Payment> findByTransactionDateBetweenAndPaymentType(Calendar from, Calendar to, PaymentType paymentType);
 
     @Query(value = "SELECT SUM(amount) FROM(SELECT payments.transaction_date, payments.account_id, payments.amount,accounts.zone_id, (SELECT name FROM zones WHERE zones.zone_id=accounts.zone_id) AS zone_code from payments LEFT JOIN (accounts) ON (accounts.account_id= payments.account_id)) AS temp WHERE zone_code =?1 AND transaction_date>=?2 AND transaction_date<=?3", nativeQuery = true)

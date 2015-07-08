@@ -1,8 +1,5 @@
 package ke.co.suncha.simba.aqua.services;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -78,6 +75,9 @@ public class StatsService {
     GaugeService gaugeService;
 
     @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
     private SMSService smsService;
 
     private RestResponse response;
@@ -85,6 +85,7 @@ public class StatsService {
     private TopView topView = new TopView();
     private BillsPaymentsLineGraph billsPaymentsLineGraph = new BillsPaymentsLineGraph();
     private ZonesBarGraph zonesBarGraph = new ZonesBarGraph();
+    private ZoneBalances zoneBalances = new ZoneBalances();
 
     @Scheduled(fixedDelay = 5000)
     private void populateAccountsConsumersCount() {
@@ -217,7 +218,6 @@ public class StatsService {
         return today;
     }
 
-
     @Scheduled(fixedDelay = 5000)
     private void populateXaxis() {
         try {
@@ -263,13 +263,33 @@ public class StatsService {
                 items.add(zone.getName().trim());
             }
             xAxisMeta.setItems(items);
+            //set x axis for zone bar graph
             zonesBarGraph.setxAxisMeta(xAxisMeta);
+
+            //set x axis for zone balances
+            zoneBalances.setxAxisMeta(xAxisMeta);
         } catch (Exception ex) {
             log.error(ex.getMessage());
             ex.printStackTrace();
         }
     }
 
+    @Scheduled(fixedDelay = 5000)
+    private void populateZonesAccountBalancesBarGraph() {
+        try {
+            List<GraphSeries> seriesList = new ArrayList<>();
+
+            //payments
+            List<GraphSeries> series = this.getZoneAccountBalancesGraphData();
+            if (!series.isEmpty()) {
+                seriesList.addAll(series);
+            }
+            zoneBalances.setSeries(seriesList);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
     @Scheduled(fixedDelay = 5000)
     private void populateZonesBarGraph() {
@@ -358,6 +378,67 @@ public class StatsService {
         return seriesList;
     }
 
+
+    @Transactional
+    private List<GraphSeries> getZoneAccountBalancesGraphData() {
+        List<GraphSeries> seriesList = new ArrayList<>();
+        GraphSeries activeSeries = new GraphSeries();
+        GraphSeries inactiveSeries = new GraphSeries();
+        GraphSeries allSeries = new GraphSeries();
+
+        //set series names
+        activeSeries.setName("Active Account Balances");
+        inactiveSeries.setName("Inactive Account Balances");
+        allSeries.setName("All Account Balances");
+
+        List<Double> activeValues = new ArrayList<>();
+        List<Double> inActiveValues = new ArrayList<>();
+        List<Double> allValues = new ArrayList<>();
+
+        //List<Double> billValues = new ArrayList<>();
+
+        List<Zone> zones = zoneRepository.findAll();
+        if (!zones.isEmpty()) {
+            for (Zone zone : zones) {
+                //Get accounts by zone
+                Double activeBal = 0d;
+                Double inactiveBal = 0d;
+                Double allBal = 0d;
+                List<Account> accounts = accountRepository.findAllByZone(zone);
+                if (!accounts.isEmpty()) {
+                    for (Account account : accounts) {
+                        Double bal = paymentService.getAccountBalance(account.getAccountId());
+                        if (bal != account.getOutstandingBalance()) {
+                            account.setOutstandingBalance(bal);
+                            //save
+                            account = accountRepository.save(account);
+                        }
+
+                        if (account.isActive()) {
+                            activeBal += account.getOutstandingBalance();
+                        } else {
+                            inactiveBal += account.getOutstandingBalance();
+                        }
+
+                        allBal += account.getOutstandingBalance();
+                    }
+                }
+                //add bill series values
+                inActiveValues.add(inactiveBal);
+                activeValues.add(activeBal);
+                allValues.add(allBal);
+            }
+
+            activeSeries.setData(activeValues);
+            inactiveSeries.setData(inActiveValues);
+            allSeries.setData(allValues);
+
+            seriesList.add(activeSeries);
+            seriesList.add(inactiveSeries);
+            seriesList.add(allSeries);
+        }
+        return seriesList;
+    }
 
     @Transactional
     private List<GraphSeries> getZonesBarGraphDataPayments() {
@@ -565,10 +646,6 @@ public class StatsService {
                 }
 
                 StatsResponse statsResponse = new StatsResponse();
-
-//                if (authManager.grant(requestObject.getToken(), "stats_top").getStatusCode() == HttpStatus.OK) {
-//                    statsResponse.setTopView(this.topView);
-//                }
                 TopView topView1 = new TopView();
                 if (authManager.grant(requestObject.getToken(), "stats_consumer_count").getStatusCode() == HttpStatus.OK) {
                     topView1.setConsumers(this.topView.getConsumers());
@@ -608,6 +685,11 @@ public class StatsService {
                 }
                 if (authManager.grant(requestObject.getToken(), "stats_zones_bargraph").getStatusCode() == HttpStatus.OK) {
                     statsResponse.setZonesBarGraph(zonesBarGraph);
+                }
+
+                //zone account balances
+                if (authManager.grant(requestObject.getToken(), "stats_zones_account_balances").getStatusCode() == HttpStatus.OK) {
+                    statsResponse.setZoneBalances(this.zoneBalances);
                 }
 
 

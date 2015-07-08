@@ -272,8 +272,9 @@ public class PaymentService {
                 account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
 
                 //send sms
-                smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
-
+                if (!created.getPaymentType().hasComments()) {
+                    smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
+                }
 
                 accountRepository.save(account);
 

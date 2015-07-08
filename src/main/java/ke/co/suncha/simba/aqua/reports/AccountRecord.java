@@ -12,6 +12,16 @@ public class AccountRecord {
     private String meterOwner;
     private  Integer average;
     private  Boolean active;
+    private String status;
+
+    public String getStatus() {
+        if (active) {
+            this.status = "Active";
+        } else {
+            this.status = "Inactive";
+        }
+        return status;
+    }
 
 
     public String getAccNo() {

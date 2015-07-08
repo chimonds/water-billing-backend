@@ -1,7 +1,5 @@
 package ke.co.suncha.simba.aqua.stats;
 
-import ke.co.suncha.simba.aqua.services.ZonesBarGraph;
-
 /**
  * Created by manyala on 5/19/15.
  */
@@ -9,12 +7,14 @@ public class StatsResponse {
     private TopView topView;
     private BillsPaymentsLineGraph billsPaymentsLineGraph;
     private ZonesBarGraph zonesBarGraph;
+    private ZoneBalances zoneBalances;
 
 
     public StatsResponse() {
         this.topView = new TopView();
         this.billsPaymentsLineGraph = new BillsPaymentsLineGraph();
-        this.zonesBarGraph= new ZonesBarGraph();
+        this.zonesBarGraph = new ZonesBarGraph();
+        this.zoneBalances = new ZoneBalances();
     }
 
     public ZonesBarGraph getZonesBarGraph() {
@@ -39,5 +39,13 @@ public class StatsResponse {
 
     public void setBillsPaymentsLineGraph(BillsPaymentsLineGraph billsPaymentsLineGraph) {
         this.billsPaymentsLineGraph = billsPaymentsLineGraph;
+    }
+
+    public ZoneBalances getZoneBalances() {
+        return zoneBalances;
+    }
+
+    public void setZoneBalances(ZoneBalances zoneBalances) {
+        this.zoneBalances = zoneBalances;
     }
 }

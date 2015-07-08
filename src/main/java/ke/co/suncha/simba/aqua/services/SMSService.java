@@ -27,6 +27,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -167,11 +168,18 @@ public class SMSService {
                 }
 
                 //add all
+
+
                 if (!smsList.isEmpty()) {
                     smsRepository.save(smsList);
                     smsGroup.setExploded(true);
                     smsGroup.setMessages(smsList.size());
                     smsGroupRepository.save(smsGroup);
+                } else {
+                    if (smsGroup.getApproved()) {
+                        smsGroup.setExploded(true);
+                        smsGroupRepository.save(smsGroup);
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -184,6 +192,73 @@ public class SMSService {
         NumberFormat formatter = new DecimalFormat("###,###.###");
         return formatter.format(value);
     }
+
+    //TODO;
+    //TO REMOVE
+    //@Scheduled(fixedDelay = 300)
+    //@PostConstruct
+    //@Transactional
+    public void updateMissingSMSForJuneBilling() {
+        log.info("Getting messages for june billing");
+        try {
+
+            BillingMonth billingMonth = billingMonthRepository.findOne(173L);
+            if (billingMonth == null) {
+                return;
+            }
+
+            List<Bill> bills = billRepository.findAllByBillingMonth_BillingMonthId(billingMonth.getBillingMonthId());
+
+
+            if (bills.isEmpty()) {
+                return;
+            }
+
+            log.info(bills.size() + " bills found for june.");
+
+            for (Bill bill : bills) {
+
+                try {
+                    //check if notification already exists
+                    Long accountId = billRepository.findAccountIdByBillId(bill.getBillId());
+
+                    Account account = accountRepository.findOne(accountId);
+
+                    String notification = "";
+                    if (account.getOutstandingBalance() == 0) {
+                        notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_ZERO_BALANCE;
+                    } else if (account.getOutstandingBalance() > 0) {
+                        notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_BALANCE;
+                    } else if (account.getOutstandingBalance() < 0) {
+                        notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_CREDIT_BALANCE;
+                    }
+
+                    String monthYear = this.getMonthYear() + account.getZone().getName() + "_";
+                    notification = monthYear + notification;
+
+                    //set sms group
+                    SMSGroup smsGroup = smsGroupRepository.findByName(notification);
+                    if (smsGroup != null) {
+
+                        Long consumerId = accountRepository.findConsumerIdByAccountId(accountId);
+                        Consumer consumer = consumerRepository.findOne(consumerId);
+
+                        if (!consumer.getPhoneNumber().isEmpty()) {
+                            SMS sms = smsRepository.findBySmsGroupAndMobileNumber(smsGroup, consumer.getPhoneNumber());
+                            if (sms == null) {
+                                this.saveNotification(account.getAccountId(), 0L, bill.getBillId(), SMSNotificationType.BILL);
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.error(ex.getMessage());
+                }
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
 
     @Transactional
     private String parseSMS(String message, Long accountId, Long paymentId, Long billId) {
@@ -258,21 +333,29 @@ public class SMSService {
             return;
         }
 
-        if (account.getConsumer().getPhoneNumber().isEmpty()) {
+        Long consumerId = accountRepository.findConsumerIdByAccountId(accountId);
+        Consumer consumer = consumerRepository.findOne(consumerId);
+
+        if (consumer == null) {
             return;
         }
 
-        if (account.getConsumer().getPhoneNumber().length() != 10) {
-            log.error("Invalid account notification number:" + account.getConsumer().getPhoneNumber());
+        if (consumer.getPhoneNumber().isEmpty()) {
+            return;
+        }
+
+        if (consumer.getPhoneNumber().length() != 10) {
+            log.error("Invalid account notification number:" + consumer.getPhoneNumber());
         }
 
         //set mobile number
-        sms.setMobileNumber(account.getConsumer().getPhoneNumber());
+        sms.setMobileNumber(consumer.getPhoneNumber());
 
 
         String notification = "";
         if (smsNotificationType == SMSNotificationType.BILL) {
             if (account.getOutstandingBalance() == 0) {
+                //
                 notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_ZERO_BALANCE;
             } else if (account.getOutstandingBalance() > 0) {
                 notification = Config.SMS_NOTIFICATION_BILL_ACCOUNT_WITH_BALANCE;
@@ -289,7 +372,13 @@ public class SMSService {
             }
         }
 
-        notification = this.getMonthYear() + notification;
+
+        if (smsNotificationType == SMSNotificationType.BILL) {
+            String monthYear = this.getMonthYear() + account.getZone().getName() + "_";
+            notification = monthYear + notification;
+        } else if (smsNotificationType == SMSNotificationType.PAYMENT) {
+            notification = this.getMonthYear() + notification;
+        }
 
 
         //set sms group
