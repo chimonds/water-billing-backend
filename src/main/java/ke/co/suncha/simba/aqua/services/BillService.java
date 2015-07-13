@@ -166,7 +166,7 @@ public class BillService {
                 if (unitsConsumed > 0) {
                     bill.setConsumptionType("Actual");
                 } else {
-                    unitsConsumed = lastBill.getAverageConsumption();
+                    unitsConsumed = account.getAverageConsumption();
                     bill.setConsumptionType("Average");
                 }
 

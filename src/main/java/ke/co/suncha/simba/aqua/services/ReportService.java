@@ -206,11 +206,24 @@ public class ReportService {
 
                         //balance from last bill
                         Calendar date = billingMonth.getMonth();
-
+                        date.set(Calendar.DATE,1);
+                        //date.add(Calendar.MONTH, -1);
                         //date.add(Calendar.MONTH, -1);
                         Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), date);
 
-                        monthlyBillRecord.setBalanceBf(balanceBeforeBill + monthlyBillRecord.getTotalPayments());
+                        Double paymentsOnBill = monthlyBillRecord.getTotalPayments();
+                        //log.info("Balance before Bill:" + balanceBeforeBill);
+                        //log.info("Payments on Bill:" + paymentsOnBill);
+
+//                        if(paymentsOnBill>0) {
+//                            monthlyBillRecord.setBalanceBf(balanceBeforeBill + paymentsOnBill);
+//                        }
+//                        else{
+//                            //debit adjustment was done
+//                            monthlyBillRecord.setBalanceBf(balanceBeforeBill);
+//                        }
+
+                        monthlyBillRecord.setBalanceBf(balanceBeforeBill);
 
                         //check if inarreas
                         if ((monthlyBillRecord.getBalanceBf() - monthlyBillRecord.getTotalPayments()) > 0) {
@@ -240,6 +253,9 @@ public class ReportService {
                         if (!chargeRecords.isEmpty()) {
                             monthlyBillRecord.setCharges(chargeRecords);
                         }
+
+
+
 
                         records.add(monthlyBillRecord);
                     }

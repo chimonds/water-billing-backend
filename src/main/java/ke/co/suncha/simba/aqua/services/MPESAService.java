@@ -116,7 +116,7 @@ public class MPESAService {
             ObjectMapper mapper = new ObjectMapper();
             MPESAResponse mpesaResponse = mapper.readValue(jsonResponse, MPESAResponse.class);
 
-            log.info("MPESA:" + mpesaResponse.getMessage());
+            //log.info("MPESA:" + mpesaResponse.getMessage());
             if (!mpesaResponse.getError()) {
                 if (!mpesaResponse.getPayload().isEmpty()) {
                     for (MPESATransaction mpesaTransaction : mpesaResponse.getPayload()) {
@@ -137,7 +137,7 @@ public class MPESAService {
                             }
 
                         } catch (Exception ex) {
-
+                            log.error(ex.getMessage());
                         }
                     }
                 }

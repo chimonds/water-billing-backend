@@ -282,6 +282,7 @@ public class SMSService {
 
         //$balance
         if (message.contains("$balance")) {
+            //calculate balance
             message = message.replace("$balance", this.formatNumber(account.getOutstandingBalance()));
         }
 

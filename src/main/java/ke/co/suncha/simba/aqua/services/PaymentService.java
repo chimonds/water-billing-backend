@@ -271,12 +271,13 @@ public class PaymentService {
                 // update account outstanding balance
                 account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
 
+                //save account info before generating notification
+                accountRepository.save(account);
+
                 //send sms
                 if (!created.getPaymentType().hasComments()) {
                     smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
                 }
-
-                accountRepository.save(account);
 
                 // package response
                 responseObject.setMessage("Payment created successfully. ");

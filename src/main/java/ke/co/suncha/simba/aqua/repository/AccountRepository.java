@@ -60,4 +60,13 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Query(value = "SELECT consumer_id FROM accounts WHERE account_id =?1", nativeQuery = true)
     Long findConsumerIdByAccountId(Long accountId);
 
+    @Transactional
+    @Query(value = "SELECT zone_id FROM accounts WHERE account_id =?1", nativeQuery = true)
+    Long findZoneIdByAccountId(Long accountId);
+
+
+    @Transactional
+    @Query(value = "SELECT acc_no FROM accounts", nativeQuery = true)
+    List<String> findAllAccountNumbers();
+
 }
