@@ -341,7 +341,7 @@ public class SMSService {
             return;
         }
 
-        if (consumer.getPhoneNumber().isEmpty()) {
+        if (consumer.getPhoneNumber() == null) {
             return;
         }
 
@@ -424,25 +424,36 @@ public class SMSService {
             String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
             String sms_sender_id = optionService.getOption("SMS_SENDER_ID").getValue();
             AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
+            Integer smsSent = 0;
             for (SMS sms : smsList) {
                 if (sms.getSmsGroup().getApproved()) {
                     try {
-                        log.info("Sending SMS to:" + sms.getMobileNumber());
-
-                        JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
-                        JSONObject result = results.getJSONObject(0);
-                        String status = result.getString("status");
-                        if (status.compareTo("Success") == 0) {
-                            sms.setDateSend(Calendar.getInstance());
-                            sms.setSend(true);
-                            smsRepository.save(sms);
+                        if (sms.getMobileNumber().length() != 10) {
+                            log.error("SMS not sent. Invalid mobile number:" + sms.getMobileNumber());
                         } else {
-                            log.error("Unable to send SMS to:" + sms.getMobileNumber());
-                            log.error(status);
+                            log.info("Sending SMS to:" + sms.getMobileNumber());
+
+                            JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
+                            JSONObject result = results.getJSONObject(0);
+                            String status = result.getString("status");
+                            if (status.compareTo("Success") == 0) {
+                                sms.setDateSend(Calendar.getInstance());
+                                sms.setSend(true);
+                                smsRepository.save(sms);
+                                log.info("SMS sent:" + sms.getMessage());
+                                smsSent++;
+                            } else {
+                                log.error("Unable to send SMS to:" + sms.getMobileNumber());
+                                log.error(status);
+                            }
                         }
                     } catch (Exception ex) {
                         log.error(ex.getMessage());
                     }
+
+                    log.info("ALL SMS's:" + smsList.size());
+                    log.info("Sent SMS's:" + smsSent);
+                    log.info("Not Sent SMS's:" + (smsList.size() - smsSent));
                 }
             }
         } catch (Exception ex) {

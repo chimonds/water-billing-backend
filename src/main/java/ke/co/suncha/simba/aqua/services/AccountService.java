@@ -288,7 +288,6 @@ public class AccountService {
         return response;
     }
 
-
     @Transactional
     public RestResponse transfer(RestRequestObject<Account> requestObject, Long id) {
         try {

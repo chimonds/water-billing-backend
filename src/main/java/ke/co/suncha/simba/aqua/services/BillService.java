@@ -221,6 +221,7 @@ public class BillService {
                     if (!billRequest.getBillItemTypes().isEmpty()) {
                         List<BillItem> billItems = new ArrayList<>();
                         for (BillItemType bit : billRequest.getBillItemTypes()) {
+                            log.info("Bill item type:" + bit.getName());
                             BillItem bi = new BillItem();
                             bi.setAmount(bit.getAmount());
                             bi.setBill(createdBill);
@@ -232,18 +233,23 @@ public class BillService {
                             log.info("Adding other charges:" + bit.getName());
                             billItems.add(createdBillItem);
                         }
-                        bill.setBillItems(billItems);
+//                        bill.setBillItems(billItems);
+                        createdBill.setBillItems(billItems);
+                        //createdBill = billRepository.save(bill);
                     }
                 }
 
                 //
+
                 Double totalAmount = 0.0;
                 if (account.isMetered()) {
+                    log.info("Applying meter rent...");
                     if (account.getMeter().getMeterOwner().getCharge()) {
                         totalAmount += account.getMeter().getMeterSize().getRentAmount();
                     }
                 }
 
+                log.info("Getting total billed...");
                 totalAmount += createdBill.getAmount();
                 if (createdBill.getBillItems() != null) {
                     if (!createdBill.getBillItems().isEmpty()) {
@@ -257,12 +263,18 @@ public class BillService {
 
                 createdBill = billRepository.save(bill);
 
-                //save outsatanding balance
+                //save outstanding balance
+                log.info("Saving outstanding balance...");
                 account = accountRepository.findOne(accountId);
-                account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
+                log.info("Getting balance for:" + account.getAccountId());
+
+                Double outstandingBalance = paymentService.getAccountBalance(account.getAccountId());
+                log.info("Balance:" + outstandingBalance);
+                account.setOutstandingBalance(outstandingBalance);
                 accountRepository.save(account);
 
                 //send sms
+                log.info("Saving SMS notification...");
                 smsService.saveNotification(account.getAccountId(), 0L, createdBill.getBillId(), SMSNotificationType.BILL);
 
 
@@ -282,6 +294,7 @@ public class BillService {
                 //End - audit trail
             }
         } catch (Exception ex) {
+            ex.printStackTrace();
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
             log.error(ex.getLocalizedMessage());

@@ -183,7 +183,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
      * @return the metered
      */
     public Boolean isMetered() {
-        if (this.meter != null) {
+        if (this.getMeter() != null) {
             this.metered = true;
         }
         return metered;

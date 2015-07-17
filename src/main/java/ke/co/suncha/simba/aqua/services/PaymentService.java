@@ -74,6 +74,10 @@ public class PaymentService {
     private SMSService smsService;
 
     @Autowired
+    private BillService billService;
+
+
+    @Autowired
     private AuthManager authManager;
 
     @Autowired
@@ -102,9 +106,13 @@ public class PaymentService {
         Account account = accountRepository.findOne(accountId);
         // get payments
         List<Payment> payments = account.getPayments();
-        if (payments != null) {
+        if (!payments.isEmpty()) {
             for (Payment p : payments) {
-                amount = (amount + p.getAmount());
+                if (p.getAmount() > 0) {
+                    amount = amount + p.getAmount();
+                } else {
+                    amount = amount - Math.abs(p.getAmount());
+                }
             }
         }
         return amount;
@@ -116,22 +124,29 @@ public class PaymentService {
 
         // update balances
         Account account = accountRepository.findOne(accountId);
+        if (!account.isMetered()) {
+            account.setMeter(null);
+        }
         Double balance = 0d;
 
         // add balance b/f
         balance += account.getBalanceBroughtForward();
 
         List<Bill> bills = account.getBills();
-        if (bills != null) {
-            for (Bill bill : bills) {
-                balance += bill.getAmount();
-                balance += bill.getMeterRent();
+        if (bills != null) if (!bills.isEmpty()) {
+            {
+                for (Bill bill : bills) {
+                    balance += bill.getAmount();
+                    balance += bill.getMeterRent();
 
-                // get bill items
-                List<BillItem> billItems = bill.getBillItems();
-                if (billItems != null) {
-                    for (BillItem billItem : billItems) {
-                        balance += billItem.getAmount();
+                    if (bill.getBillItems() != null) {
+                        // get bill items
+                        List<BillItem> billItems = bill.getBillItems();
+                        if (!billItems.isEmpty()) {
+                            for (BillItem billItem : billItems) {
+                                balance += billItem.getAmount();
+                            }
+                        }
                     }
                 }
             }
@@ -140,8 +155,10 @@ public class PaymentService {
         // get payments
         List<Payment> payments = account.getPayments();
         if (payments != null) {
-            for (Payment p : payments) {
-                balance = (balance - p.getAmount());
+            if (!payments.isEmpty()) {
+                for (Payment p : payments) {
+                    balance = (balance - p.getAmount());
+                }
             }
         }
         return balance;

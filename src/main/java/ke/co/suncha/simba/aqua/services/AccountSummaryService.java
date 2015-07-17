@@ -54,6 +54,9 @@ public class AccountSummaryService {
     private SimbaOptionService optionService;
 
     @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
     private AuthManager authManager;
 
     @Autowired
@@ -234,6 +237,28 @@ public class AccountSummaryService {
             }
             //upload data
 
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
+    @Scheduled(fixedDelay = 3000)
+    public void populateOutstandingAccountBalances() {
+        try {
+            List<String> accountList = accountRepository.findAllAccountNumbers();
+            if (!accountList.isEmpty()) {
+                for (String accNo : accountList) {
+
+                    Account account = accountRepository.findByaccNo(accNo);
+                    if (account != null) {
+                        Double balance = paymentService.getAccountBalance(account.getAccountId());
+                        if (balance.compareTo(account.getOutstandingBalance()) != 0) {
+                            account.setOutstandingBalance(balance);
+                            accountRepository.save(account);
+                        }
+                    }
+                }
+            }
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }

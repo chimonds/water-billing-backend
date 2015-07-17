@@ -206,7 +206,7 @@ public class ReportService {
 
                         //balance from last bill
                         Calendar date = billingMonth.getMonth();
-                        date.set(Calendar.DATE,1);
+                        date.set(Calendar.DATE, 1);
                         //date.add(Calendar.MONTH, -1);
                         //date.add(Calendar.MONTH, -1);
                         Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), date);
@@ -255,8 +255,6 @@ public class ReportService {
                         }
 
 
-
-
                         records.add(monthlyBillRecord);
                     }
                 }
@@ -287,6 +285,16 @@ public class ReportService {
             log.error(ex.getLocalizedMessage());
         }
         return response;
+    }
+
+    @Scheduled(fixedDelay = 30000)
+    @Transactional
+    private void calculateBalances(){
+        try{
+
+        }catch (Exception ex){
+            log.error(ex.getMessage());
+        }
     }
 
     @Scheduled(fixedDelay = 30000)
@@ -1072,14 +1080,21 @@ public class ReportService {
                         paymentRecord.setRefNo(payment.getReceiptNo() + "-" + payment.getPaymentType().getName());
 
 
-                        Double amount = Math.abs(payment.getAmount()) * -1;
+                        //Double amount = Math.abs(payment.getAmount()) * -1;
+                        Double amount = payment.getAmount();
+
 
                         if (payment.getPaymentType().isNegative()) {
                             amount = Math.abs(payment.getAmount());
+                        } else {
+                            if (amount > 0) {
+                                amount = Math.abs(payment.getAmount()) * -1;
+                            } else {
+                                amount = Math.abs(payment.getAmount());
+                            }
                         }
 
                         paymentRecord.setAmount(amount);
-
                         if (payment.getPaymentType().hasComments()) {
                             paymentRecord.setItemType("Adjustment");
                         } else {
@@ -1263,5 +1278,4 @@ public class ReportService {
         }
         return params;
     }
-
 }

@@ -99,7 +99,6 @@ public class StatsService {
         }
     }
 
-
     @Scheduled(fixedDelay = 5000)
     private void populatePaidThisMonth() {
         try {
@@ -122,7 +121,6 @@ public class StatsService {
             log.error(ex.getMessage());
         }
     }
-
 
     @Scheduled(fixedDelay = 5000)
     private void populatePaidToday() {
