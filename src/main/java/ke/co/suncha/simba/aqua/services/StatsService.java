@@ -1,14 +1,18 @@
 package ke.co.suncha.simba.aqua.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.stats.*;
+import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
+import ke.co.suncha.simba.aqua.utils.MobileClientResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 
 import java.text.SimpleDateFormat;
@@ -94,6 +99,31 @@ public class StatsService {
             topView.setConsumers(consumerRepository.count());
             topView.setActive(accountRepository.countByActive(true));
             topView.setInactive(accountRepository.countByActive(false));
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    private void uploadMobileClientStats() {
+        try {
+            //topView
+            //log.info("Uploading topview stats");
+            RestTemplate restTemplate = new RestTemplate();
+
+            MobileClientRequest request = new MobileClientRequest();
+            Credential credential = new Credential();
+
+            credential.setUsername(optionService.getOption("MOBILE_CLIENT_USERNAME").getValue());
+            credential.setPassword(optionService.getOption("MOBILE_CLIENT_KEY").getValue());
+            request.setLogin(credential);
+            request.setPayload(topView);
+
+            String url = optionService.getOption("MOBILE_CLIENT_ENDPOINT").getValue() + "/upload_summary_stats";
+            String jsonResponse = restTemplate.postForObject(url, request, String.class);
+            //log.info("Response:" + jsonResponse);
+
+            //2. Convert JSON to Java object
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
