@@ -42,6 +42,13 @@ public class ReportController extends AbstractRestHandler {
         return reportService.getBillingSummary(requestObject);
     }
 
+    @RequestMapping(value = "/waris", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list waris summary items.", notes = "The list is not paginated.")
+    public RestResponse getWaris(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getWaris(requestObject);
+    }
+
+
     @RequestMapping(value = "/potentialCutOff", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of accounts.", notes = "The list is not paginated.")
     public RestResponse getPotentialCutOff(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {

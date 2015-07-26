@@ -169,6 +169,7 @@ public class ReleaseManager {
                             "report_billing_summary,\n" +
                             "report_potential_cut_off,\n" +
                             "report_monthly_bills,\n" +
+                            "report_waris,\n"+
                             "zones_create,\n" +
                             "zones_view,\n" +
                             "zones_update,\n" +

@@ -58,6 +58,10 @@ public class SMSService {
     @Autowired
     private BillRepository billRepository;
 
+
+    @Autowired
+    private SMSInquiryRepository smsInquiryRepository;
+
     @Autowired
     private SMSTemplateRepository smsTemplateRepository;
 
@@ -99,18 +103,172 @@ public class SMSService {
         return bmonth.toUpperCase();
     }
 
-    //send payment summary reports @8 oclock & 4 oclock
-    @Scheduled(fixedDelay = 3000)
-    @Transactional
-    public void sendSummaryReports() {
-
-    }
 
     @Scheduled(fixedDelay = 3000)
     @Transactional
     public void process() {
         sendSMS();
-        //populateSMSGroupSMSs();
+    }
+
+    @Scheduled(fixedDelay = 3000)
+    @Transactional
+    public void processSMSRequests() {
+        try {
+            List<SMSInquiry> smsInquiries = smsInquiryRepository.findAllBySend(false);
+            if (!smsInquiries.isEmpty()) {
+                for (SMSInquiry smsInquiry : smsInquiries) {
+
+                    Account account = accountRepository.findByaccNo(smsInquiry.getMessage());
+                    if (account == null) {
+                        SMS sms = new SMS();
+                        //set message
+                        SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID);
+                        //String message = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID_DEFAULT).getMessage();
+                        sms.setMessage(smsGroup.getSmsTemplate().getMessage());
+                        sms.setMobileNumber(smsInquiry.getMsgFrom());
+                        sms.setSmsGroup(smsGroup);
+                        smsRepository.save(sms);
+
+                        //Save as queued
+                        smsInquiry.setSend(true);
+                        smsInquiryRepository.save(smsInquiry);
+                    } else {
+                        SMS sms = new SMS();
+
+                        //set message
+
+                        SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID);
+                        //String message = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID_DEFAULT).getMessage();
+
+
+                        String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), account.getAccountId(), 0L, 0L);
+                        sms.setMessage(message);
+                        sms.setMobileNumber(smsInquiry.getMsgFrom());
+                        sms.setSmsGroup(smsGroup);
+                        smsRepository.save(sms);
+
+                        //Save as queued
+                        smsInquiry.setSend(true);
+                        smsInquiryRepository.save(smsInquiry);
+                    }
+
+                }
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    @PostConstruct
+    public void addDefaultSMSGroupsSMSInquiry() {
+        //valid accounts
+        try {
+            SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID);
+            if (smsGroup == null) {
+                smsGroup = new SMSGroup();
+                smsGroup.setName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID);
+                smsGroup.setApproved(true);
+                smsGroup.setStatus("Approved");
+                smsGroup.setFromSystem(true);
+                smsGroup.setExploded(true);
+                smsGroup = smsGroupRepository.save(smsGroup);
+
+
+                //create template
+                SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID);
+                if (smsTemplate == null) {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID);
+                    smsTemplate.setMessage(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID_DEFAULT);
+                    smsTemplate = smsTemplateRepository.save(smsTemplate);
+                }
+                smsGroup.setSmsTemplate(smsTemplate);
+                smsGroup = smsGroupRepository.save(smsGroup);
+            }
+        } catch (Exception ex) {
+
+        }
+
+        try {
+            SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID);
+            if (smsGroup == null) {
+                smsGroup = new SMSGroup();
+                smsGroup.setName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID);
+                smsGroup.setApproved(true);
+                smsGroup.setStatus("Approved");
+                smsGroup.setFromSystem(true);
+                smsGroup.setExploded(true);
+                smsGroup = smsGroupRepository.save(smsGroup);
+
+
+                //create template
+                SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID);
+                if (smsTemplate == null) {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID);
+                    smsTemplate.setMessage(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID_DEFAULT);
+                    smsTemplate = smsTemplateRepository.save(smsTemplate);
+                }
+                smsGroup.setSmsTemplate(smsTemplate);
+                smsGroup = smsGroupRepository.save(smsGroup);
+            }
+        } catch (Exception ex) {
+
+        }
+    }
+
+    @Scheduled(fixedDelay = 3000)
+    @Transactional
+    public void poolRemoteBalanceRequests() {
+
+        Boolean poolRemoteBalanceRequests = false;
+        try {
+            poolRemoteBalanceRequests = Boolean.parseBoolean(optionService.getOption("REMOTE_BALANCE_REQUESTS_ENABLE").getValue());
+        } catch (Exception ex) {
+
+        }
+        if (!poolRemoteBalanceRequests) {
+            return;
+        }
+
+
+        String sms_username = optionService.getOption("SMS_USERNAME").getValue();
+        String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
+        AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
+
+        int lastReceivedId = 0;
+
+        Integer maxId = smsInquiryRepository.getMaxSequenceId();
+        if (maxId != null) {
+            lastReceivedId = maxId;
+        }
+
+        try {
+            JSONArray results = null;
+            do {
+                results = gateway.fetchMessages(lastReceivedId);
+                for (int i = 0; i < results.length(); ++i) {
+                    JSONObject result = results.getJSONObject(i);
+                    lastReceivedId = result.getInt("id");
+                    SMSInquiry smsInquiry = smsInquiryRepository.findBySequenceId(lastReceivedId);
+                    if (smsInquiry == null) {
+
+                        smsInquiry = new SMSInquiry();
+                        smsInquiry.setMsgFrom(result.getString("from"));
+                        smsInquiry.setMsgTo(result.getString("to"));
+                        smsInquiry.setMessage(result.getString("text"));
+                        smsInquiry.setStringDate(result.getString("date"));
+                        smsInquiry.setSequenceId(lastReceivedId);
+
+                        smsInquiryRepository.save(smsInquiry);
+                    }
+                }
+            } while (results.length() > 0);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
     }
 
     @Scheduled(fixedDelay = 3000)
@@ -425,12 +583,20 @@ public class SMSService {
             String sms_sender_id = optionService.getOption("SMS_SENDER_ID").getValue();
             AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
             Integer smsSent = 0;
+
             for (SMS sms : smsList) {
                 if (sms.getSmsGroup().getApproved()) {
                     try {
-                        if (sms.getMobileNumber().length() != 10) {
-                            log.error("SMS not sent. Invalid mobile number:" + sms.getMobileNumber());
+                        Boolean sendSMS = false;
+                        if (sms.getMobileNumber().startsWith("+") && sms.getMobileNumber().length() == 13) {
+                            sendSMS = true;
+                        } else if (sms.getMobileNumber().length() == 10) {
+                            sendSMS = true;
                         } else {
+                            log.error("SMS not sent. Invalid mobile number:" + sms.getMobileNumber());
+                        }
+
+                        if (sendSMS) {
                             log.info("Sending SMS to:" + sms.getMobileNumber());
 
                             JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
@@ -737,7 +903,7 @@ public class SMSService {
     }
 
 
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 5000)
     @Transactional
     public void populateDefaultPaymentNotifications() {
         try {

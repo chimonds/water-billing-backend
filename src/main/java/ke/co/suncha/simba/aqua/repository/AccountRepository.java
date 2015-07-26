@@ -64,9 +64,25 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Query(value = "SELECT zone_id FROM accounts WHERE account_id =?1", nativeQuery = true)
     Long findZoneIdByAccountId(Long accountId);
 
+    @Transactional
+    @Query(value = "SELECT meter_id FROM accounts WHERE account_id =?1", nativeQuery = true)
+    Long findMeterIdByAccountId(Long accountId);
+
 
     @Transactional
     @Query(value = "SELECT acc_no FROM accounts", nativeQuery = true)
     List<String> findAllAccountNumbers();
+
+    @Transactional
+    @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE cut_off =?1", nativeQuery = true)
+    Double getOutstandingBalancesByStatus(Integer cutOff);
+
+    @Transactional
+    @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is not null", nativeQuery = true)
+    Integer getActiveMeteredAccounts();
+
+    @Transactional
+    @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is null", nativeQuery = true)
+    Integer getActiveUnMeteredAccounts();
 
 }

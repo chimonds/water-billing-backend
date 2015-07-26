@@ -22,6 +22,111 @@ public class BillingSummaryRecord {
     private Double surchargeMissuse = 0.0;
     private Double meterServicing = 0.0;
 
+    //additional for waris report
+    private Integer activeAccounts = 0;
+    private Integer inactiveAccounts = 0;
+
+    private Integer unitsActualConsumption = 0;
+    private Integer unitsEstimatedConsumption = 0;
+
+    private Double balancesActiveAccounts = 0.0;
+    private Double balancesInactiveAccounts = 0.0;
+
+    private Double totalPayments=0.0;
+
+    private Integer activeMeteredAccounts=0;
+    private Integer activeUnMeteredAccounts=0;
+
+    private Integer meteredBilledActual=0;
+    private Integer meteredBilledAverage=0;
+
+    public Integer getMeteredBilledActual() {
+        return meteredBilledActual;
+    }
+
+    public void setMeteredBilledActual(Integer meteredBilledActual) {
+        this.meteredBilledActual = meteredBilledActual;
+    }
+
+    public Integer getMeteredBilledAverage() {
+        return meteredBilledAverage;
+    }
+
+    public void setMeteredBilledAverage(Integer meteredBilledAverage) {
+        this.meteredBilledAverage = meteredBilledAverage;
+    }
+
+    public Integer getActiveMeteredAccounts() {
+        return activeMeteredAccounts;
+    }
+
+    public void setActiveMeteredAccounts(Integer activeMeteredAccounts) {
+        this.activeMeteredAccounts = activeMeteredAccounts;
+    }
+
+    public Integer getActiveUnMeteredAccounts() {
+        return activeUnMeteredAccounts;
+    }
+
+    public void setActiveUnMeteredAccounts(Integer activeUnMeteredAccounts) {
+        this.activeUnMeteredAccounts = activeUnMeteredAccounts;
+    }
+
+    public Double getTotalPayments() {
+        return totalPayments;
+    }
+
+    public void setTotalPayments(Double totalPayments) {
+        this.totalPayments = totalPayments;
+    }
+
+    public Double getBalancesActiveAccounts() {
+        return balancesActiveAccounts;
+    }
+
+    public void setBalancesActiveAccounts(Double balancesActiveAccounts) {
+        this.balancesActiveAccounts = balancesActiveAccounts;
+    }
+
+    public Double getBalancesInactiveAccounts() {
+        return balancesInactiveAccounts;
+    }
+
+    public void setBalancesInactiveAccounts(Double balancesInactiveAccounts) {
+        this.balancesInactiveAccounts = balancesInactiveAccounts;
+    }
+
+    public Integer getActiveAccounts() {
+        return activeAccounts;
+    }
+
+    public void setActiveAccounts(Integer activeAccounts) {
+        this.activeAccounts = activeAccounts;
+    }
+
+    public Integer getInactiveAccounts() {
+        return inactiveAccounts;
+    }
+
+    public void setInactiveAccounts(Integer inactiveAccounts) {
+        this.inactiveAccounts = inactiveAccounts;
+    }
+
+    public Integer getUnitsActualConsumption() {
+        return unitsActualConsumption;
+    }
+
+    public void setUnitsActualConsumption(Integer unitsActualConsumption) {
+        this.unitsActualConsumption = unitsActualConsumption;
+    }
+
+    public Integer getUnitsEstimatedConsumption() {
+        return unitsEstimatedConsumption;
+    }
+
+    public void setUnitsEstimatedConsumption(Integer unitsEstimatedConsumption) {
+        this.unitsEstimatedConsumption = unitsEstimatedConsumption;
+    }
 
     public Double getBilledOnActual() {
         return billedOnActual;

@@ -254,7 +254,6 @@ public class ReportService {
                             monthlyBillRecord.setCharges(chargeRecords);
                         }
 
-
                         records.add(monthlyBillRecord);
                     }
                 }
@@ -287,15 +286,6 @@ public class ReportService {
         return response;
     }
 
-    @Scheduled(fixedDelay = 30000)
-    @Transactional
-    private void calculateBalances(){
-        try{
-
-        }catch (Exception ex){
-            log.error(ex.getMessage());
-        }
-    }
 
     @Scheduled(fixedDelay = 30000)
     @Transactional
@@ -1278,4 +1268,190 @@ public class ReportService {
         }
         return params;
     }
+
+    public RestResponse getWaris(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_waris");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                log.info("Getting WARIS report...");
+                ReportsParam request = requestObject.getObject();
+
+                Map<String, String> params = this.getParamsMap(request);
+
+                BillingSummaryRecord bsr = new BillingSummaryRecord();
+
+
+                List<Bill> bills;
+                if (params.isEmpty()) {
+                    responseObject.setMessage("Please select billing month.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (params.containsKey("billingMonthId")) {
+                    Object billingMonthId = params.get("billingMonthId");
+
+                    BillingMonth billingMonth;
+                    billingMonth = billingMonthRepository.findOne(Long.valueOf(billingMonthId.toString()));
+
+                    if (billingMonth == null) {
+                        responseObject.setMessage("Invalid billing month.");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+
+                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    log.info("Bills " + bills.size() + " found.");
+                    if (bills == null || bills.isEmpty()) {
+                        responseObject.setMessage("No content found");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+
+                    Double totalAmountBilled = 0.0;
+                    Double totalMeterRent = 0.0;
+
+                    for (Bill b : bills) {
+                        Boolean include = true;
+                        if (params.containsKey("zoneId")) {
+                            Object zoneId = params.get("zoneId");
+                            if (b.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                include = false;
+                            }
+                        }
+
+
+                        if (include) {
+
+                            //accountRepository.fi
+                            Long meterId = 0l;
+
+
+                            Boolean isMetered = false;
+
+                            try {
+                                if (b.getAccount().isMetered()) {
+                                    isMetered = true;
+                                }
+                            } catch (Exception ex) {
+                                log.error(ex.getMessage());
+                            }
+
+                            totalAmountBilled += b.getAmount();
+                            totalMeterRent += b.getMeterRent();
+                            //amount billed
+                            if (b.getConsumptionType().compareToIgnoreCase("Actual") == 0) {
+                                //amount billed on actual
+                                bsr.setBilledOnActual(bsr.getBilledOnActual() + b.getAmount());
+
+                                //units billed on actual
+                                bsr.setUnitsActualConsumption(bsr.getUnitsActualConsumption() + b.getUnitsBilled());
+                                if (isMetered) {
+                                    bsr.setMeteredBilledActual(bsr.getMeteredBilledActual() + 1);
+                                }
+
+                            } else if (b.getConsumptionType().compareToIgnoreCase("Average") == 0) {
+                                //amount billed on average
+                                bsr.setBilledOnEstimate(bsr.getBilledOnEstimate() + b.getAmount());
+
+                                //units billed on average
+                                bsr.setUnitsEstimatedConsumption(bsr.getUnitsEstimatedConsumption() + b.getAverageConsumption());
+                                if (isMetered) {
+                                    bsr.setMeteredBilledAverage(bsr.getMeteredBilledAverage() + 1);
+                                }
+                            }
+
+                            //Other charges
+                            if (!b.getBillItems().isEmpty()) {
+                                for (BillItem bi : b.getBillItems()) {
+                                    totalAmountBilled += bi.getAmount();
+                                    if (bi.getBillItemType().getName().compareToIgnoreCase("Reconnection Fee") == 0) {
+                                        bsr.setReconnectionFee(bsr.getReconnectionFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("At Owners Request Fee") == 0) {
+                                        bsr.setAtOwnersRequestFee(bsr.getAtOwnersRequestFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Change Of Account Name") == 0) {
+                                        bsr.setChangeOfAccountName(bsr.getChangeOfAccountName() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("By Pass Fee") == 0) {
+                                        bsr.setByPassFee(bsr.getByPassFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Bounced Cheque Fee") == 0) {
+                                        bsr.setBouncedChequeFee(bsr.getBouncedChequeFee() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Irrigation") == 0) {
+                                        bsr.setSurchargeIrrigation(bsr.getSurchargeIrrigation() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Missuse") == 0) {
+                                        bsr.setSurchargeMissuse(bsr.getSurchargeMissuse() + bi.getAmount());
+                                    } else if (bi.getBillItemType().getName().compareToIgnoreCase("Meter Servicing") == 0) {
+                                        bsr.setMeterServicing(bsr.getMeterServicing() + bi.getAmount());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    List<Payment> payments;
+                    payments = paymentRepository.findByBillingMonth(billingMonth);
+
+                    if (!payments.isEmpty()) {
+
+                        for (Payment p : payments) {
+                            //payments
+                            Boolean include = true;
+                            if (params.containsKey("zoneId")) {
+                                Object zoneId = params.get("zoneId");
+                                if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                    include = false;
+                                }
+                            }
+
+                            if (include) {
+                                if (p.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
+                                    bsr.setCreditAdjustments(bsr.getCreditAdjustments() + Math.abs(p.getAmount()));
+                                } else if (p.getPaymentType().getName().compareToIgnoreCase("Debit") == 0) {
+                                    bsr.setDebitAdjustments(bsr.getDebitAdjustments() + Math.abs(p.getAmount()));
+                                } else {
+                                    //total payments
+                                    bsr.setTotalPayments(bsr.getTotalPayments() + p.getAmount());
+                                }
+                            }
+                        }
+                    }
+
+                    //bsr.set
+
+                    bsr.setActiveAccounts(Integer.valueOf(accountRepository.countByActive(true).toString()));
+                    bsr.setInactiveAccounts(Integer.valueOf(accountRepository.countByActive(false).toString()));
+
+                    bsr.setBalancesActiveAccounts(accountRepository.getOutstandingBalancesByStatus(1));
+                    bsr.setBalancesInactiveAccounts(accountRepository.getOutstandingBalancesByStatus(0));
+
+
+                    bsr.setActiveMeteredAccounts(accountRepository.getActiveMeteredAccounts());
+                    bsr.setActiveUnMeteredAccounts(accountRepository.getActiveUnMeteredAccounts());
+
+
+                    //send report
+                    ReportObject report = new ReportObject();
+                    report.setDate(Calendar.getInstance());
+                    report.setAmount(totalAmountBilled);
+                    report.setMeterRent(totalMeterRent);
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:WARIS").getValue());
+                    report.setContent(bsr);
+
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
+        }
+        return response;
+    }
+
 }

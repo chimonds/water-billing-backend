@@ -26,4 +26,15 @@ public class Config {
     public static final String SMS_NOTIFICATION_BILL_DEFAULT = "Dear Customer, your $billing_month bill for a/c $account_no is KES $bill_amount. New Water balance is KES $balance. Pay via MPESA paybill no 888780 to avoid disconnection.";
     public static final String SMS_NOTIFICATION_PAYMENT_DEFAULT = "Thank you for your payment of KES $receipt_amount to a/c $account_no (txn id $receipt_no). Your new water balance is KES $balance.";
 
+
+    public static final String SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID = "SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID";
+    public static final String SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID = "SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID";
+
+
+    public static final String SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID_DEFAULT = "Dear Customer, your Water Balance for a/c $account_no is KES $balance. Tuhifadhi Maji.";
+    public static final String SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID_DEFAULT = "Dear Customer, account number does not exist. Tuhifadhi Maji.";
+
+    public static final String SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID = "SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID";
+    public static final String SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID = "SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID";
+
 }
