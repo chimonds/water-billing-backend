@@ -55,6 +55,7 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
 
     List<Payment> findByTransactionDateBetween(Calendar from, Calendar to);
+    List<Payment> findByTransactionDateBetweenAndAccount(Calendar from, Calendar to, Account account);
 
     List<Payment> findByTransactionDateBetweenAndPaymentType(Calendar from, Calendar to, PaymentType paymentType);
 

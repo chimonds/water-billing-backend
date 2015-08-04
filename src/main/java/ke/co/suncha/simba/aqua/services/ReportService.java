@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -118,6 +119,19 @@ public class ReportService {
                 String formatted = format1.format(billingMonth.getMonth().getTime());
                 log.info("Getting bills for billing month:" + formatted);
 
+                Calendar bMonth = Calendar.getInstance();
+                bMonth.setTime(billingMonth.getMonth().getTime());
+                //billingMonth.getMonth();
+
+                Calendar paymentBillingDate = bMonth;
+                paymentBillingDate.add(Calendar.MONTH, -1);
+                paymentBillingDate.set(Calendar.DATE, 24);
+
+                //System.out.println("Payment billing date:" + paymentBillingDate.getTime());
+
+
+                BillingMonth paymentBillingMonth = billingMonthRepository.findByMonth(paymentBillingDate);
+
                 //get bills belonging to billing month
                 List<Bill> bills = new ArrayList<>();
 
@@ -144,7 +158,7 @@ public class ReportService {
                 }
 
                 List<MonthlyBillRecord> records = new ArrayList<>();
-
+                Integer counter = 0;
                 for (Bill b : bills) {
                     Boolean include = true;
                     if (params.containsKey("zoneId")) {
@@ -156,6 +170,8 @@ public class ReportService {
 
 
                     if (include) {
+                        counter++;
+
                         MonthlyBillRecord monthlyBillRecord = new MonthlyBillRecord();
                         monthlyBillRecord.setAccName(b.getAccount().getAccName());
                         monthlyBillRecord.setAccNo(b.getAccount().getAccNo());
@@ -186,46 +202,89 @@ public class ReportService {
                         monthlyBillRecord.setBillSummaryList(list);
                         //payments
                         Double totalPayments = 0.0;
-                        List<Payment> payments = paymentRepository.findByBillingMonthAndAccount(billingMonth, b.getAccount());
+
+
+                        //get payments from the previous month
+                        List<Payment> payments = paymentRepository.findByBillingMonthAndAccount(paymentBillingMonth, b.getAccount());
+                        //List<Payment> payments = paymentRepository.findByTransactionDateBetweenAndAccount(startDate, toDate, b.getAccount());
+
+
+                        Long accountId = billRepository.findAccountIdByBillId(b.getBillId());
+                        Integer billCode = billRepository.findPreviousBillCode(accountId, b.getBillCode());
+
+
+                        //balance from last bill
+                        Calendar lastDateBeforeBillingCycle = Calendar.getInstance();
+                        lastDateBeforeBillingCycle.setTime(billingMonth.getMonth().getTime());
+                        lastDateBeforeBillingCycle.set(Calendar.DAY_OF_MONTH, 1);
+                        //log.info("Bill Code:" + billCode);
+
+
+                        Calendar lastBillingDate = Calendar.getInstance();
+
+                        if (billCode != null) {
+                            //get the actual previous bill
+                            // Calendar c = Calendar.getInstance();
+                            Timestamp timestamp = billRepository.findPreviousBillDate(accountId, billCode);
+                            if (timestamp != null) {
+                                //log.info("Last bill:" + timestamp.getTime());
+                                lastDateBeforeBillingCycle = Calendar.getInstance();
+                                lastDateBeforeBillingCycle.setTimeInMillis(timestamp.getTime());
+                                lastDateBeforeBillingCycle.add(Calendar.DAY_OF_MONTH, 1);
+                                //log.info("lastDateBeforeBillingCycle:" + lastDateBeforeBillingCycle.getTime());
+
+                                lastBillingDate.setTimeInMillis(timestamp.getTime());
+                            }
+                        }
+
+
+                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), lastDateBeforeBillingCycle);
+
+
+                        Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
+
+                        Double paymentsDoneOnBillingDay = 0.0;
                         if (!payments.isEmpty()) {
+                            //log.info("Payments: " + payments.size());
                             List<PaymentRecord> paymentRecords = new ArrayList<>();
 
                             for (Payment p : payments) {
-                                totalPayments += p.getAmount();
-                                PaymentRecord paymentRecord = new PaymentRecord();
-                                paymentRecord.setTransactionDate(p.getTransactionDate());
-                                paymentRecord.setAmount(p.getAmount());
-                                paymentRecord.setReceiptNo(p.getReceiptNo());
-                                paymentRecords.add(paymentRecord);
+                                Integer intPaymentCode = Integer.valueOf(p.getTransactionDate().get(Calendar.YEAR) + "" + p.getTransactionDate().get(Calendar.MONTH) + "" + p.getTransactionDate().get(Calendar.DAY_OF_MONTH));
+                                if (intPaymentCode > intBillCode) {
+                                    totalPayments += p.getAmount();
+                                    PaymentRecord paymentRecord = new PaymentRecord();
+                                    paymentRecord.setTransactionDate(p.getTransactionDate());
+                                    paymentRecord.setAmount(p.getAmount());
+                                    paymentRecord.setReceiptNo(p.getReceiptNo());
+
+                                    paymentRecords.add(paymentRecord);
+
+                                    //
+                                    //log.info("PAYMENT CODE:" + intPaymentCode);
+                                    //log.info("BILL CODE:" + intBillCode);
+                                    if (intBillCode.compareTo(intPaymentCode) == 0) {
+                                        paymentsDoneOnBillingDay += p.getAmount();
+                                        //log.info("Adding payments done on same day...");
+                                    }
+                                }
                             }
                             monthlyBillRecord.setPayments(paymentRecords);
 
                         }
                         monthlyBillRecord.setTotalPayments(totalPayments);
 
+                        //set balance befor bill
+                        //log.info("Balance b4 bill:" + balanceBeforeBill);
+                        //log.info("Payments done on billing day:" + paymentsDoneOnBillingDay);
+                        balanceBeforeBill = balanceBeforeBill + paymentsDoneOnBillingDay;
 
-                        //balance from last bill
-                        Calendar date = billingMonth.getMonth();
-                        date.set(Calendar.DATE, 1);
-                        //date.add(Calendar.MONTH, -1);
-                        //date.add(Calendar.MONTH, -1);
-                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), date);
 
                         Double paymentsOnBill = monthlyBillRecord.getTotalPayments();
-                        //log.info("Balance before Bill:" + balanceBeforeBill);
-                        //log.info("Payments on Bill:" + paymentsOnBill);
 
-//                        if(paymentsOnBill>0) {
-//                            monthlyBillRecord.setBalanceBf(balanceBeforeBill + paymentsOnBill);
-//                        }
-//                        else{
-//                            //debit adjustment was done
-//                            monthlyBillRecord.setBalanceBf(balanceBeforeBill);
-//                        }
 
                         monthlyBillRecord.setBalanceBf(balanceBeforeBill);
 
-                        //check if inarreas
+                        //check if in arreas
                         if ((monthlyBillRecord.getBalanceBf() - monthlyBillRecord.getTotalPayments()) > 0) {
                             monthlyBillRecord.setInArreas(true);
                         }
@@ -248,7 +307,6 @@ public class ReportService {
                                 chargeRecords.add(chargeRecord);
                             }
                         }
-
 
                         if (!chargeRecords.isEmpty()) {
                             monthlyBillRecord.setCharges(chargeRecords);
@@ -282,6 +340,7 @@ public class ReportService {
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
             log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
         }
         return response;
     }
