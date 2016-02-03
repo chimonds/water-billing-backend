@@ -161,7 +161,7 @@ public class AfricasTalkingGateway
     }
 
 
-    public void call(String from_, String to_) throws Exception
+    public JSONArray call(String from_, String to_) throws Exception
     {
         HashMap<String, String> data = new HashMap<String, String>();
         data.put("username", _username);
@@ -173,12 +173,13 @@ public class AfricasTalkingGateway
 
         JSONObject jsObject = new JSONObject(response);
 
-        if(!jsObject.getString("Status").equals("Success"))
-            throw new Exception(jsObject.getString("ErrorMessage"));
+        if(jsObject.getString("errorMessage").equals("None"))
+            return jsObject.getJSONArray("entries");
+        throw new Exception(jsObject.getString("ErrorMessage"));
     }
 
     //Call methods
-    public int getNumQueuedCalls(String phoneNumber, String queueName) throws Exception
+    public JSONArray getNumQueuedCalls(String phoneNumber, String queueName) throws Exception
     {
         HashMap<String, String> data = new HashMap<String, String>();
         data.put("username", _username);
@@ -189,7 +190,7 @@ public class AfricasTalkingGateway
     }
 
 
-    public int getNumQueuedCalls(String phoneNumber) throws Exception
+    public JSONArray getNumQueuedCalls(String phoneNumber) throws Exception
     {
         HashMap<String, String> data = new HashMap<String, String>();
         data.put("username", _username);
@@ -210,8 +211,8 @@ public class AfricasTalkingGateway
 
         JSONObject jsObject = new JSONObject(response);
 
-        if(!jsObject.getString("Status").equals("Success"))
-            throw new Exception(jsObject.getString("ErrorMessage"));
+        if(!jsObject.getString("errorMessage").equals("None"))
+            throw new Exception(jsObject.getString("errorMessage"));
 
     }
 
@@ -266,13 +267,13 @@ public class AfricasTalkingGateway
 
 
     //Private accessor methods
-    private int queuedCalls(HashMap<String, String> data_) throws Exception {
+    private JSONArray queuedCalls(HashMap<String, String> data_) throws Exception {
         String requestUrl = VOICEURLString + "/queueStatus";
         String response = sendPOSTRequest(data_, requestUrl);
         JSONObject jsObject = new JSONObject(response);
-        if(jsObject.getString("Status").equals("Success"))
-            return jsObject.getInt("NumQueued");
-        throw new Exception(jsObject.getString("ErrorMessage"));
+        if(jsObject.getString("errorMessage").equals("None"))
+            return jsObject.getJSONArray("entries");
+        throw new Exception(jsObject.getString("errorMessage"));
     }
 
 

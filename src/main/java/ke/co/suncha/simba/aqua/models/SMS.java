@@ -41,9 +41,8 @@ public class SMS extends SimbaBaseEntity implements Serializable {
     @Column(name = "response")
     private String response="";
 
-    //sms belongs to a sms group
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sms_group_id")
     private SMSGroup smsGroup;
 

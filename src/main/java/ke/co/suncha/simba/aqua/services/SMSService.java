@@ -93,10 +93,6 @@ public class SMSService {
 
     final Integer INITIAL_DELAY_SUMMARY_REPORTS = 0;
 
-    public SMSService() {
-        //ge
-    }
-
     public String getMonthYear() {
         SimpleDateFormat format1 = new SimpleDateFormat("MMM_yyyy_");
         String bmonth = format1.format(Calendar.getInstance().getTime());
@@ -105,12 +101,11 @@ public class SMSService {
 
 
     @Scheduled(fixedDelay = 2000)
-    @Transactional
     public void process() {
         sendSMS();
     }
 
-    @Scheduled(fixedDelay = 3000)
+    //    @Scheduled(fixedDelay = 3000)
     @Transactional
     public void processSMSRequests() {
         try {
@@ -218,7 +213,7 @@ public class SMSService {
         }
     }
 
-    @Scheduled(fixedDelay = 2000)
+    //    @Scheduled(fixedDelay = 2000)
     @Transactional
     public void poolRemoteBalanceRequests() {
 
@@ -593,19 +588,31 @@ public class SMSService {
                             sendSMS = true;
                         } else {
                             log.error("SMS not sent. Invalid mobile number:" + sms.getMobileNumber());
+                            sms.setSend(true);
+                            sms.setResponse("SMS not sent. Invalid mobile number:" + sms.getMobileNumber());
+                            smsRepository.save(sms);
                         }
 
                         if (sendSMS) {
-                            log.info("Sending SMS to:" + sms.getMobileNumber());
 
+                            log.info("Sending SMS to:" + sms.getMobileNumber());
                             JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
                             JSONObject result = results.getJSONObject(0);
                             String status = result.getString("status");
+                            log.info("SMS Response:" + status);
                             if (status.compareTo("Success") == 0) {
                                 sms.setDateSend(Calendar.getInstance());
+                                sms.setResponse(status);
                                 sms.setSend(true);
                                 smsRepository.save(sms);
                                 log.info("SMS sent:" + sms.getMessage());
+                                smsSent++;
+                            } else if (status.compareToIgnoreCase("User In BlackList") == 0) {
+                                sms.setDateSend(Calendar.getInstance());
+                                sms.setSend(true);
+                                sms.setResponse(status);
+                                smsRepository.save(sms);
+                                log.info("status: " + sms.getMessage());
                                 smsSent++;
                             } else {
                                 log.error("Unable to send SMS to:" + sms.getMobileNumber());
@@ -615,10 +622,6 @@ public class SMSService {
                     } catch (Exception ex) {
                         log.error(ex.getMessage());
                     }
-
-                    log.info("ALL SMS's:" + smsList.size());
-                    log.info("Sent SMS's:" + smsSent);
-                    log.info("Not Sent SMS's:" + (smsList.size() - smsSent));
                 }
             }
         } catch (Exception ex) {
@@ -931,7 +934,8 @@ public class SMSService {
                     smsGroup = smsGroupRepository.save(smsGroup);
                 }
             } catch (Exception ex) {
-
+                log.error(ex.getMessage());
+                ex.printStackTrace();
             }
 
             //payment notification account with zero balance
@@ -995,7 +999,7 @@ public class SMSService {
         }
     }
 
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 30000)
     @Transactional
     public void populateDefaultBillingNotifications() {
         try {

@@ -134,6 +134,54 @@ public class UserService {
         return response;
     }
 
+    public RestResponse restPassword(RestRequestObject<User> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "users_resetPassword");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                User user = requestObject.getObject();
+                User u = userRepository.findByEmailAddress(user.getEmailAddress());
+                if (u == null) {
+                    responseObject.setMessage("User does not exist");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                } else {
+
+                    // generate and set password;
+                    UserAuth auth = new UserAuth();
+                    BCryptPasswordEncoder passEncoder = new BCryptPasswordEncoder();
+                    // encode pass plus email address
+                    String pass = passEncoder.encode(user.getEmailAddress().toLowerCase() + "123456");
+
+                    auth.setAuthPassword(pass);
+                    auth.setResetAuth(true);
+                    u.setUserAuth(auth);
+
+
+                    // send password
+
+                    // create resource
+                    User createdUser = userRepository.save(u);
+
+                    // package response
+                    responseObject.setMessage("User password reset  to 123456.");
+                    responseObject.setPayload(createdUser);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+
+            //
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+
     public RestResponse updatePassword(RestRequestObject<PasswordReset> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -251,7 +299,6 @@ public class UserService {
         return response;
     }
 
-
     public RestResponse getUser(long id) {
         try {
             User user = userRepository.findOne(id);
@@ -309,7 +356,6 @@ public class UserService {
         }
         return response;
     }
-
 
     private Sort sortByDateAddedDesc() {
         return new Sort(Sort.Direction.DESC, "createdOn");

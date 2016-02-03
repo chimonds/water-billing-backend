@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -83,6 +84,34 @@ public class ReportService {
     public ReportService() {
     }
 
+    private Integer getYearMonthDayFromCalendar(Calendar calendar) {
+        Integer year = calendar.get(Calendar.YEAR);
+        Integer month = calendar.get(Calendar.MONTH) + 1;
+        Integer day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        String content = year.toString();
+
+        if (month.toString().length() == 1) {
+            content = content + "0" + month.toString();
+        } else {
+            content = content + month.toString();
+        }
+
+
+        if (day.toString().length() == 1) {
+            content = content + "0" + day.toString();
+        } else {
+            content = content + day.toString();
+        }
+
+        //log.info("Year Month Day:" + content);
+
+        Integer val = Integer.valueOf(content);
+
+        return val;
+
+    }
+
     public RestResponse getMonthlyBills(RestRequestObject<ReportsParam> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -91,7 +120,6 @@ public class ReportService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
-
 
                 log.info("Getting Monthly Bills report...");
                 ReportsParam request = requestObject.getObject();
@@ -126,20 +154,21 @@ public class ReportService {
                 Calendar paymentBillingDate = bMonth;
                 paymentBillingDate.add(Calendar.MONTH, -1);
                 paymentBillingDate.set(Calendar.DATE, 24);
-
-                //System.out.println("Payment billing date:" + paymentBillingDate.getTime());
+                ///log.info("Payment billing date:" + paymentBillingDate.getTime());
 
 
                 BillingMonth paymentBillingMonth = billingMonthRepository.findByMonth(paymentBillingDate);
+                //log.info("Payment billing Month id:" + paymentBillingMonth.getBillingMonthId());
 
                 //get bills belonging to billing month
-                List<Bill> bills = new ArrayList<>();
+                List<BigInteger> bills = new ArrayList<>();
 
                 if (params.containsKey("accNo")) {
                     //Get account number from params
                     String accNo = params.get("accNo").toString();
                     if (!accNo.isEmpty() && accNo != null) {
-                        bills = billRepository.findAllByBillingMonthAndAccount_AccNo(billingMonth, accNo);
+                        Account account = accountRepository.findByaccNo(accNo);
+                        bills = billRepository.findAllByBillingMonthAndAccount_AccNo(billingMonth.getBillingMonthId(), account.getAccountId());
                         if (bills.isEmpty()) {
                             responseObject.setMessage("No bill found found for account number " + accNo);
                             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -147,7 +176,7 @@ public class ReportService {
                         }
                     }
                 } else {
-                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                 }
 
                 log.info("Bills " + bills.size() + " found.");
@@ -159,7 +188,8 @@ public class ReportService {
 
                 List<MonthlyBillRecord> records = new ArrayList<>();
                 Integer counter = 0;
-                for (Bill b : bills) {
+                for (BigInteger billId : bills) {
+                    Bill b = billRepository.findOne(billId.longValue());
                     Boolean include = true;
                     if (params.containsKey("zoneId")) {
                         Object zoneId = params.get("zoneId");
@@ -205,7 +235,7 @@ public class ReportService {
 
 
                         //get payments from the previous month
-                        List<Payment> payments = paymentRepository.findByBillingMonthAndAccount(paymentBillingMonth, b.getAccount());
+                        List<Payment> payments = paymentRepository.findByBillingMonth_BillingMonthIdAndAccount(paymentBillingMonth.getBillingMonthId(), b.getAccount());
                         //List<Payment> payments = paymentRepository.findByTransactionDateBetweenAndAccount(startDate, toDate, b.getAccount());
 
 
@@ -225,6 +255,8 @@ public class ReportService {
                         if (billCode != null) {
                             //get the actual previous bill
                             // Calendar c = Calendar.getInstance();
+//                            log.info("account id:" + accountId);
+//                            log.info("bill code:" + billCode);
                             Timestamp timestamp = billRepository.findPreviousBillDate(accountId, billCode);
                             if (timestamp != null) {
                                 //log.info("Last bill:" + timestamp.getTime());
@@ -241,7 +273,9 @@ public class ReportService {
                         Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), lastDateBeforeBillingCycle);
 
 
-                        Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
+                        //Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
+                        Integer intBillCode = this.getYearMonthDayFromCalendar(lastBillingDate);
+
 
                         Double paymentsDoneOnBillingDay = 0.0;
                         if (!payments.isEmpty()) {
@@ -249,7 +283,14 @@ public class ReportService {
                             List<PaymentRecord> paymentRecords = new ArrayList<>();
 
                             for (Payment p : payments) {
-                                Integer intPaymentCode = Integer.valueOf(p.getTransactionDate().get(Calendar.YEAR) + "" + p.getTransactionDate().get(Calendar.MONTH) + "" + p.getTransactionDate().get(Calendar.DAY_OF_MONTH));
+
+
+                                //Integer intPaymentCode = Integer.valueOf(p.getTransactionDate().get(Calendar.YEAR) + "" + p.getTransactionDate().get(Calendar.MONTH) + "" + p.getTransactionDate().get(Calendar.DAY_OF_MONTH));
+                                Integer intPaymentCode = this.getYearMonthDayFromCalendar(p.getTransactionDate());
+
+                                //log.info("intPaymentCode:" + intPaymentCode);
+                                //log.info("intBillCode:" + intBillCode);
+                                //log.info("Payment amount:" + p.getAmount());
                                 if (intPaymentCode > intBillCode) {
                                     totalPayments += p.getAmount();
                                     PaymentRecord paymentRecord = new PaymentRecord();
@@ -346,21 +387,21 @@ public class ReportService {
     }
 
 
-    @Scheduled(fixedDelay = 30000)
+    //    @Scheduled(fixedDelay = 50000000)
     @Transactional
     private void populateAgeingReport() {
         try {
             log.info("Populating ageing report for accounts");
-            List<Account> accounts = accountRepository.findAll();
-            if (accounts.isEmpty()) {
+            List<String> accountList = accountRepository.findAllAccountNumbers();
+            if (accountList.isEmpty()) {
                 return;
             }
-            log.info("Populating ageing report for accounts");
             //delete all ageing records
             ageingRecordRepository.deleteAll();
 
-            for (Account acc : accounts) {
+            for (String a : accountList) {
                 AgeingRecord ageingRecord = new AgeingRecord();
+                Account acc = accountRepository.findByaccNo(a);
                 //log.info("Populating ageing report for:" + acc.getAccNo());
                 try {
                     Long consumerId = accountRepository.findConsumerIdByAccountId(acc.getAccountId());
@@ -693,7 +734,8 @@ public class ReportService {
 
                 ageingRecordRepository.save(ageingRecord);
             }
-
+            log.info("Done populating ageing report for accounts");
+            log.info("****************************************************");
         } catch (Exception ex) {
             ex.printStackTrace();
             log.error(ex.getMessage());
@@ -919,7 +961,7 @@ public class ReportService {
                 BillingSummaryRecord bsr = new BillingSummaryRecord();
 
 
-                List<Bill> bills;
+                List<BigInteger> bills;
                 if (params.isEmpty()) {
                     responseObject.setMessage("Please select billing month.");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -938,7 +980,7 @@ public class ReportService {
                         return response;
                     }
 
-                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                     log.info("Bills " + bills.size() + " found.");
                     if (bills == null || bills.isEmpty()) {
                         responseObject.setMessage("No content found");
@@ -949,7 +991,8 @@ public class ReportService {
                     Double totalAmountBilled = 0.0;
                     Double totalMeterRent = 0.0;
 
-                    for (Bill b : bills) {
+                    for (BigInteger billId : bills) {
+                        Bill b = billRepository.findOne(billId.longValue());
                         Boolean include = true;
                         if (params.containsKey("zoneId")) {
                             Object zoneId = params.get("zoneId");
@@ -1344,7 +1387,7 @@ public class ReportService {
                 BillingSummaryRecord bsr = new BillingSummaryRecord();
 
 
-                List<Bill> bills;
+                List<BigInteger> bills;
                 if (params.isEmpty()) {
                     responseObject.setMessage("Please select billing month.");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -1363,7 +1406,7 @@ public class ReportService {
                         return response;
                     }
 
-                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                     log.info("Bills " + bills.size() + " found.");
                     if (bills == null || bills.isEmpty()) {
                         responseObject.setMessage("No content found");
@@ -1374,7 +1417,8 @@ public class ReportService {
                     Double totalAmountBilled = 0.0;
                     Double totalMeterRent = 0.0;
 
-                    for (Bill b : bills) {
+                    for (BigInteger billId : bills) {
+                        Bill b = billRepository.findOne(billId.longValue());
                         Boolean include = true;
                         if (params.containsKey("zoneId")) {
                             Object zoneId = params.get("zoneId");

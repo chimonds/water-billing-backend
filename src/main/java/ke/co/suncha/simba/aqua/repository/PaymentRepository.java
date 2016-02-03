@@ -50,7 +50,7 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 
     List<Payment> findByBillingMonth(BillingMonth billingMonth);
 
-    List<Payment> findByBillingMonthAndAccount(BillingMonth billingMonth, Account account);
+    List<Payment> findByBillingMonth_BillingMonthIdAndAccount(Long billingMonthId, Account account);
 
     List<Payment> findByTransactionDateBetweenOrderByTransactionDateDesc(Calendar from, Calendar to);
 

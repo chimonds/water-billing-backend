@@ -32,6 +32,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
@@ -49,13 +50,19 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
 
     List<Bill> findAllByConsumptionTypeAndBillingMonth(String consumptionType, BillingMonth billingMonth);
 
-    List<Bill> findAllByBillingMonth(BillingMonth billingMonth);
+//    List<Bill> findAllByBillingMonth(BillingMonth billingMonth);
+
+    @Query(value = "SELECT bill_id FROM bills WHERE billing_month_id =?1", nativeQuery = true)
+    List<BigInteger> findAllByBillingMonth(Long billingMonthId);
+
+    @Query(value = "SELECT bill_id FROM bills WHERE billing_month_id =?1 AND account_id=?2", nativeQuery = true)
+    List<BigInteger> findAllByBillingMonthAndAccount_AccNo(Long billingMonthId, Long accountId);
 
     List<Bill> findAllByBillingMonth_BillingMonthId(Long billingMonthId);
 
-    List<Bill> findAllByBillingMonthAndAccount_AccNo(BillingMonth billingMonth, String accNo);
+//    List<Bill> findAllByBillingMonthAndAccount_AccNo(BillingMonth billingMonth, String accNo);
 
-    @Query(value = "SELECT SUM(amount) FROM(SELECT bills.billing_month_id, (SELECT billing_month FROM billing_months WHERE bills.billing_month_id=billing_months.billing_month_id) AS billing_month, bills.account_id, bills.amount,accounts.zone_id, (SELECT name FROM zones WHERE zones.zone_id=accounts.zone_id) AS zone_code from bills LEFT JOIN (accounts) ON (accounts.account_id= `bills`.account_id)) AS temp WHERE zone_code =?1 AND billing_month>=?2 AND billing_month<=?3", nativeQuery = true)
+    @Query(value = "SELECT SUM(amount) FROM(SELECT bills.billing_month_id, (SELECT billing_month FROM billing_months WHERE bills.billing_month_id=billing_months.billing_month_id) AS billing_month, bills.account_id, bills.amount,accounts.zone_id, (SELECT name FROM zones WHERE zones.zone_id=accounts.zone_id) AS zone_code from bills LEFT JOIN (accounts) ON (accounts.account_id= bills.account_id)) AS temp WHERE zone_code =?1 AND billing_month>=?2 AND billing_month<=?3", nativeQuery = true)
     Double findByContent(String zoneNo, String from, String to);
 
     //@Transactional

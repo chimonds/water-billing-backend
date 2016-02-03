@@ -108,7 +108,7 @@ public class ReleaseManager {
      * @return
      */
 
-    //@PostConstruct
+//    @PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -121,7 +121,7 @@ public class ReleaseManager {
                     SimbaOption so = new SimbaOption();
                     so.setName("COMPANY_NAME");
                     so.setDescription("The name of the company");
-                    so.setValue("Demo Company");
+                    so.setValue("Kibwezi -  Makindu Water and Sanitation Company Ltd");
                     optionService.save(so);
 
                     // set application version
@@ -386,7 +386,7 @@ public class ReleaseManager {
 
                     bit = new BillItemType();
                     bit.setName("At Owners Request Fee");
-                    bit.setAmount((double) 1000);
+                    bit.setAmount((double) 500);
                     billItemTypeRepository.save(bit);
 
                     bit = new BillItemType();
@@ -417,7 +417,7 @@ public class ReleaseManager {
 
                     bit = new BillItemType();
                     bit.setName("Meter Servicing");
-                    bit.setAmount((double) 100);
+                    bit.setAmount((double) 500);
                     billItemTypeRepository.save(bit);
                 } catch (Exception ex) {
 
@@ -459,7 +459,7 @@ public class ReleaseManager {
 
                 try {
                     ms = new MeterSize();
-                    ms.setRentAmount((double) 450);
+                    ms.setRentAmount((double) 250);
                     ms.setSize("2.5 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
@@ -467,7 +467,7 @@ public class ReleaseManager {
 
                 try {
                     ms = new MeterSize();
-                    ms.setRentAmount((double) 800);
+                    ms.setRentAmount((double) 450);
                     ms.setSize("3 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
@@ -475,7 +475,7 @@ public class ReleaseManager {
 
                 try {
                     ms = new MeterSize();
-                    ms.setRentAmount((double) 800);
+                    ms.setRentAmount((double) 450);
                     ms.setSize("3.5 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {
@@ -483,7 +483,7 @@ public class ReleaseManager {
 
                 try {
                     ms = new MeterSize();
-                    ms.setRentAmount((double) 1500);
+                    ms.setRentAmount((double) 800);
                     ms.setSize("4 INCH");
                     meterSizeRepository.save(ms);
                 } catch (Exception ex) {

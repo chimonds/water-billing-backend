@@ -31,8 +31,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -72,6 +74,10 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Transactional
     @Query(value = "SELECT acc_no FROM accounts", nativeQuery = true)
     List<String> findAllAccountNumbers();
+
+    @Transactional
+    @Query(value = "SELECT account_id FROM accounts WHERE zone_id =:zoneId", nativeQuery = true)
+    List<BigInteger> findAllAccountNumbersByZoneId(@Param("zoneId") Long zoneId);
 
     @Transactional
     @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE cut_off =?1", nativeQuery = true)

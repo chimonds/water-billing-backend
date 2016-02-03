@@ -26,6 +26,7 @@ package ke.co.suncha.simba.admin.api;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -69,5 +70,11 @@ public class AuthController extends AbstractRestHandler {
     @ApiOperation(value = "Update user resource authentication password.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
     public RestResponse updatePassword(@RequestBody RestRequestObject<PasswordReset> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return userService.updatePassword(requestObject);
+    }
+
+    @RequestMapping(value = "resetPassword", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Reset user password to 123456", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse resetPassword(@RequestBody RestRequestObject<User> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return userService.restPassword(requestObject);
     }
 }

@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 
+import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -92,7 +93,24 @@ public class StatsService {
     private ZonesBarGraph zonesBarGraph = new ZonesBarGraph();
     private ZoneBalances zoneBalances = new ZoneBalances();
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 60000)
+    private void populateStats() {
+        populateAccountsConsumersCount();
+        populatePaidThisMonth();
+        populatePaidToday();
+        populatePaidLastMonth();
+        //uploadMobileClientStats();
+    }
+
+    @Scheduled(initialDelay = 1000, fixedDelay = 600000)
+    private void populateHuge() {
+        populateXaxis();
+        populateXZonesBarGraph();
+        populateZonesBarGraph();
+        populateBillsPaymentsLineGraph();
+        populateZonesAccountBalancesBarGraph();
+    }
+
     private void populateAccountsConsumersCount() {
         try {
             topView.setAccounts(accountRepository.count());
@@ -104,7 +122,6 @@ public class StatsService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void uploadMobileClientStats() {
         try {
             //topView
@@ -129,7 +146,6 @@ public class StatsService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populatePaidThisMonth() {
         try {
             Calendar toDate = this.getFirstDayThisMonth();
@@ -152,7 +168,6 @@ public class StatsService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populatePaidToday() {
         try {
             Calendar toDate = Calendar.getInstance();
@@ -190,7 +205,6 @@ public class StatsService {
 
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populatePaidLastMonth() {
         try {
             Double total = 0.0;
@@ -198,13 +212,15 @@ public class StatsService {
             if (billingMonth == null) {
                 return;
             }
-            List<Bill> bills = billRepository.findAllByBillingMonth(billingMonth);
-            if (bills.isEmpty()) {
+//            List<Bill> bills = billRepository.findAllByBillingMonth(billingMonth);
+            List<BigInteger> billIds = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
+            if (billIds.isEmpty()) {
                 return;
             }
 
 
-            for (Bill bill : bills) {
+            for (BigInteger billId : billIds) {
+                Bill bill = billRepository.findOne(Long.valueOf(billId.toString()));
                 total += bill.getAmount();
                 total += bill.getMeterRent();
             }
@@ -231,12 +247,14 @@ public class StatsService {
     }
 
     private Integer getMonths() {
-        Integer months = -12;
+        Integer months = 12;
         try {
             months = Integer.valueOf(optionService.getOption("GRAPH_PERIOD_IN_MONTHS").getValue());
+            months = Math.abs(months);
         } catch (Exception ex) {
 
         }
+        months *= -1;
         return months;
     }
 
@@ -246,7 +264,6 @@ public class StatsService {
         return today;
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populateXaxis() {
         try {
             XAxisMeta xAxisMeta = new XAxisMeta();
@@ -276,7 +293,6 @@ public class StatsService {
 
     }
 
-    @Scheduled(fixedDelay = 3600)
     private void populateXZonesBarGraph() {
         try {
             XAxisMeta xAxisMeta = new XAxisMeta();
@@ -302,7 +318,6 @@ public class StatsService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populateZonesAccountBalancesBarGraph() {
         try {
             List<GraphSeries> seriesList = new ArrayList<>();
@@ -319,11 +334,9 @@ public class StatsService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populateZonesBarGraph() {
         try {
             List<GraphSeries> seriesList = new ArrayList<>();
-
             //payments
             List<GraphSeries> series = this.getZonesBarGraphDataPayments();
             if (!series.isEmpty()) {
@@ -342,7 +355,6 @@ public class StatsService {
         }
     }
 
-    @Scheduled(fixedDelay = 5000)
     private void populateBillsPaymentsLineGraph() {
         try {
             List<GraphSeries> seriesList = new ArrayList<>();
@@ -371,7 +383,6 @@ public class StatsService {
             ex.printStackTrace();
         }
     }
-
 
     @Transactional
     private List<GraphSeries> getZonesBarGraphData() {
@@ -406,7 +417,6 @@ public class StatsService {
         return seriesList;
     }
 
-
     @Transactional
     private List<GraphSeries> getZoneAccountBalancesGraphData() {
         List<GraphSeries> seriesList = new ArrayList<>();
@@ -432,10 +442,13 @@ public class StatsService {
                 Double activeBal = 0d;
                 Double inactiveBal = 0d;
                 Double allBal = 0d;
-                List<Account> accounts = accountRepository.findAllByZone(zone);
-                if (!accounts.isEmpty()) {
-                    for (Account account : accounts) {
-                        Double bal = paymentService.getAccountBalance(account.getAccountId());
+                List<BigInteger> accountIds = accountRepository.findAllAccountNumbersByZoneId(zone.getZoneId());
+                if (!accountIds.isEmpty()) {
+                    for (BigInteger accId : accountIds) {
+                        Account account = accountRepository.findOne(Long.valueOf(accId.toString()));
+                        //log.info("Start Getting account balance for "+ account.getAccNo());
+                        Double bal = paymentService.getAccountBalance(Long.valueOf(accId.toString()));
+                        //log.info("End Getting account balance for "+ account.getAccNo());
                         if (bal != account.getOutstandingBalance()) {
                             account.setOutstandingBalance(bal);
                             //save
@@ -500,7 +513,6 @@ public class StatsService {
         }
         return seriesList;
     }
-
 
     @Transactional
     private List<GraphSeries> getPaymentTypesData() {
@@ -588,9 +600,11 @@ public class StatsService {
             }
             Double billed = 0.0;
             Double meterRent = 0.0;
-            List<Bill> bills = billRepository.findAllByBillingMonth(month);
-            if (!bills.isEmpty()) {
-                for (Bill bill : bills) {
+            List<BigInteger> billIds = billRepository.findAllByBillingMonth(month.getBillingMonthId());
+            //List<Bill> bills = billRepository.findAllByBillingMonth(month);
+            if (!billIds.isEmpty()) {
+                for (BigInteger billId : billIds) {
+                    Bill bill = billRepository.findOne(Long.valueOf(billId.toString()));
                     billed += bill.getAmount();
                     meterRent += bill.getMeterRent();
                 }
@@ -642,9 +656,11 @@ public class StatsService {
                         return null;
                     }
                     Double amount = 0.0;
-                    List<Bill> bills = billRepository.findAllByBillingMonth(month);
-                    if (!bills.isEmpty()) {
-                        for (Bill bill : bills) {
+//                    List<Bill> bills = billRepository.findAllByBillingMonth(month);
+                    List<BigInteger> billIds = billRepository.findAllByBillingMonth(month.getBillingMonthId());
+                    if (!billIds.isEmpty()) {
+                        for (BigInteger billId : billIds) {
+                            Bill bill = billRepository.findOne(Long.valueOf(billId.toString()));
                             if (!bill.getBillItems().isEmpty()) {
                                 for (BillItem billItem : bill.getBillItems()) {
                                     if (billItem.getBillItemType().getName().compareToIgnoreCase(billItemType.getName()) == 0) {

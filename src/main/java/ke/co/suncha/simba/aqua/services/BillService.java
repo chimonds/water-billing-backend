@@ -52,6 +52,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -530,7 +531,9 @@ public class BillService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
                 log.info("Generating meter reading report...");
-                List<Bill> bills;
+
+                //List<Bill> bills;
+                List<BigInteger> bills;
                 List<MeterRecord> meterRecords = new ArrayList<>();
 
                 if (params == null || params.isEmpty()) {
@@ -538,7 +541,6 @@ public class BillService {
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
-
 
                 if (params.containsKey("billingMonthId")) {
                     Object billingMonthId = params.get("billingMonthId");
@@ -552,7 +554,7 @@ public class BillService {
                         return response;
                     }
 
-                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                     log.info("Bills " + bills.size() + " found.");
                     if (bills == null || bills.isEmpty()) {
                         responseObject.setMessage("No content found");
@@ -560,8 +562,8 @@ public class BillService {
                         return response;
                     }
                     Integer totalUnits = 0;
-                    for (Bill b : bills) {
-
+                    for (BigInteger billId : bills) {
+                        Bill b = billRepository.findOne(Long.valueOf(billId.toString()));
                         MeterRecord mr = new MeterRecord();
                         if (b.getAccount() != null) {
                             mr.setAccName(b.getAccount().getAccName());
@@ -634,7 +636,7 @@ public class BillService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
 
-                List<Bill> bills;
+                List<BigInteger> bills;
                 List<MeterRecord> meterRecords = new ArrayList<>();
 
                 if (params != null) {
@@ -652,7 +654,7 @@ public class BillService {
                                 return response;
                             }
 
-                            bills = billRepository.findAllByBillingMonth(billingMonth);
+                            bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                             log.info("Bills " + bills.size() + " found.");
                             if (bills == null || bills.isEmpty()) {
                                 responseObject.setMessage("No content found");
@@ -660,7 +662,8 @@ public class BillService {
                                 return response;
                             }
                             Integer totalUnits = 0;
-                            for (Bill b : bills) {
+                            for (BigInteger billId : bills) {
+                                Bill b = billRepository.findOne(Long.valueOf(billId.toString()));
                                 MeterRecord mr = new MeterRecord();
                                 if (b.getAccount() != null) {
                                     mr.setAccName(b.getAccount().getAccName());
@@ -731,7 +734,7 @@ public class BillService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
 
-                List<Bill> bills;
+                List<BigInteger> bills;
                 List<MeterRecord> meterRecords = new ArrayList<>();
 
                 if (params != null) {
@@ -749,7 +752,7 @@ public class BillService {
                                 return response;
                             }
 
-                            bills = billRepository.findAllByBillingMonth(billingMonth);
+                            bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                             log.info("Bills " + bills.size() + " found.");
                             if (bills == null || bills.isEmpty()) {
                                 responseObject.setMessage("No content found");
@@ -757,7 +760,8 @@ public class BillService {
                                 return response;
                             }
                             Integer totalUnits = 0;
-                            for (Bill b : bills) {
+                            for (BigInteger billId : bills) {
+                                Bill b = billRepository.findOne(billId.longValue());
                                 MeterRecord mr = new MeterRecord();
                                 if (b.getAccount() != null) {
                                     mr.setAccName(b.getAccount().getAccName());
@@ -829,7 +833,7 @@ public class BillService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
 
-                List<Bill> bills;
+                List<BigInteger> bills;
                 List<BillRecord> billRecords = new ArrayList<>();
 
                 if (params == null || params.isEmpty()) {
@@ -850,7 +854,7 @@ public class BillService {
                         return response;
                     }
 
-                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                     log.info("Bills " + bills.size() + " found.");
                     if (bills == null || bills.isEmpty()) {
                         responseObject.setMessage("No content found");
@@ -862,7 +866,8 @@ public class BillService {
                     Double totalMeterRent = 0.0;
                     Double totalCharges = 0.0;
 
-                    for (Bill b : bills) {
+                    for (BigInteger billId : bills) {
+                        Bill b = billRepository.findOne(billId.longValue());
                         BillRecord br = new BillRecord();
                         if (b.getAccount() != null) {
                             br.setAccName(b.getAccount().getAccName());
@@ -947,7 +952,7 @@ public class BillService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
 
-                List<Bill> bills;
+                List<BigInteger> bills;
                 List<BillRecord> billRecords = new ArrayList<>();
 
                 if (params.isEmpty()) {
@@ -968,7 +973,7 @@ public class BillService {
                         return response;
                     }
 
-                    bills = billRepository.findAllByBillingMonth(billingMonth);
+                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                     log.info("Bills " + bills.size() + " found.");
                     if (bills == null || bills.isEmpty()) {
                         responseObject.setMessage("No content found");
@@ -980,7 +985,8 @@ public class BillService {
                     Double totalMeterRent = 0.0;
                     Double totalCharges = 0.0;
 
-                    for (Bill b : bills) {
+                    for (BigInteger billId : bills) {
+                        Bill b = billRepository.findOne(billId.longValue());
                         BillRecord br = new BillRecord();
                         if (b.getAccount() != null) {
                             br.setAccName(b.getAccount().getAccName());

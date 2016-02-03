@@ -134,7 +134,6 @@ public class SimbaOptionService {
         return response;
     }
 
-
     private Sort sortByDateAddedDesc() {
         return new Sort(Sort.Direction.DESC, "createdOn");
     }

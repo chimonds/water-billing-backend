@@ -81,7 +81,7 @@ public class AccountSummaryService {
 
     }
 
-    @Scheduled(fixedDelay = 10000)
+    //@Scheduled(fixedDelay = 10000)
     public void notifyAllUsers() {
         try {
             List<User> users = userRepository.findAll();
@@ -123,14 +123,14 @@ public class AccountSummaryService {
         }
     }
 
-    @Scheduled(fixedDelay = 1000)
+    //@Scheduled(fixedDelay = 1000)
     public void notifyRemoteClient() {
         try {
             Boolean notifyClient = false;
             try {
                 notifyClient = Boolean.parseBoolean(optionService.getOption("MOBILE_CLIENT_ENABLE").getValue());
             } catch (Exception ex) {
-
+                log.error(ex.getMessage());
             }
             if (!notifyClient) {
                 return;
@@ -172,7 +172,7 @@ public class AccountSummaryService {
         }
     }
 
-    @Scheduled(fixedDelay = 3000)
+    //@Scheduled(fixedDelay = 300000)
     public void populateAccountSummaryTable() {
         try {
             List<String> accountList = accountRepository.findAllAccountNumbers();
@@ -242,13 +242,12 @@ public class AccountSummaryService {
         }
     }
 
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 30000)
     public void populateOutstandingAccountBalances() {
         try {
             List<String> accountList = accountRepository.findAllAccountNumbers();
             if (!accountList.isEmpty()) {
                 for (String accNo : accountList) {
-
                     Account account = accountRepository.findByaccNo(accNo);
                     if (account != null) {
                         Double balance = paymentService.getAccountBalance(account.getAccountId());

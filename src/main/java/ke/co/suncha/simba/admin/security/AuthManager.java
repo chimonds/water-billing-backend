@@ -333,7 +333,6 @@ public class AuthManager {
         return jwtHeader;
     }
 
-
     public String getEmailFromToken(String token) {
         String emailAddress = "";
         try {
