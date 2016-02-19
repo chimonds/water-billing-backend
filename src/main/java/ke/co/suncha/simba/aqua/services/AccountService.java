@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import java.math.BigInteger;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,9 +41,7 @@ import ke.co.suncha.simba.aqua.reports.AccountRecord;
 import ke.co.suncha.simba.aqua.reports.BalancesReport;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
-import ke.co.suncha.simba.aqua.repository.AccountRepository;
-import ke.co.suncha.simba.aqua.repository.AccountStatusHistoryRepository;
-import ke.co.suncha.simba.aqua.repository.ConsumerRepository;
+import ke.co.suncha.simba.aqua.repository.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +86,12 @@ public class AccountService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private BillRepository billRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Autowired
     private AccountStatusHistoryRepository accountStatusHistoryRepository;
@@ -230,14 +235,14 @@ public class AccountService {
                     responseObject.setMessage("Account not found");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                    return  response;
+                    return response;
                 } else {
                     AccountStatusHistory accountStatusHistory = requestObject.getObject();
                     if (accountStatusHistory.getNotes().isEmpty()) {
                         responseObject.setMessage("Notes missing");
                         responseObject.setPayload("");
                         response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                        return  response;
+                        return response;
                     }
 
                     accountStatusHistory.setAccount(account);
@@ -279,7 +284,7 @@ public class AccountService {
                     //End - audit trail
                 }
             }
-        }  catch (Exception ex) {
+        } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());
             responseObject.setPayload("");
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -458,7 +463,7 @@ public class AccountService {
                     return response;
                 }
                 Account acc = requestObject.getObject();
-                log.info("Find account by account no:"+ acc.getAccNo());
+                log.info("Find account by account no:" + acc.getAccNo());
                 Account account = accountRepository.findByaccNo(acc.getAccNo());
 
                 if (account == null) {
@@ -495,9 +500,10 @@ public class AccountService {
         // add balance b/f
         balance += account.getBalanceBroughtForward();
 
-        List<Bill> bills = account.getBills();
-        if (bills != null) {
-            for (Bill bill : bills) {
+
+        //List<BigInteger> billIds = billRepository.findAllByAccount(accountId);
+        if (account.getBills() != null) {
+            for (Bill bill : account.getBills()) {
                 if (bill.getTransactionDate().before(calendar)) {
                     balance += bill.getAmount();
                     balance += bill.getMeterRent();
@@ -514,9 +520,11 @@ public class AccountService {
         }
 
         // get payments
-        List<Payment> payments = account.getPayments();
-        if (payments != null) {
-            for (Payment p : payments) {
+        //List<BigInteger> paymentIds = paymentRepository.findAllByAccount(accountId);
+
+        if (account.getPayments() != null) {
+            for (Payment p : account.getPayments()) {
+                //Payment p = paymentRepository.findOne(paymentId.longValue());
                 if (p.getTransactionDate().before(calendar)) {
                     balance -= p.getAmount();
                 }
@@ -547,14 +555,15 @@ public class AccountService {
                 }
 
                 log.info("Generating account balances report");
-                List<Account> accounts;
-                accounts = accountRepository.findAll();
-                Double totalAmount = 0.0;
-                if (!accounts.isEmpty()) {
-                    log.info(accounts.size() + " accounts found.");
-                    List<BalancesReport> balances = new ArrayList<>();
+                List<BigInteger> accountIds = accountRepository.findAllAccountIds();
 
-                    for (Account acc : accounts) {
+                Double totalAmount = 0.0;
+                if (!accountIds.isEmpty()) {
+                    log.info(accountIds.size() + " accounts found.");
+                    List<BalancesReport> balances = new ArrayList<>();
+                    Integer count = 1;
+                    for (BigInteger accountId : accountIds) {
+                        Account acc = accountRepository.findOne(accountId.longValue());
                         BalancesReport br = new BalancesReport();
                         br.setAccName(acc.getAccName());
                         br.setAccNo(acc.getAccNo());
@@ -564,7 +573,8 @@ public class AccountService {
 
                         br.setActive(acc.isActive());
 
-
+                        log.info("getting balance for " + count);
+                        count++;
                         Boolean include = true;
 
                         if (params != null) {
@@ -605,7 +615,7 @@ public class AccountService {
                                 }
 
                                 //update balance on local object
-                                br.setBalance(this.getAccountBalanceByDate(acc, calendar));
+                                //br.setBalance(this.getAccountBalanceByDate(acc, calendar));
                             }
 
                             if (br.getBalance() > 0) {
@@ -620,8 +630,6 @@ public class AccountService {
                     ReportObject report = new ReportObject();
                     report.setAmount(totalAmount);
                     report.setDate(Calendar.getInstance());
-
-                    accounts = null;
 
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS_RECEIVABLE").getValue());
@@ -665,14 +673,16 @@ public class AccountService {
                 }
 
                 log.info("Generating credit balances report");
-                List<Account> accounts;
-                accounts = accountRepository.findAll();
+
+                List<BigInteger> accountList = accountRepository.findAllAccountIds();
+
                 Double totalAmount = 0.0;
-                if (!accounts.isEmpty()) {
-                    log.info(accounts.size() + " accounts found.");
+                if (!accountList.isEmpty()) {
+                    log.info(accountList.size() + " accounts found.");
                     List<BalancesReport> balances = new ArrayList<>();
 
-                    for (Account acc : accounts) {
+                    for (BigInteger accountId : accountList) {
+                        Account acc = accountRepository.findOne(accountId.longValue());
                         BalancesReport br = new BalancesReport();
                         br.setAccName(acc.getAccName());
                         br.setAccNo(acc.getAccNo());
@@ -716,7 +726,7 @@ public class AccountService {
                                 }
 
                                 //update balance on local object
-                                br.setBalance(this.getAccountBalanceByDate(acc, calendar));
+                                //br.setBalance(this.getAccountBalanceByDate(acc, calendar));
                             }
 
                             if (br.getBalance() < 0) {
@@ -732,7 +742,6 @@ public class AccountService {
                     report.setAmount(totalAmount);
                     report.setDate(Calendar.getInstance());
 
-                    accounts = null;
 
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:CREDIT_BALANCES").getValue());
@@ -772,14 +781,14 @@ public class AccountService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
 
-                List<Account> accounts;
-                accounts = accountRepository.findAll();
+                List<BigInteger> accountList = accountRepository.findAllAccountIds();
 
-                if (!accounts.isEmpty()) {
-                    log.info(accounts.size() + " accounts found.");
+                if (!accountList.isEmpty()) {
+                    log.info(accountList.size() + " accounts found.");
                     List<AccountRecord> accountRecords = new ArrayList<>();
 
-                    for (Account acc : accounts) {
+                    for (BigInteger accountId : accountList) {
+                        Account acc = accountRepository.findOne(accountId.longValue());
                         AccountRecord ar = new AccountRecord();
                         ar.setAccName(acc.getAccName());
                         ar.setAccNo(acc.getAccNo());
@@ -828,7 +837,7 @@ public class AccountService {
 
                     ReportObject report = new ReportObject();
                     report.setDate(Calendar.getInstance());
-                    accounts = null;
+
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:FIELD_CARD").getValue());
                     report.setContent(accountRecords);

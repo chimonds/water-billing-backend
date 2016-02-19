@@ -24,12 +24,12 @@ public class TaskExecutorConfig {
 //        pool.setWaitForTasksToCompleteOnShutdown(true);
 //        return pool;
 //    }
-
-    @Bean(destroyMethod = "shutdown")
-    public Executor taskScheduler() {
-        Executor executor= Executors.newScheduledThreadPool(5);
-        return executor;
-    }
+//
+//    @Bean(destroyMethod = "shutdown")
+//    public Executor taskScheduler() {
+//        Executor executor= Executors.newScheduledThreadPool(5);
+//        return executor;
+//    }
 
     @Bean
     public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {

@@ -847,16 +847,15 @@ public class ReportService {
                     params = mapper.readValue(jsonString, Map.class);
                 }
 
-                List<Account> accounts;
-                accounts = accountRepository.findAll();
 
-                if (!accounts.isEmpty()) {
-                    log.info(accounts.size() + " accounts found.");
+                List<BigInteger> accountList = accountRepository.findAllAccountIds();
+                if (!accountList.isEmpty()) {
+                    log.info(accountList.size() + " accounts found.");
 
                     List<PotentialCutOffRecord> records = new ArrayList<>();
 
-                    for (Account acc : accounts) {
-
+                    for (BigInteger accId : accountList) {
+                        Account acc = accountRepository.findOne(accId.longValue());
                         Boolean include = true;
 
                         if (params != null) {
@@ -870,21 +869,23 @@ public class ReportService {
                                 }
 
                                 //account status
-                                if (params.containsKey("accountStatus")) {
-                                    String status = params.get("accountStatus");
-                                    if (status.compareToIgnoreCase("inactive") == 0) {
-                                        if (acc.isActive()) {
-                                            include = false;
-                                        }
-                                    } else if (status.compareToIgnoreCase("active") == 0) {
-                                        if (!acc.isActive()) {
-                                            include = false;
-                                        }
-                                    }
-                                }
+//                                if (params.containsKey("accountStatus")) {
+//                                    String status = params.get("accountStatus");
+//                                    if (status.compareToIgnoreCase("inactive") == 0) {
+//                                        if (acc.isActive()) {
+//                                            include = false;
+//                                        }
+//                                    } else if (status.compareToIgnoreCase("active") == 0) {
+//                                        if (!acc.isActive()) {
+//                                            include = false;
+//                                        }
+//                                    }
+//                                }
                             }
                         }
-
+                        if (!acc.isActive()) {
+                            include = false;
+                        }
                         if (include) {
                             PotentialCutOffRecord pcr = new PotentialCutOffRecord();
 
@@ -923,7 +924,6 @@ public class ReportService {
 
                     ReportObject report = new ReportObject();
                     report.setDate(Calendar.getInstance());
-                    accounts = null;
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:POTENTIAL_CUT_OFF").getValue());
                     report.setContent(records);

@@ -55,6 +55,9 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
     @Query(value = "SELECT bill_id FROM bills WHERE billing_month_id =?1", nativeQuery = true)
     List<BigInteger> findAllByBillingMonth(Long billingMonthId);
 
+    @Query(value = "SELECT bill_id FROM bills WHERE account_id =?1", nativeQuery = true)
+    List<BigInteger> findAllByAccount(Long accountId);
+
     @Query(value = "SELECT bill_id FROM bills WHERE billing_month_id =?1 AND account_id=?2", nativeQuery = true)
     List<BigInteger> findAllByBillingMonthAndAccount_AccNo(Long billingMonthId, Long accountId);
 

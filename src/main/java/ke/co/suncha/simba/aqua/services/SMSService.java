@@ -675,6 +675,7 @@ public class SMSService {
                 String errorMessage = "";
                 Boolean validZones = true;
                 for (Zone zone : smsGroup.getZones()) {
+                    log.info(zone.getName());
                     if (zoneRepository.findByName(zone.getName()) == null) {
                         validZones = false;
                         errorMessage += zone.getName() + " zone invalid ";

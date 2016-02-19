@@ -63,6 +63,10 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     Long findConsumerIdByAccountId(Long accountId);
 
     @Transactional
+    @Query(value = "SELECT balance_bf FROM accounts WHERE account_id =?1", nativeQuery = true)
+    Double getBalanceBf(Long accountId);
+
+    @Transactional
     @Query(value = "SELECT zone_id FROM accounts WHERE account_id =?1", nativeQuery = true)
     Long findZoneIdByAccountId(Long accountId);
 
@@ -74,6 +78,10 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Transactional
     @Query(value = "SELECT acc_no FROM accounts", nativeQuery = true)
     List<String> findAllAccountNumbers();
+
+    @Transactional
+    @Query(value = "SELECT account_id FROM accounts", nativeQuery = true)
+    List<BigInteger> findAllAccountIds();
 
     @Transactional
     @Query(value = "SELECT account_id FROM accounts WHERE zone_id =:zoneId", nativeQuery = true)

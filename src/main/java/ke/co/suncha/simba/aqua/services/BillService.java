@@ -102,6 +102,9 @@ public class BillService {
     @Autowired
     private SMSService smsService;
 
+    @Autowired
+    private MPESARepository mpesaRepository;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -140,6 +143,26 @@ public class BillService {
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                     return response;
+                }
+
+                //Check if meter validation is enabled
+                Boolean billOnlyMeteredAccounts = Boolean.parseBoolean(optionService.getOption("BILL_ONLY_METERED_ACCOUNTS").getValue());
+                if (billOnlyMeteredAccounts) {
+                    if (account.getMeter() == null) {
+                        responseObject.setMessage("Sorry we can not complete your request, the account is not metered.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+                }
+                //check if there is pending unallocated payments
+                Boolean billOnlyWithZeroUnAllocatedPayments = Boolean.parseBoolean(optionService.getOption("BILL_WHEN_ZERO_UNALLOCATED_PAYMENTS").getValue());
+                if (billOnlyWithZeroUnAllocatedPayments) {
+                    Double notAllocated = 0d;
+                    try {
+                        notAllocated = mpesaRepository.findSumAllocated(0);
+                    } catch (Exception ex) {
+                    }
                 }
 
                 log.info("Billing account:" + account.getAccNo());
