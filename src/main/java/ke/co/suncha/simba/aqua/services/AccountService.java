@@ -137,6 +137,7 @@ public class AccountService {
                     created.setZone(account.getZone());
                     created.setTariff(account.getTariff());
                     created.setConsumer(consumer);
+                    created.setAccountCategory(account.getAccountCategory());
                     accountRepository.save(created);
 
                     //Start - audit trail
@@ -187,9 +188,10 @@ public class AccountService {
                     acc.setAccNo(account.getAccNo());
                     acc.setAverageConsumption(account.getAverageConsumption());
                     acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
+                    acc.setAccountCategory(account.getAccountCategory());
 
                     // save
-                    accountRepository.save(acc);
+                    acc = accountRepository.save(acc);
                     responseObject.setMessage("Account  updated successfully");
                     responseObject.setPayload(acc);
                     response = new RestResponse(responseObject, HttpStatus.OK);

@@ -945,6 +945,99 @@ public class ReportService {
         return response;
     }
 
+    public RestResponse getAccountsNotBilled(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            log.info("Generating accounts not billed report");
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_accounts_not_billed");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+                BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+
+                if (billingMonth == null) {
+                    responseObject.setMessage("You do not have open billing month.");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    return response;
+                }
+
+                List<BigInteger> accountList = accountRepository.findAllAccountIds();
+                if (!accountList.isEmpty()) {
+                    log.info(accountList.size() + " accounts found.");
+
+                    List<PotentialCutOffRecord> records = new ArrayList<>();
+
+                    for (BigInteger accId : accountList) {
+                        Account acc = accountRepository.findOne(accId.longValue());
+                        Boolean include = true;
+
+                        if (params != null) {
+                            if (!params.isEmpty()) {
+                                //zone id
+                                if (params.containsKey("zoneId")) {
+                                    Object zoneId = params.get("zoneId");
+                                    if (acc.getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+                                        include = false;
+                                    }
+                                }
+                            }
+                        }
+                        //account status
+                        if (!acc.isActive()) {
+                            include = false;
+                        }
+                        if (include) {
+                            PotentialCutOffRecord pcr = new PotentialCutOffRecord();
+
+                            if (acc.getConsumer() != null) {
+                                pcr.setAccName(acc.getAccName());
+                            }
+
+                            if (acc.getZone() != null) {
+                                pcr.setZone(acc.getZone().getName());
+                            }
+                            pcr.setAccNo(acc.getAccNo());
+                            List<BigInteger> bills = billRepository.findAllByBillingMonthAndAccount_AccNo(billingMonth.getBillingMonthId(), accId.longValue());
+                            if (bills.isEmpty()) {
+                                records.add(pcr);
+                            }
+                        }
+                    }
+                    log.info("Packaged report data...");
+
+                    ReportObject report = new ReportObject();
+                    report.setDate(Calendar.getInstance());
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS_NOT_BILLED").getValue());
+                    report.setContent(records);
+                    log.info("Sending Payload send to client...");
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
+        }
+        return response;
+    }
+
     public RestResponse getBillingSummary(RestRequestObject<ReportsParam> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -1313,6 +1406,15 @@ public class ReportService {
                                 include = false;
                             }
                         }
+
+                        //Payment source
+                        if (params.containsKey("paymentSourceId")) {
+                            Object paymentSourceId = params.get("paymentSourceId");
+                            if (p.getPaymentSource().getPaymentSourceId() != Long.valueOf(paymentSourceId.toString())) {
+                                include = false;
+                            }
+                        }
+
 
                         //check if to include in payload
                         if (include) {

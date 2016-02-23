@@ -87,32 +87,36 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private Integer averageConsumption = 0;
 
     @Column(name = "cut_off")
-    private Boolean active=true;
+    private Boolean active = true;
 
     @Transient
     private Boolean metered = false;
 
     // account belongs to a consumer
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "consumer_id")
     private Consumer consumer;
 
 
     // an account has a location
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "location_id")
     private Location location;
 
     // an account has a zone
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "zone_id")
     private Zone zone;
 
     // an account has a tariff
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tariff_id")
     private Tariff tariff;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "account_category_id")
+    private AccountCategory accountCategory;
 
     // an account has a bills
     @JsonIgnore
@@ -370,6 +374,14 @@ public class Account extends SimbaBaseEntity implements Serializable {
      */
     public void setConsumer(Consumer consumer) {
         this.consumer = consumer;
+    }
+
+    public AccountCategory getAccountCategory() {
+        return accountCategory;
+    }
+
+    public void setAccountCategory(AccountCategory accountCategory) {
+        this.accountCategory = accountCategory;
     }
 
     @Override

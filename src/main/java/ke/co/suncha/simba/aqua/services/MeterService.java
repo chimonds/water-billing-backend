@@ -56,308 +56,309 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class MeterService {
 
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private MeterRepository meterRepository;
+    @Autowired
+    private MeterRepository meterRepository;
 
-	@Autowired
-	private MeterAllocationRepository meterAllocationRepository;
+    @Autowired
+    private MeterAllocationRepository meterAllocationRepository;
 
-	@Autowired
-	private MeterOwnerRepository meterOwnerRepository;
+    @Autowired
+    private MeterOwnerRepository meterOwnerRepository;
 
-	@Autowired
-	private MeterSizeRepository meterSizeRepository;
+    @Autowired
+    private MeterSizeRepository meterSizeRepository;
 
-	@Autowired
-	private AccountRepository accountRepository;
+    @Autowired
+    private AccountRepository accountRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	@Autowired
-	private AuditService auditService;
+    @Autowired
+    private AuditService auditService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	public MeterService() {
+    public MeterService() {
 
-	}
+    }
 
-	@Transactional
-	public RestResponse create(RestRequestObject<Meter> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    @Transactional
+    public RestResponse create(RestRequestObject<Meter> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
 
-				response = authManager.grant(requestObject.getToken(), "meter_create");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
+                response = authManager.grant(requestObject.getToken(), "meter_create");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
-				Meter meter = requestObject.getObject();
-				Meter m = meterRepository.findByMeterNo(meter.getMeterNo());
-				if (m != null) {
-					responseObject.setMessage("Meter already exists");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-				} else {
-					// create resource
+                Meter meter = requestObject.getObject();
+                Meter m = meterRepository.findByMeterNo(meter.getMeterNo());
+                if (m != null) {
+                    responseObject.setMessage("Meter already exists");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                } else {
+                    // create resource
+                    MeterOwner meterOwner = meterOwnerRepository.findOne(meter.getMeterOwner().getMeterOwnerId());
+                    MeterSize meterSize = meterSizeRepository.findOne(meter.getMeterSize().getMeterSizeId());
+                    meter.setMeterOwner(meterOwner);
+                    meter.setMeterSize(meterSize);
+                    meter.setCanBeAllocated(true);
+                    Meter created = meterRepository.save(meter);
 
-					MeterOwner meterOwner = meterOwnerRepository.findOne(meter.getMeterOwner().getMeterOwnerId());
-					MeterSize meterSize = meterSizeRepository.findOne(meter.getMeterSize().getMeterSizeId());
+                    // package response
+                    responseObject.setMessage("Meter created successfully. ");
+                    responseObject.setPayload(created);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
 
-					meter.setMeterOwner(meterOwner);
-					meter.setMeterSize(meterSize);
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(created.getMeterId()));
+                    auditRecord.setCurrentData(created.toString());
+                    auditRecord.setParentObject("Meters");
+                    auditRecord.setNotes("CREATED METER");
+                    auditService.log(AuditOperation.CREATED, auditRecord);
+                    //End - audit trail
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-					Meter created = meterRepository.save(meter);
-
-					// package response
-					responseObject.setMessage("Meter created successfully. ");
-					responseObject.setPayload(created);
-					response = new RestResponse(responseObject, HttpStatus.CREATED);
-
-					//Start - audit trail
-					AuditRecord auditRecord = new AuditRecord();
-					auditRecord.setParentID(String.valueOf(created.getMeterId()));
-					auditRecord.setCurrentData(created.toString());
-					auditRecord.setParentObject("Meters");
-					auditRecord.setNotes("CREATED METER");
-					auditService.log(AuditOperation.CREATED, auditRecord);
-					//End - audit trail
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
-
-	@Transactional
-	public RestResponse deallocate(RestRequestObject<Meter> requestObject, Long id) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    @Transactional
+    public RestResponse deallocate(RestRequestObject<Meter> requestObject, Long id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "meter_deallocate");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
-				Meter m = meterRepository.findOne(id);
-				if (m == null) {
-					responseObject.setMessage("Meter not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					if (m.getAccount() == null) {
-						responseObject.setMessage("Meter not allocated to any connection.");
-						responseObject.setPayload("");
-						response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                Meter m = meterRepository.findOne(id);
+                if (m == null) {
+                    responseObject.setMessage("Meter not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
+                    if (m.getAccount() == null) {
+                        responseObject.setMessage("Meter not allocated to any connection.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-					} else {
-						// update meter info
-						Meter meter = requestObject.getObject();
+                    } else {
+                        // update meter info
+                        Meter meter = requestObject.getObject();
 
-						// Update account info
-						Account acc = accountRepository.findByMeter(m);
-						acc.setMeter(null);
-						accountRepository.save(acc); // persist changes
+                        // Update account info
+                        Account acc = accountRepository.findByMeter(m);
+                        acc.setMeter(null);
+                        accountRepository.save(acc); // persist changes
 
-						// update meter info
-						m.setNotes(meter.getNotes());
-						meterRepository.save(m); // persist changes
+                        // update meter info
+                        m.setNotes(meter.getNotes());
+                        m.setCanBeAllocated(meter.getCanBeAllocated());
+                        meterRepository.save(m); // persist changes
 
-						// update meter allocation
-						MeterAllocation meterAllocation = new MeterAllocation();
-						meterAllocation.setAccount(acc);
-						meterAllocation.setMeter(m);
-						meterAllocation.setNotes(meter.getNotes());
-						meterAllocation.setAllocationType("DeAllocated");
-						meterAllocation.setReading(m.getInitialReading());
-						meterAllocationRepository.save(meterAllocation);
+                        // update meter allocation
+                        MeterAllocation meterAllocation = new MeterAllocation();
+                        meterAllocation.setAccount(acc);
+                        meterAllocation.setMeter(m);
+                        meterAllocation.setNotes(meter.getNotes());
+                        meterAllocation.setAllocationType("DeAllocated");
+                        meterAllocation.setReading(m.getInitialReading());
+                        meterAllocationRepository.save(meterAllocation);
 
-						// meterRepository.save(m);
-						// meterAllocationRepository.save(meterAllocation);
+                        // meterRepository.save(m);
+                        // meterAllocationRepository.save(meterAllocation);
 
-						responseObject.setMessage("Meter  allocation updated successfully");
-						responseObject.setPayload(m);
-						response = new RestResponse(responseObject, HttpStatus.OK);
+                        responseObject.setMessage("Meter  de-allocation updated successfully");
+                        responseObject.setPayload(m);
+                        response = new RestResponse(responseObject, HttpStatus.OK);
 
-						//Start - audit trail
+                        //Start - audit trail
 //						AuditRecord auditRecord = new AuditRecord();
 //						auditRecord.setParentID(String.valueOf(m.getMeterId()));
 //						auditRecord.setCurrentData(m.getAccount().getAccNo());
 //						auditRecord.setParentObject("Meters");
 //						auditRecord.setNotes("METER DEALLOCATION");
 //						auditService.log(AuditOperation.UPDATED, auditRecord);
-						//End - audit trail
-					}
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        //End - audit trail
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	@Transactional
-	public RestResponse allocate(RestRequestObject<Meter> requestObject, Long id) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    @Transactional
+    public RestResponse allocate(RestRequestObject<Meter> requestObject, Long id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "meter_allocate");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
-				Meter m = meterRepository.findOne(id);
-				if (m == null) {
-					responseObject.setMessage("Meter not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					if (m.getAccount() != null) {
-						responseObject.setMessage("Meter already allocated to " + m.getAccount().getAccNo() + ".  Please deallocate the meter.");
-						responseObject.setPayload("");
-						response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                Meter m = meterRepository.findOne(id);
+                if (m == null) {
+                    responseObject.setMessage("Meter not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else if (!m.getCanBeAllocated()) {
+                    responseObject.setMessage("Meter not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
+                    if (m.getAccount() != null) {
+                        responseObject.setMessage("Meter already allocated to " + m.getAccount().getAccNo() + ".  Please deallocate the meter.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-					} else {
-						// update meter info
-						Meter meter = requestObject.getObject();
+                    } else {
+                        // update meter info
+                        Meter meter = requestObject.getObject();
 
-						// set account
-						Account acc = accountRepository.findByaccNo(meter.getAccountId());
-						if (acc.getMeter() != null) {
-							responseObject.setMessage("You can not allocate a meter to this connection. The connection is already allocated to meter  " + acc.getMeter().getMeterNo());
-							responseObject.setPayload("");
-							response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        // set account
+                        Account acc = accountRepository.findByaccNo(meter.getAccountId());
+                        if (acc.getMeter() != null) {
+                            responseObject.setMessage("You can not allocate a meter to this connection. The connection is already allocated to meter  " + acc.getMeter().getMeterNo());
+                            responseObject.setPayload("");
+                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-						} else {
-							acc.setMeter(m);
-							accountRepository.save(acc); // persist account info
+                        } else {
+                            acc.setMeter(m);
+                            accountRepository.save(acc); // persist account info
 
-							// update meter allocations
-							MeterAllocation meterAllocation = new MeterAllocation();
-							meterAllocation.setAccount(acc);
-							meterAllocation.setMeter(m);
-							meterAllocation.setNotes(meter.getNotes());
-							meterAllocation.setAllocationType("Allocated");
-							meterAllocation.setReading(m.getInitialReading());
-							meterAllocationRepository.save(meterAllocation);
+                            // update meter allocations
+                            MeterAllocation meterAllocation = new MeterAllocation();
+                            meterAllocation.setAccount(acc);
+                            meterAllocation.setMeter(m);
+                            meterAllocation.setNotes(meter.getNotes());
+                            meterAllocation.setAllocationType("Allocated");
+                            meterAllocation.setReading(m.getInitialReading());
+                            meterAllocationRepository.save(meterAllocation);
 
-							responseObject.setMessage("Meter  allocation updated successfully");
-							responseObject.setPayload(m);
-							response = new RestResponse(responseObject, HttpStatus.OK);
-						}
-					}
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                            responseObject.setMessage("Meter  allocation updated successfully");
+                            responseObject.setPayload(m);
+                            response = new RestResponse(responseObject, HttpStatus.OK);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	@Transactional
-	public RestResponse update(RestRequestObject<Meter> requestObject, Long meterId) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    @Transactional
+    public RestResponse update(RestRequestObject<Meter> requestObject, Long meterId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "meter_update");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
 
-				Meter m = meterRepository.findOne(meterId);
-				if (m == null) {
-					responseObject.setMessage("Meter not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
+                Meter m = meterRepository.findOne(meterId);
+                if (m == null) {
+                    responseObject.setMessage("Meter not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    // setup resource
                     Meter meter = requestObject.getObject();
-					m.setMeterNo(meter.getMeterNo());
-					m.setInitialReading(meter.getInitialReading());
+                    m.setMeterNo(meter.getMeterNo());
+                    m.setInitialReading(meter.getInitialReading());
 
-					MeterOwner meterOwner = meterOwnerRepository.findOne(meter.getMeterOwner().getMeterOwnerId());
-					MeterSize meterSize = meterSizeRepository.findOne(meter.getMeterSize().getMeterSizeId());
+                    MeterOwner meterOwner = meterOwnerRepository.findOne(meter.getMeterOwner().getMeterOwnerId());
+                    MeterSize meterSize = meterSizeRepository.findOne(meter.getMeterSize().getMeterSizeId());
 
-					m.setMeterOwner(meterOwner);
-					m.setMeterSize(meterSize);
-					// save
-					meterRepository.save(m);
-					responseObject.setMessage("Meter  updated successfully");
-					responseObject.setPayload(m);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    m.setMeterOwner(meterOwner);
+                    m.setMeterSize(meterSize);
+                    // save
+                    meterRepository.save(m);
+                    responseObject.setMessage("Meter  updated successfully");
+                    responseObject.setPayload(m);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
 
-	public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+    public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "meter_view");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
-				RestPageRequest p = requestObject.getObject();
+                RestPageRequest p = requestObject.getObject();
 
-				Page<Meter> page;
-				if (p.getFilter().isEmpty()) {
-					page = meterRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				} else {
+                Page<Meter> page;
+                if (p.getFilter().isEmpty()) {
+                    page = meterRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
 
-					page = meterRepository.findByMeterNoContainsOrAccount_AccNoContains(p.getFilter(), p.getFilter(),new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                    page = meterRepository.findByMeterNoContainsOrAccount_AccNoContains(p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
-				}
-				if (page.hasContent()) {
+                }
+                if (page.hasContent()) {
 
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(page);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(page);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

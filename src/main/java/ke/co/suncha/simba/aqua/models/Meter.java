@@ -50,7 +50,6 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Entity
 @Table(name = "meters")
@@ -58,231 +57,232 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Meter extends SimbaBaseEntity implements Serializable {
 
-	private static final long serialVersionUID = 7476663980584980131L;
+    private static final long serialVersionUID = 7476663980584980131L;
 
-	@Id
-	@Column(name = "meter_id", nullable = false)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long meterId;
+    @Id
+    @Column(name = "meter_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long meterId;
 
-	@NotNull
-	@Column(name = "meter_no", unique = true, length = 20)
-	private String meterNo;
+    @NotNull
+    @Column(name = "meter_no", unique = true, length = 20)
+    private String meterNo;
 
-	@Column(name = "is_active")
-	private Boolean active;
+    @Column(name = "is_active")
+    private Boolean active;
 
-	@Column(name = "notes", length = 1000)
-	private String notes;
+    @Column(name = "notes", length = 1000)
+    private String notes;
 
-	@NotNull
-	@Column(name = "initial_reading")
-	private Integer initialReading = 0;
+    @NotNull
+    @Column(name = "initial_reading")
+    private Integer initialReading = 0;
 
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "meter_owner_id")
-	private MeterOwner meterOwner;
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "meter_owner_id")
+    private MeterOwner meterOwner;
 
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "meter_size_id")
-	private MeterSize meterSize;
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "meter_size_id")
+    private MeterSize meterSize;
 
-	@JsonIgnore
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "meter")
-	private Account account;
+    @JsonIgnore
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "meter")
+    private Account account;
 
-	@Transient
-	private Boolean assigned = false;
-	
-	@Transient
-	private String accountId="Not Available";
+    @Transient
+    private Boolean assigned = false;
 
-	@JsonIgnore
-	@OneToMany(mappedBy = "meter")
-	private List<MeterAllocation> meterAllocations;
+    @Transient
+    private String accountId = "Not Available";
 
-	
-	/**
-	 * @return the accountId
-	 */
-	public String getAccountId() {
-		if(this.account!=null){
-			this.accountId=account.getAccNo().toString();
-		}
-		return accountId;
-	}
+    @Column(name = "can_be_allocated")
+    private Boolean canBeAllocated = false;
 
-	/**
-	 * @param accountId the accountId to set
-	 */
-	public void setAccountId(String accountId) {
-		this.accountId = accountId;
-	}
+    @JsonIgnore
+    @OneToMany(mappedBy = "meter")
+    private List<MeterAllocation> meterAllocations;
 
-	/**
-	 * @return the assigned
-	 */
-	public Boolean getAssigned() {
-		if (this.account != null) {
-			this.assigned = true;
-		}
-		return assigned;
-	}
 
-	/**
-	 * @param assigned
-	 *            the assigned to set
-	 */
-	public void setAssigned(Boolean assigned) {
-		this.assigned = assigned;
-	}
+    /**
+     * @return the accountId
+     */
+    public String getAccountId() {
+        if (this.account != null) {
+            this.accountId = account.getAccNo().toString();
+        }
+        return accountId;
+    }
 
-	/**
-	 * @return the meterAllocations
-	 */
-	public List<MeterAllocation> getMeterAllocations() {
-		return meterAllocations;
-	}
+    /**
+     * @param accountId the accountId to set
+     */
+    public void setAccountId(String accountId) {
+        this.accountId = accountId;
+    }
 
-	/**
-	 * @param meterAllocations
-	 *            the meterAllocations to set
-	 */
-	public void setMeterAllocations(List<MeterAllocation> meterAllocations) {
-		this.meterAllocations = meterAllocations;
-	}
+    /**
+     * @return the assigned
+     */
+    public Boolean getAssigned() {
+        if (this.account != null) {
+            this.assigned = true;
+        }
+        return assigned;
+    }
 
-	/**
-	 * @return the initialReading
-	 */
-	public Integer getInitialReading() {
-		return initialReading;
-	}
+    /**
+     * @param assigned the assigned to set
+     */
+    public void setAssigned(Boolean assigned) {
+        this.assigned = assigned;
+    }
 
-	/**
-	 * @param initialReading
-	 *            the initialReading to set
-	 */
-	public void setInitialReading(Integer initialReading) {
-		this.initialReading = initialReading;
-	}
+    /**
+     * @return the meterAllocations
+     */
+    public List<MeterAllocation> getMeterAllocations() {
+        return meterAllocations;
+    }
 
-	/**
-	 * @return the meterId
-	 */
-	public long getMeterId() {
-		return meterId;
-	}
+    /**
+     * @param meterAllocations the meterAllocations to set
+     */
+    public void setMeterAllocations(List<MeterAllocation> meterAllocations) {
+        this.meterAllocations = meterAllocations;
+    }
 
-	/**
-	 * @param meterId
-	 *            the meterId to set
-	 */
-	public void setMeterId(long meterId) {
-		this.meterId = meterId;
-	}
+    /**
+     * @return the initialReading
+     */
+    public Integer getInitialReading() {
+        return initialReading;
+    }
 
-	/**
-	 * @return the meterNo
-	 */
-	public String getMeterNo() {
-		return meterNo;
-	}
+    /**
+     * @param initialReading the initialReading to set
+     */
+    public void setInitialReading(Integer initialReading) {
+        this.initialReading = initialReading;
+    }
 
-	/**
-	 * @param meterNo
-	 *            the meterNo to set
-	 */
-	public void setMeterNo(String meterNo) {
-		this.meterNo = meterNo;
-	}
+    /**
+     * @return the meterId
+     */
+    public long getMeterId() {
+        return meterId;
+    }
 
-	/**
-	 * @return the active
-	 */
-	public Boolean getActive() {
-		return active;
-	}
+    /**
+     * @param meterId the meterId to set
+     */
+    public void setMeterId(long meterId) {
+        this.meterId = meterId;
+    }
 
-	/**
-	 * @param active
-	 *            the active to set
-	 */
-	public void setActive(Boolean active) {
-		this.active = active;
-	}
+    /**
+     * @return the meterNo
+     */
+    public String getMeterNo() {
+        return meterNo;
+    }
 
-	/**
-	 * @return the notes
-	 */
-	public String getNotes() {
-		return notes;
-	}
+    /**
+     * @param meterNo the meterNo to set
+     */
+    public void setMeterNo(String meterNo) {
+        this.meterNo = meterNo;
+    }
 
-	/**
-	 * @param notes
-	 *            the notes to set
-	 */
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
+    /**
+     * @return the active
+     */
+    public Boolean getActive() {
+        return active;
+    }
 
-	/**
-	 * @return the meterOwner
-	 */
-	public MeterOwner getMeterOwner() {
-		return meterOwner;
-	}
+    /**
+     * @param active the active to set
+     */
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 
-	/**
-	 * @param meterOwner
-	 *            the meterOwner to set
-	 */
-	public void setMeterOwner(MeterOwner meterOwner) {
-		this.meterOwner = meterOwner;
-	}
+    /**
+     * @return the notes
+     */
+    public String getNotes() {
+        return notes;
+    }
 
-	/**
-	 * @return the meterSize
-	 */
-	public MeterSize getMeterSize() {
-		return meterSize;
-	}
+    /**
+     * @param notes the notes to set
+     */
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
 
-	/**
-	 * @param meterSize
-	 *            the meterSize to set
-	 */
-	public void setMeterSize(MeterSize meterSize) {
-		this.meterSize = meterSize;
-	}
+    /**
+     * @return the meterOwner
+     */
+    public MeterOwner getMeterOwner() {
+        return meterOwner;
+    }
 
-	/**
-	 * @return the account
-	 */
-	public Account getAccount() {
-		return account;
-	}
+    /**
+     * @param meterOwner the meterOwner to set
+     */
+    public void setMeterOwner(MeterOwner meterOwner) {
+        this.meterOwner = meterOwner;
+    }
 
-	/**
-	 * @param account
-	 *            the account to set
-	 */
-	public void setAccount(Account account) {
-		this.account = account;
-	}
+    /**
+     * @return the meterSize
+     */
+    public MeterSize getMeterSize() {
+        return meterSize;
+    }
 
-	@Override
-	public String toString() {
-		return "Meter{" +
-				"meterId=" + meterId +
-				", meterNo='" + meterNo + '\'' +
-				", active=" + active +
-				", notes='" + notes + '\'' +
-				", initialReading=" + initialReading +
-				", meterOwner=" + meterOwner +
-				", meterSize=" + meterSize +
-				", assigned=" + assigned +
-				'}';
-	}
+    /**
+     * @param meterSize the meterSize to set
+     */
+    public void setMeterSize(MeterSize meterSize) {
+        this.meterSize = meterSize;
+    }
+
+    /**
+     * @return the account
+     */
+    public Account getAccount() {
+        return account;
+    }
+
+    /**
+     * @param account the account to set
+     */
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    public Boolean getCanBeAllocated() {
+        return canBeAllocated;
+    }
+
+    public void setCanBeAllocated(Boolean canBeAllocated) {
+        this.canBeAllocated = canBeAllocated;
+    }
+
+    @Override
+    public String toString() {
+        return "Meter{" +
+                "meterId=" + meterId +
+                ", meterNo='" + meterNo + '\'' +
+                ", active=" + active +
+                ", notes='" + notes + '\'' +
+                ", initialReading=" + initialReading +
+                ", meterOwner=" + meterOwner +
+                ", meterSize=" + meterSize +
+                ", assigned=" + assigned +
+                '}';
+    }
 }
