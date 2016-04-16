@@ -41,13 +41,14 @@ public class AuditService {
     public void log(AuditOperation auditOperation, AuditRecord auditRecord) {
         try {
             //log.info("Adding audit:"+ auditRecord.ge);
-            auditRecord.setAuthor(currentUserService.getCurrent().getEmailAddress());
-            auditRecord.setOperation(auditOperation.name());
-            auditRecordRepository.save(auditRecord);
+            if (auditOperation != AuditOperation.ACCESSED && auditOperation!= AuditOperation.VIEWED) {
+                auditRecord.setAuthor(currentUserService.getCurrent().getEmailAddress());
+                auditRecord.setOperation(auditOperation.name());
+                auditRecordRepository.save(auditRecord);
+            }
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
-
     }
 
 }

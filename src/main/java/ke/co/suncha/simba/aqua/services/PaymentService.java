@@ -39,6 +39,7 @@ import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -307,6 +308,82 @@ public class PaymentService {
                 auditRecord.setCurrentData(created.toString());
                 auditRecord.setParentObject("Payments");
                 auditRecord.setNotes("CREATED PAYMENT");
+                auditService.log(AuditOperation.CREATED, auditRecord);
+                //End - audit trail
+
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+
+    @Transactional
+    public RestResponse voidReceipt(RestRequestObject<Payment> requestObject, Long accountId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "payment_void");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                Account account = accountRepository.findOne(accountId);
+                if (account == null) {
+                    responseObject.setMessage("Invalid account");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                Payment payment = paymentRepository.findOne(requestObject.getObject().getPaymentid());
+                if (payment == null) {
+                    responseObject.setMessage("Invalid payment resource");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (StringUtils.isEmpty(payment.getNotes())) {
+                    responseObject.setMessage("Notes can not be empty");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+
+                // create resource
+                payment.setAmount(0d);
+                Payment created = paymentRepository.save(payment);
+
+                // update balances
+                account = accountRepository.findOne(accountId);
+
+                // update account outstanding balance
+                account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
+
+                //save account info before generating notification
+                accountRepository.save(account);
+
+                //send sms
+                if (!created.getPaymentType().hasComments()) {
+                    //smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
+                }
+
+                // package response
+                responseObject.setMessage("Receipt updated successfully");
+                responseObject.setPayload(created);
+                response = new RestResponse(responseObject, HttpStatus.CREATED);
+
+                //Start - audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setParentID(String.valueOf(created.getPaymentid()));
+                auditRecord.setCurrentData(created.toString());
+                auditRecord.setParentObject("Payments");
+                auditRecord.setNotes("VOIDED PAYMENT");
                 auditService.log(AuditOperation.CREATED, auditRecord);
                 //End - audit trail
 

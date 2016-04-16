@@ -30,6 +30,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.List;
+
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  *
@@ -40,4 +42,6 @@ public interface ConsumerRepository extends PagingAndSortingRepository<Consumer,
 	Consumer findByIdentityNo(String identityNo);
 
 	Page<Consumer> findAll(Pageable pageable);
+
+	List<Consumer> findAllByPhoneNumber(String phoneNumber);
 }

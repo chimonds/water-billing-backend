@@ -212,6 +212,9 @@ public class ReleaseManager {
                             "report_ageing,\n" +
                             "sms_create,\n" +
                             "sms_approve,\n" +
+                            "report_consumers_without_phone_numbers,\n" +
+                            "stats_sms_balance,\n" +
+                            "payment_void,\n"+
                             "settings_view";
                     String[] permissions = content.split(",");
                     if (permissions.length > 0) {
@@ -227,7 +230,6 @@ public class ReleaseManager {
                         }
                     }
                 } catch (Exception ex) {
-
                 }
 
 

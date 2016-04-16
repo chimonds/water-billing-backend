@@ -48,38 +48,45 @@ import com.wordnik.swagger.annotations.ApiParam;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @RestController
 @RequestMapping(value = "/api/v1/payments")
 @Api(value = "Connection payments", description = "Connection payment API")
 public class PaymentController {
-	@Autowired
-	private PaymentService paymentService;
-
-	@RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ResponseStatus(HttpStatus.CREATED)
-	@ApiOperation(value = "Create a payment resource.", notes = "Returns the URL of the new resource in the Location header.")
-	public RestResponse createByAccount(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return this.paymentService.createByAccount(requestObject, id);
-	}
-
-	@RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all account bills.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAll(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long account_id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return paymentService.getAllByAccount(requestObject, account_id);
-	}
+    @Autowired
+    private PaymentService paymentService;
 
 
-	@RequestMapping(value = "transfer/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-	@ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse transferPayment(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return paymentService.transferPayment(requestObject, accountId);
-	}
+    @RequestMapping(value = "/void/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.CREATED)
+    @ApiOperation(value = "Void a receipt resource.", notes = "Returns the URL of the new resource in the Location header.")
+    public RestResponse voidReceipt(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return this.paymentService.voidReceipt(requestObject, id);
+    }
 
-	@RequestMapping(value = "", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a paginated list of all payments.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAllByReceiptNo(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return paymentService.getAllByReceiptNo(requestObject);
-	}
+    @RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.CREATED)
+    @ApiOperation(value = "Create a payment resource.", notes = "Returns the URL of the new resource in the Location header.")
+    public RestResponse createByAccount(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return this.paymentService.createByAccount(requestObject, id);
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all account bills.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getAll(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long account_id, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return paymentService.getAllByAccount(requestObject, account_id);
+    }
+
+
+    @RequestMapping(value = "transfer/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse transferPayment(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return paymentService.transferPayment(requestObject, accountId);
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all payments.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getAllByReceiptNo(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return paymentService.getAllByReceiptNo(requestObject);
+    }
 }

@@ -9,6 +9,7 @@ import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.repository.*;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1648,6 +1649,80 @@ public class ReportService {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(report);
                     response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
+        }
+        return response;
+    }
+
+    public RestResponse getConsumersWithoutPhoneNumbers(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            log.info("Generating consumers not with phone numbers report");
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_consumers_without_phone_numbers");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+
+                List<Consumer> consumers = consumerRepository.findAllByPhoneNumber("");
+                if (!consumers.isEmpty()) {
+                    log.info(consumers.size() + " consumers found.");
+
+                    List<BalancesReport> records = new ArrayList<>();
+
+                    for (Consumer consumer : consumers) {
+                        Boolean include = true;
+                        if (include) {
+                            BalancesReport balancesReport = new BalancesReport();
+                            String consumerName = "";
+                            if (StringUtils.isNotEmpty(consumer.getFirstName())) {
+                                consumerName += consumer.getFirstName();
+                            }
+
+                            if (StringUtils.isNotEmpty(consumer.getMiddleName())) {
+                                consumerName += " " + consumer.getMiddleName();
+                            }
+
+                            if (StringUtils.isNotEmpty(consumer.getLastName())) {
+                                consumerName += " " + consumer.getLastName();
+                            }
+
+                            balancesReport.setAccName(consumerName);
+                            balancesReport.setId(consumer.getConsumerId() + "");
+                            balancesReport.setActive(true);
+                            balancesReport.setZone("");
+                            records.add(balancesReport);
+                        }
+                    }
+                    log.info("Packaged report data...");
+
+                    ReportObject report = new ReportObject();
+                    report.setDate(Calendar.getInstance());
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:CONSUMERS_WITHOUT_PHONE_NUMBERS").getValue());
+                    report.setContent(records);
+                    log.info("Sending Payload send to client...");
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
                 }
             }
         } catch (Exception ex) {

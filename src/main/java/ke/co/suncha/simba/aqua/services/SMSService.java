@@ -13,6 +13,7 @@ import ke.co.suncha.simba.admin.utils.Config;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +100,27 @@ public class SMSService {
         return bmonth.toUpperCase();
     }
 
+    public String getBalance() {
+        String balance = "Balance not Available";
+        String sms_username = optionService.getOption("SMS_USERNAME").getValue();
+        String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
+        String sms_sender_id = optionService.getOption("SMS_SENDER_ID").getValue();
+        AfricasTalkingGateway gateway = new AfricasTalkingGateway(sms_username, sms_api_key);
+        try {
+            JSONObject result = gateway.getUserData();
+            //The result will have the format=> KES XXX
+            balance = result.getString("balance");
+            balance = balance.replace("KES", "");
+
+            Double bal = 0d;
+            bal = Double.valueOf(balance);
+            balance = bal.intValue() + "";
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+        return balance;
+    }
 
     @Scheduled(fixedDelay = 2000)
     public void process() {
@@ -466,6 +488,22 @@ public class SMSService {
             if (message.contains("$bill_amount")) {
                 message = message.replace("$bill_amount", this.formatNumber(bill.getTotalBilled()));
             }
+
+            if (message.contains("$previous_reading")) {
+                message = message.replace("$previous_reading", bill.getPreviousReading().toString());
+            }
+
+            if (message.contains("$current_reading")) {
+                message = message.replace("$current_reading", bill.getCurrentReading().toString());
+            }
+
+            if (message.contains("$units")) {
+                message = message.replace("$units", bill.getUnitsBilled().toString());
+            }
+
+            if (message.contains("$consumption_type")) {
+                message = message.replace("$consumption_type", bill.getConsumptionType().toLowerCase());
+            }
         }
 
         //$firstname
@@ -478,7 +516,6 @@ public class SMSService {
 
     @Transactional
     public void saveNotification(Long accountId, Long paymentId, Long billId, SMSNotificationType smsNotificationType) {
-
 
         SMS sms = new SMS();
         Account account = accountRepository.findOne(accountId);
@@ -566,7 +603,7 @@ public class SMSService {
                 return;
             }
 
-            List<SMS> smsList = smsRepository.findAllBySend(false);
+            List<SMS> smsList = smsRepository.findAllBySendAndIsVoid(false, false);
             if (smsList.isEmpty()) {
                 return;
             }
@@ -750,6 +787,69 @@ public class SMSService {
     }
 
     @Transactional
+    public RestResponse update(RestRequestObject<SMS> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "sms_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                SMS sms = requestObject.getObject();
+                SMS dbSMS = smsRepository.findOne(sms.getSmsId());
+
+                if (dbSMS == null) {
+                    responseObject.setMessage("SMS not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+
+                    if (dbSMS.getSend()) {
+                        if (StringUtils.isNotEmpty(dbSMS.getMobileNumber())) {
+                            if (dbSMS.getMobileNumber().length() == 10) {
+                                responseObject.setMessage("Message has already been sent. We can not complete your request.");
+                                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                                return response;
+                            }
+                        }
+                    }
+
+                    if (dbSMS.getIsVoid()) {
+                        responseObject.setMessage("Message has already been voided. We can not complete your request.");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+
+                    // setup resource
+                    dbSMS.setSend(sms.getSend());
+                    dbSMS.setIsVoid(sms.getIsVoid());
+                    dbSMS.setMobileNumber(sms.getMobileNumber());
+
+                    // save
+                    dbSMS = smsRepository.save(dbSMS);
+                    responseObject.setMessage("SMS  updated successfully");
+                    responseObject.setPayload(dbSMS);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(dbSMS.getSmsId()));
+                    auditRecord.setCurrentData(dbSMS.toString());
+                    auditRecord.setPreviousData(sms.toString());
+                    auditRecord.setParentObject("SMS");
+                    auditRecord.setNotes("UPDATED SMS");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    @Transactional
     public RestResponse approve(RestRequestObject<SMSGroup> requestObject, Long smsGroupId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -885,7 +985,7 @@ public class SMSService {
                 if (p.getFilter().isEmpty()) {
                     page = smsRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 } else {
-                    page = smsRepository.findAllByMessageContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                    page = smsRepository.findAllByMessageContainsOrMobileNumberContains(p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 }
 
                 if (page.hasContent()) {
@@ -904,7 +1004,6 @@ public class SMSService {
         }
         return response;
     }
-
 
     @Scheduled(fixedDelay = 5000)
     @Transactional

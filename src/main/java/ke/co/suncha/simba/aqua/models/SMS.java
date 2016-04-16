@@ -30,6 +30,9 @@ public class SMS extends SimbaBaseEntity implements Serializable {
     @Column(name = "send")
     private Boolean send = false;
 
+    @Column(name = "is_void")
+    private Boolean isVoid = false;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "date_send")
     private Calendar dateSend = Calendar.getInstance();
@@ -39,7 +42,7 @@ public class SMS extends SimbaBaseEntity implements Serializable {
     private String mobileNumber;
 
     @Column(name = "response")
-    private String response="";
+    private String response = "";
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
@@ -100,5 +103,28 @@ public class SMS extends SimbaBaseEntity implements Serializable {
 
     public void setResponse(String response) {
         this.response = response;
+    }
+
+    public Boolean getIsVoid() {
+        if (this.isVoid == null) {
+            this.isVoid = false;
+        }
+        return isVoid;
+    }
+
+    public void setIsVoid(Boolean isVoid) {
+        this.isVoid = isVoid;
+    }
+
+    @Override
+    public String toString() {
+        return "SMS{" +
+                "smsId=" + smsId +
+                ", message='" + message + '\'' +
+                ", send=" + send +
+                ", isVoid=" + isVoid +
+                ", dateSend=" + dateSend +
+                ", mobileNumber='" + mobileNumber + '\'' +
+                '}';
     }
 }

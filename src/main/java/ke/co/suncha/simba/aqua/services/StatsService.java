@@ -721,7 +721,11 @@ public class StatsService {
                 if (authManager.grant(requestObject.getToken(), "stats_payments_not_allocated").getStatusCode() == HttpStatus.OK) {
                     topView1.setNotAllocated(this.topView.getNotAllocated());
                 }
+
                 //statsResponse.setTopView(this.topView);
+                if (authManager.grant(requestObject.getToken(), "stats_sms_balance").getStatusCode() == HttpStatus.OK) {
+                    topView1.setSmsBalance(smsService.getBalance());
+                }
                 statsResponse.setTopView(topView1);
 
                 if (authManager.grant(requestObject.getToken(), "stats_bills_payments_linegraph").getStatusCode() == HttpStatus.OK) {

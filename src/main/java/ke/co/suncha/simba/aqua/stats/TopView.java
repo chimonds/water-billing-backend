@@ -12,6 +12,7 @@ public class TopView {
     private Double notAllocated = 0d;
     private Long active = 0L;
     private Long inactive = 0L;
+    private String smsBalance = "";
 
     public Double getPaidToday() {
         return paidToday;
@@ -75,6 +76,14 @@ public class TopView {
 
     public void setPaidLastMonth(Double paidLastMonth) {
         this.paidLastMonth = paidLastMonth;
+    }
+
+    public String getSmsBalance() {
+        return smsBalance;
+    }
+
+    public void setSmsBalance(String smsBalance) {
+        this.smsBalance = smsBalance;
     }
 
     @Override

@@ -7,9 +7,7 @@ import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.SMSGroup;
-import ke.co.suncha.simba.aqua.models.SMSTemplate;
+import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.services.SMSService;
 import ke.co.suncha.simba.aqua.services.SMSTemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,5 +51,12 @@ public class SMSController extends AbstractRestHandler {
     @ApiOperation(value = "Approve/Reject sms group resource.", notes = "Returns the URL of the new resource in the Location header.")
     public RestResponse create(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<SMSGroup> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return this.smsService.approve(requestObject, id);
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = {"application/json"}, produces = {"application/json"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update a sms resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse update(@ApiParam(value = "The ID of the existing sms resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<SMS> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return smsService.update(requestObject);
     }
 }
