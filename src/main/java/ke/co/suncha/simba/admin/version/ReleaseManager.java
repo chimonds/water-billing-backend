@@ -215,6 +215,8 @@ public class ReleaseManager {
                             "report_consumers_without_phone_numbers,\n" +
                             "stats_sms_balance,\n" +
                             "payment_void,\n"+
+                            "bill_edit_previous_reading,\n"+
+                            "report_accounts,\n"+
                             "settings_view";
                     String[] permissions = content.split(",");
                     if (permissions.length > 0) {

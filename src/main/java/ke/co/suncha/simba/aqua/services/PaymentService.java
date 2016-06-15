@@ -322,20 +322,12 @@ public class PaymentService {
 
 
     @Transactional
-    public RestResponse voidReceipt(RestRequestObject<Payment> requestObject, Long accountId) {
+    public RestResponse voidReceipt(RestRequestObject<Payment> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "payment_void");
                 if (response.getStatusCode() != HttpStatus.OK) {
-                    return response;
-                }
-
-                Account account = accountRepository.findOne(accountId);
-                if (account == null) {
-                    responseObject.setMessage("Invalid account");
-                    responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                     return response;
                 }
 
@@ -347,20 +339,27 @@ public class PaymentService {
                     return response;
                 }
 
-                if (StringUtils.isEmpty(payment.getNotes())) {
+                if (payment.getAmount().equals(0d)) {
+                    responseObject.setMessage("You can not void this receipt. Amount is zero.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (StringUtils.isEmpty(requestObject.getObject().getNotes())) {
                     responseObject.setMessage("Notes can not be empty");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
-
                 // create resource
                 payment.setAmount(0d);
+                payment.setNotes(requestObject.getObject().getNotes());
                 Payment created = paymentRepository.save(payment);
 
                 // update balances
-                account = accountRepository.findOne(accountId);
+                Account account = accountRepository.findOne(created.getAccount().getAccountId());
 
                 // update account outstanding balance
                 account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));

@@ -10,12 +10,12 @@ import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -157,6 +157,14 @@ public class ReportService {
                 paymentBillingDate.set(Calendar.DATE, 24);
                 ///log.info("Payment billing date:" + paymentBillingDate.getTime());
 
+                //log.info("Billing Month:" + billingMonth.getMonth().getTime());
+
+                DateTime startDate = new DateTime(billingMonth.getMonth().getTimeInMillis()).withDayOfMonth(1);
+                //log.info("Start date:" + startDate);
+
+                DateTime endDate = startDate.plusMonths(1).minusMinutes(1);
+                //log.info("To date:" + endDate);
+
 
                 BillingMonth paymentBillingMonth = billingMonthRepository.findByMonth(paymentBillingDate);
                 //log.info("Payment billing Month id:" + paymentBillingMonth.getBillingMonthId());
@@ -236,8 +244,10 @@ public class ReportService {
 
 
                         //get payments from the previous month
-                        List<Payment> payments = paymentRepository.findByBillingMonth_BillingMonthIdAndAccount(paymentBillingMonth.getBillingMonthId(), b.getAccount());
+                        //List<Payment> payments = paymentRepository.findByBillingMonth_BillingMonthIdAndAccount(paymentBillingMonth.getBillingMonthId(), b.getAccount());
                         //List<Payment> payments = paymentRepository.findByTransactionDateBetweenAndAccount(startDate, toDate, b.getAccount());
+                        Long paymentAccountId = b.getAccount().getAccountId();
+                        List<Payment> payments = paymentRepository.findByTransactionDate(paymentAccountId, startDate.toString("yyyy/MM/dd"), endDate.toString("yyyy/MM/dd"));
 
 
                         Long accountId = billRepository.findAccountIdByBillId(b.getBillId());
@@ -297,7 +307,11 @@ public class ReportService {
                                     PaymentRecord paymentRecord = new PaymentRecord();
                                     paymentRecord.setTransactionDate(p.getTransactionDate());
                                     paymentRecord.setAmount(p.getAmount());
-                                    paymentRecord.setReceiptNo(p.getReceiptNo());
+                                    if (!p.getPaymentType().getName().equals("Water Sale")) {
+                                        paymentRecord.setReceiptNo(p.getReceiptNo() + "(" + p.getPaymentType().getName() + ")");
+                                    } else {
+                                        paymentRecord.setReceiptNo(p.getReceiptNo());
+                                    }
 
                                     paymentRecords.add(paymentRecord);
 
@@ -388,7 +402,7 @@ public class ReportService {
     }
 
 
-    //    @Scheduled(fixedDelay = 50000000)
+    @Scheduled(fixedDelay = 25000000)
     @Transactional
     private void populateAgeingReport() {
         try {

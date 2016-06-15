@@ -133,4 +133,10 @@ public class AccountController extends AbstractRestHandler {
     public RestResponse fieldCard(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return accountService.getFieldCardReport(requestObject);
     }
+
+    @RequestMapping(value = "/accounts", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse accounts(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getAccountsReport(requestObject);
+    }
 }

@@ -32,6 +32,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigInteger;
 import java.util.Calendar;
@@ -58,6 +59,11 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     List<Payment> findByTransactionDateBetween(Calendar from, Calendar to);
 
     List<Payment> findByTransactionDateBetweenAndAccount(Calendar from, Calendar to, Account account);
+
+    List<Payment> findByAccount_accountIdAndTransactionDateBetween(Long accountId, Calendar from, Calendar to);
+
+    @Query(value = "select * from payments where account_id=:accountId AND transaction_date>=:startDate AND transaction_date<=:endDate", nativeQuery = true)
+    List<Payment> findByTransactionDate(@Param("accountId") Long accountId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
     List<Payment> findByTransactionDateBetweenAndPaymentType(Calendar from, Calendar to, PaymentType paymentType);
 

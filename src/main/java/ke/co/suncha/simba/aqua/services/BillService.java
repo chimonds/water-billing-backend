@@ -180,10 +180,24 @@ public class BillService {
                 Bill bill = new Bill();
 
                 //set
+
+
+                //Only allow editing of previous reading if user has a role
+                if (lastBill != null) {
+                    response = authManager.grant(requestObject.getToken(), "bill_edit_previous_reading");
+                    if (response.getStatusCode() != HttpStatus.OK) {
+                        if (!billRequest.getPreviousReading().equals(lastBill.getCurrentReading())) {
+                            responseObject.setMessage("Sorry you are not authorized to edit previous reading when billing. Please contact your admin.");
+                            responseObject.setPayload("");
+                            response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                            return response;
+                        }
+                    }
+                }
+
                 //TODO; check nulls
                 bill.setCurrentReading(billRequest.getCurrentReading());
                 bill.setPreviousReading(billRequest.getPreviousReading());
-
 
                 //get units consumed
                 Integer unitsConsumed = bill.getCurrentReading() - bill.getPreviousReading();
@@ -274,11 +288,15 @@ public class BillService {
                 }
 
                 log.info("Getting total billed...");
+                Boolean accountIsActive = true;
                 totalAmount += createdBill.getAmount();
                 if (createdBill.getBillItems() != null) {
                     if (!createdBill.getBillItems().isEmpty()) {
                         for (BillItem bi : createdBill.getBillItems()) {
                             totalAmount += bi.getAmount();
+                            if (!bi.getBillItemType().isActive()) {
+                                accountIsActive = false;
+                            }
                         }
                     }
                 }
@@ -295,6 +313,7 @@ public class BillService {
                 Double outstandingBalance = paymentService.getAccountBalance(account.getAccountId());
                 log.info("Balance:" + outstandingBalance);
                 account.setOutstandingBalance(outstandingBalance);
+                account.setActive(accountIsActive);
                 accountRepository.save(account);
 
                 //send sms

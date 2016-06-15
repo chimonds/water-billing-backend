@@ -1,5 +1,9 @@
 package ke.co.suncha.simba.aqua.reports;
 
+import org.joda.time.DateTime;
+
+import java.util.Calendar;
+
 /**
  * Created by manyala on 5/1/15.
  */
@@ -13,6 +17,8 @@ public class AccountRecord {
     private  Integer average;
     private  Boolean active;
     private String status;
+    private String phoneNo;
+    private Calendar createdOn;
 
     public String getStatus() {
         if (active) {
@@ -86,5 +92,21 @@ public class AccountRecord {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getPhoneNo() {
+        return phoneNo;
+    }
+
+    public void setPhoneNo(String phoneNo) {
+        this.phoneNo = phoneNo;
+    }
+
+    public Calendar getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(Calendar createdOn) {
+        this.createdOn = createdOn;
     }
 }

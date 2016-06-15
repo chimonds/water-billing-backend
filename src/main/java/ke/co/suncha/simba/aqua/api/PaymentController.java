@@ -57,11 +57,11 @@ public class PaymentController {
     private PaymentService paymentService;
 
 
-    @RequestMapping(value = "/void/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @RequestMapping(value = "/void", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.CREATED)
     @ApiOperation(value = "Void a receipt resource.", notes = "Returns the URL of the new resource in the Location header.")
-    public RestResponse voidReceipt(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return this.paymentService.voidReceipt(requestObject, id);
+    public RestResponse voidReceipt(@RequestBody RestRequestObject<Payment> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return this.paymentService.voidReceipt(requestObject);
     }
 
     @RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
