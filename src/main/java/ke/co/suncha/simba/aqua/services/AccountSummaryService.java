@@ -14,7 +14,9 @@ import ke.co.suncha.simba.aqua.models.AccountSummary;
 import ke.co.suncha.simba.aqua.models.Consumer;
 import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.repository.*;
-import ke.co.suncha.simba.aqua.utils.*;
+import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
+import ke.co.suncha.simba.aqua.utils.MobileClientResponse;
+import ke.co.suncha.simba.aqua.utils.RemoteUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +24,10 @@ import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -73,6 +73,9 @@ public class AccountSummaryService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    AccountService accountService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -242,20 +245,14 @@ public class AccountSummaryService {
         }
     }
 
-    @Scheduled(fixedDelay = 30000)
+
+    //@Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
     public void populateOutstandingAccountBalances() {
         try {
-            List<String> accountList = accountRepository.findAllAccountNumbers();
+            List<BigInteger> accountList = accountRepository.findAllAccountIds();
             if (!accountList.isEmpty()) {
-                for (String accNo : accountList) {
-                    Account account = accountRepository.findByaccNo(accNo);
-                    if (account != null) {
-                        Double balance = paymentService.getAccountBalance(account.getAccountId());
-                        if (balance.compareTo(account.getOutstandingBalance()) != 0) {
-                            account.setOutstandingBalance(balance);
-                            accountRepository.save(account);
-                        }
-                    }
+                for (BigInteger accountId : accountList) {
+                    accountService.updateBalance(accountId.longValue());
                 }
             }
         } catch (Exception ex) {

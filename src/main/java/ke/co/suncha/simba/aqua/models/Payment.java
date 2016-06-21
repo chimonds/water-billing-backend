@@ -23,22 +23,19 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
-import java.util.Calendar;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import java.io.Serializable;
+import java.util.Calendar;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Entity
 @Table(name = "payments")
@@ -46,222 +43,235 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Payment extends SimbaBaseEntity implements Serializable {
 
-	private static final long serialVersionUID = -656163045643445357L;
-	@Id
-	@Column(name = "payment_id", nullable = false)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long paymentid;
+    private static final long serialVersionUID = -656163045643445357L;
+    @Id
+    @Column(name = "payment_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long paymentid;
 
-	@NotNull
-	@Column(name = "amount")
-	private Double amount = (double) 0;
+    @NotNull
+    @Column(name = "amount")
+    private Double amount = (double) 0;
 
-	@NotNull
-	@Column(name = "transaction_date")
-	private Calendar  transactionDate = Calendar.getInstance();
+    @NotNull
+    @Column(name = "transaction_date")
+    private Calendar transactionDate = Calendar.getInstance();
 
-	@NotNull
-	@Column(name = "receipt_no", length = 15)
-	private String receiptNo;
+    @NotNull
+    @Column(name = "receipt_no", length = 15)
+    private String receiptNo;
 
-	@NotNull
-	@Column(name = "is_void", length = 1)
-	private Integer isVoid = 0;
+    @Column(name = "is_multi_part")
+    private Boolean isMultiPart = false;
 
-	@Column(name = "comments", length = 1000)
-	private String notes = "";
+    @Column(name = "ref_no")
+    private String refNo;
 
-	@Transient
-	private String accNo;
+    @NotNull
+    @Column(name = "is_void", length = 1)
+    private Integer isVoid = 0;
 
-	// payments belong to an account
-	@JsonIgnore
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "account_id")
-	private Account account;
+    @Column(name = "comments", length = 1000)
+    private String notes = "";
 
-	// payments belong to a billing month
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "billing_month_id")
-	private BillingMonth billingMonth;
+    @Transient
+    private String accNo;
 
-	// a payment has a payment type
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "payment_type_id")
-	private PaymentType paymentType;
+    // payments belong to an account
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    private Account account;
 
-	// a payment has a payment source
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "payment_source_id")
-	private PaymentSource paymentSource;
+    // payments belong to a billing month
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "billing_month_id")
+    private BillingMonth billingMonth;
 
-	public String getAccNo() {
-		if(this.getAccount()!=null){
-			this.accNo= this.getAccount().getAccNo();
-		}
-		return accNo;
-	}
+    // a payment has a payment type
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payment_type_id")
+    private PaymentType paymentType;
 
+    // a payment has a payment source
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payment_source_id")
+    private PaymentSource paymentSource;
 
-	/**
-	 * @return the paymentSource
-	 */
-	public PaymentSource getPaymentSource() {
-		return paymentSource;
-	}
-
-	/**
-	 * @param paymentSource
-	 *            the paymentSource to set
-	 */
-	public void setPaymentSource(PaymentSource paymentSource) {
-		this.paymentSource = paymentSource;
-	}
-
-	/**
-	 * @return the paymentid
-	 */
-	public long getPaymentid() {
-		return paymentid;
-	}
-
-	/**
-	 * @param paymentid
-	 *            the paymentid to set
-	 */
-	public void setPaymentid(long paymentid) {
-		this.paymentid = paymentid;
-	}
-
-	/**
-	 * @return the amount
-	 */
-	public Double getAmount() {
-		return amount;
-	}
-
-	/**
-	 * @param amount
-	 *            the amount to set
-	 */
-	public void setAmount(Double amount) {
-		this.amount = amount;
-	}
+    public String getAccNo() {
+        if (this.getAccount() != null) {
+            this.accNo = this.getAccount().getAccNo();
+        }
+        return accNo;
+    }
 
 
-	/**
-	 * @return the transactionDate
-	 */
-	public Calendar getTransactionDate() {
-		return transactionDate;
-	}
+    /**
+     * @return the paymentSource
+     */
+    public PaymentSource getPaymentSource() {
+        return paymentSource;
+    }
 
-	/**
-	 * @param transactionDate the transactionDate to set
-	 */
-	public void setTransactionDate(Calendar transactionDate) {
-		this.transactionDate = transactionDate;
-	}
+    /**
+     * @param paymentSource the paymentSource to set
+     */
+    public void setPaymentSource(PaymentSource paymentSource) {
+        this.paymentSource = paymentSource;
+    }
 
-	/**
-	 * @return the receiptNo
-	 */
-	public String getReceiptNo() {
-		return receiptNo;
-	}
+    /**
+     * @return the paymentid
+     */
+    public Long getPaymentid() {
+        return paymentid;
+    }
 
-	/**
-	 * @param receiptNo
-	 *            the receiptNo to set
-	 */
-	public void setReceiptNo(String receiptNo) {
-		this.receiptNo = receiptNo;
-	}
+    /**
+     * @param paymentid the paymentid to set
+     */
+    public void setPaymentid(Long paymentid) {
+        this.paymentid = paymentid;
+    }
 
-	/**
-	 * @return the isVoid
-	 */
-	public Integer getIsVoid() {
-		return isVoid;
-	}
+    /**
+     * @return the amount
+     */
+    public Double getAmount() {
+        return amount;
+    }
 
-	/**
-	 * @param isVoid
-	 *            the isVoid to set
-	 */
-	public void setIsVoid(Integer isVoid) {
-		this.isVoid = isVoid;
-	}
+    /**
+     * @param amount the amount to set
+     */
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
 
-	/**
-	 * @return the comments
-	 */
-	public String getNotes() {
-		return notes;
-	}
 
-	/**
-	 * @param comments
-	 *            the comments to set
-	 */
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
+    /**
+     * @return the transactionDate
+     */
+    public Calendar getTransactionDate() {
+        return transactionDate;
+    }
 
-	/**
-	 * @return the account
-	 */
-	public Account getAccount() {
-		return account;
-	}
+    /**
+     * @param transactionDate the transactionDate to set
+     */
+    public void setTransactionDate(Calendar transactionDate) {
+        this.transactionDate = transactionDate;
+    }
 
-	/**
-	 * @param account
-	 *            the account to set
-	 */
-	public void setAccount(Account account) {
-		this.account = account;
-	}
+    /**
+     * @return the receiptNo
+     */
+    public String getReceiptNo() {
+        return receiptNo;
+    }
 
-	/**
-	 * @return the billingMonth
-	 */
-	public BillingMonth getBillingMonth() {
-		return billingMonth;
-	}
+    /**
+     * @param receiptNo the receiptNo to set
+     */
+    public void setReceiptNo(String receiptNo) {
+        this.receiptNo = receiptNo;
+    }
 
-	/**
-	 * @param billingMonth
-	 *            the billingMonth to set
-	 */
-	public void setBillingMonth(BillingMonth billingMonth) {
-		this.billingMonth = billingMonth;
-	}
+    /**
+     * @return the isVoid
+     */
+    public Integer getIsVoid() {
+        return isVoid;
+    }
 
-	/**
-	 * @return the paymentType
-	 */
-	public PaymentType getPaymentType() {
-		return paymentType;
-	}
+    /**
+     * @param isVoid the isVoid to set
+     */
+    public void setIsVoid(Integer isVoid) {
+        this.isVoid = isVoid;
+    }
 
-	/**
-	 * @param paymentType
-	 *            the paymentType to set
-	 */
-	public void setPaymentType(PaymentType paymentType) {
-		this.paymentType = paymentType;
-	}
+    /**
+     * @return the comments
+     */
+    public String getNotes() {
+        return notes;
+    }
 
-	@Override
-	public String toString() {
-		return "Payment{" +
-				"paymentid=" + paymentid +
-				", amount=" + amount +
-				", transactionDate=" + transactionDate +
-				", receiptNo='" + receiptNo + '\'' +
-				", isVoid=" + isVoid +
-				", notes='" + notes + '\'' +
-				'}';
-	}
+    /**
+     * @param notes the comments to set
+     */
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    /**
+     * @return the account
+     */
+    public Account getAccount() {
+        return account;
+    }
+
+    /**
+     * @param account the account to set
+     */
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    /**
+     * @return the billingMonth
+     */
+    public BillingMonth getBillingMonth() {
+        return billingMonth;
+    }
+
+    /**
+     * @param billingMonth the billingMonth to set
+     */
+    public void setBillingMonth(BillingMonth billingMonth) {
+        this.billingMonth = billingMonth;
+    }
+
+    /**
+     * @return the paymentType
+     */
+    public PaymentType getPaymentType() {
+        return paymentType;
+    }
+
+    /**
+     * @param paymentType the paymentType to set
+     */
+    public void setPaymentType(PaymentType paymentType) {
+        this.paymentType = paymentType;
+    }
+
+    public String getRefNo() {
+        return refNo;
+    }
+
+    public void setRefNo(String refNo) {
+        this.refNo = refNo;
+    }
+
+    public Boolean getIsMultiPart() {
+        return isMultiPart;
+    }
+
+    public void setIsMultiPart(Boolean isMultiPart) {
+        this.isMultiPart = isMultiPart;
+    }
+
+    @Override
+    public String toString() {
+        return "Payment{" +
+                "paymentid=" + paymentid +
+                ", amount=" + amount +
+                ", transactionDate=" + transactionDate +
+                ", receiptNo='" + receiptNo + '\'' +
+                ", isVoid=" + isVoid +
+                ", notes='" + notes + '\'' +
+                '}';
+    }
 }

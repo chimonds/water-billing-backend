@@ -23,18 +23,6 @@
  */
 package ke.co.suncha.simba.admin.version;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-
-import ke.co.suncha.simba.aqua.models.*;
-import ke.co.suncha.simba.aqua.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import ke.co.suncha.simba.admin.models.SimbaOption;
 import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
@@ -44,6 +32,14 @@ import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.repositories.UserRoleRepository;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -108,7 +104,7 @@ public class ReleaseManager {
      * @return
      */
 
-    @PostConstruct
+    //@PostConstruct
     private void release_1() {
         try {
             System.out.println("Running updates release_1.....");
@@ -236,46 +232,46 @@ public class ReleaseManager {
 
 
                 try {
-//                    UserRole userRole = new UserRole();
-//                    userRole.setName("Administrator");
-//                    userRole.setDescription("Administrators have permission to do anything.");
-//                    UserRole createdUserRole = userRoleRepository.save(userRole);
+                    UserRole userRole = new UserRole();
+                    userRole.setName("Administrator");
+                    userRole.setDescription("Administrators have permission to do anything.");
+                    UserRole createdUserRole = userRoleRepository.save(userRole);
                 } catch (Exception ex) {
 
                 }
 
                 try {
-//                    List<SystemAction> availableSystemActions = systemActionRepository.findAll();
-//                    UserRole userRole = userRoleRepository.findOne(1L);
-//                    userRole.setSystemActions(availableSystemActions);
-//                    userRole = userRoleRepository.save(userRole);
+                    List<SystemAction> availableSystemActions = systemActionRepository.findAll();
+                    UserRole userRole = userRoleRepository.findOne(1L);
+                    userRole.setSystemActions(availableSystemActions);
+                    userRole = userRoleRepository.save(userRole);
                 } catch (Exception ex) {
 
                 }
 
                 try {
-                    // Setup default user
-//                    User user = new User();
-//                    user.setEmailAddress("maitha.manyala@gmail.com");
-//                    user.setFirstName("Maitha");
-//                    user.setLastName("Manyala");
-//                    user.setActive(true);
-//
-//                    // create auth with default pass 123456
-//
-//                    UserAuth auth = new UserAuth();
-//                    auth.setAuthPassword(AuthManager.encodePassword(user.getEmailAddress().toLowerCase(), "123456"));
-//                    user.setUserAuth(auth);
-//                    userRepository.save(user);
+                   //  Setup default user
+                    User user = new User();
+                    user.setEmailAddress("maitha.manyala@gmail.com");
+                    user.setFirstName("Maitha");
+                    user.setLastName("Manyala");
+                    user.setActive(true);
+
+                    // create auth with default pass 123456
+
+                    UserAuth auth = new UserAuth();
+                    auth.setAuthPassword(AuthManager.encodePassword(user.getEmailAddress().toLowerCase(), "123456"));
+                    user.setUserAuth(auth);
+                    userRepository.save(user);
                 } catch (Exception ex) {
 
                 }
 
                 try {
-//                    User user = userRepository.findOne(1L);
-//                    UserRole userRole = userRoleRepository.findOne(1L);
-//                    user.setUserRole(userRole);
-//                    userRepository.save(user);
+                    User user = userRepository.findOne(1L);
+                    UserRole userRole = userRoleRepository.findOne(1L);
+                    user.setUserRole(userRole);
+                    userRepository.save(user);
 
                 } catch (Exception ex) {
 
@@ -289,18 +285,18 @@ public class ReleaseManager {
                     for (int x = current; x <= last; x++) {
                         for (int y = 1; y <= 12; y++) {
                             try {
-//                                BillingMonth bm = new BillingMonth();
-//                                //bm.setCode(Integer.valueOf(billingCode));
-//                                Calendar c = Calendar.getInstance();
-//                                c.set(current, y, 24);
-//                                bm.setMonth(c);
-//
-//
-//                                SimpleDateFormat format1 = new SimpleDateFormat("yyyyMM");
-//                                String billingCode = format1.format(c.getTime());
-//
-//                                bm.setCode(Integer.valueOf(billingCode));
-//                                billingMonthRepository.save(bm);
+                                BillingMonth bm = new BillingMonth();
+                                //bm.setCode(Integer.valueOf(billingCode));
+                                Calendar c = Calendar.getInstance();
+                                c.set(current, y, 24);
+                                bm.setMonth(c);
+
+
+                                SimpleDateFormat format1 = new SimpleDateFormat("yyyyMM");
+                                String billingCode = format1.format(c.getTime());
+
+                                bm.setCode(Integer.valueOf(billingCode));
+                                billingMonthRepository.save(bm);
                             } catch (Exception ex) {
                                 ex.printStackTrace();
                                 System.out.println(ex.getLocalizedMessage());
@@ -314,17 +310,17 @@ public class ReleaseManager {
                 }
                 //Payment sources
                 try {
-//                    PaymentSource ps = new PaymentSource();
-//                    ps.setName("CASH");
-//                    paymentSourceRepository.save(ps);
-//
-//                    ps = new PaymentSource();
-//                    ps.setName("M-PESA");
-//                    paymentSourceRepository.save(ps);
-//
-//                    ps = new PaymentSource();
-//                    ps.setName("PostBank");
-//                    paymentSourceRepository.save(ps);
+                    PaymentSource ps = new PaymentSource();
+                    ps.setName("CASH");
+                    paymentSourceRepository.save(ps);
+
+                    ps = new PaymentSource();
+                    ps.setName("M-PESA");
+                    paymentSourceRepository.save(ps);
+
+                    ps = new PaymentSource();
+                    ps.setName("PostBank");
+                    paymentSourceRepository.save(ps);
                 } catch (Exception ex) {
 
                 }
@@ -332,92 +328,112 @@ public class ReleaseManager {
                 PaymentType pt = new PaymentType();
                 //Payment types
                 try {
-//                    pt.setIsPrimary(true);
-//                    pt.setName("Water Sale");
-//                    pt.setUnique(true);
-//                    pt.setDescription("Water sale payment");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Credit");
-//                    pt.setComment(true);
-//                    pt.setDescription("Credit");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Debit");
-//                    pt.setComment(true);
-//                    pt.setNegative(true);
-//                    pt.setDescription("Debit");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Other");
-//                    pt.setUnique(true);
-//                    pt.setDescription("Other");
-//                    paymentTypeRepository.save(pt);
+                    pt.setIsPrimary(true);
+                    pt.setName("Water Sale");
+                    pt.setUnique(true);
+                    pt.setDescription("Water sale payment");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Smart Receipt");
+                    pt.setUnique(true);
+                    pt.setDescription("Smart Receipt");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Fine");
+                    pt.setUnique(true);
+                    pt.setDescription("Fine");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Credit");
+                    pt.setComment(true);
+                    pt.setDescription("Credit");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Debit");
+                    pt.setComment(true);
+                    pt.setNegative(true);
+                    pt.setDescription("Debit");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Other");
+                    pt.setUnique(true);
+                    pt.setDescription("Other");
+                    paymentTypeRepository.save(pt);
+
+
+
+
+
+
+
+
                 } catch (Exception ex) {
 
                 }
 
                 try {
-//                    pt = new PaymentType();
-//                    pt.setName("Meter Rent");
-//                    pt.setUnique(true);
-//                    pt.setDescription("Meter Rent");
-//                    paymentTypeRepository.save(pt);
-//
-//                    pt = new PaymentType();
-//                    pt.setName("Fine");
-//                    pt.setUnique(true);
-//                    pt.setDescription("Fine");
-//                    paymentTypeRepository.save(pt);
+                    pt = new PaymentType();
+                    pt.setName("Meter Rent");
+                    pt.setUnique(true);
+                    pt.setDescription("Meter Rent");
+                    paymentTypeRepository.save(pt);
+
+                    pt = new PaymentType();
+                    pt.setName("Fine");
+                    pt.setUnique(true);
+                    pt.setDescription("Fine");
+                    paymentTypeRepository.save(pt);
                 } catch (Exception ex) {
                 }
 
                 //Bill item types
                 try {
-//                    BillItemType bit = new BillItemType();
-//                    bit.setName("Reconnection Fee");
-//                    bit.setAmount((double) 500);
-//                    bit.setActive(false);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("At Owners Request Fee");
-//                    bit.setAmount((double) 500);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Change Of Account Name");
-//                    bit.setAmount((double) 500);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("By Pass Fee");
-//                    bit.setActive(false);
-//                    bit.setAmount((double) 5000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Bounced Cheque Fee");
-//                    bit.setAmount((double) 400);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Surcharge Irrigation");
-//                    bit.setAmount((double) 5000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Surcharge Missuse");
-//                    bit.setAmount((double) 5000);
-//                    billItemTypeRepository.save(bit);
-//
-//                    bit = new BillItemType();
-//                    bit.setName("Meter Servicing");
-//                    bit.setAmount((double) 500);
-//                    billItemTypeRepository.save(bit);
+                    BillItemType bit = new BillItemType();
+                    bit.setName("Reconnection Fee");
+                    bit.setAmount((double) 500);
+                    bit.setActive(false);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("At Owners Request Fee");
+                    bit.setAmount((double) 500);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Change Of Account Name");
+                    bit.setAmount((double) 500);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("By Pass Fee");
+                    bit.setActive(false);
+                    bit.setAmount((double) 5000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Bounced Cheque Fee");
+                    bit.setAmount((double) 400);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Surcharge Irrigation");
+                    bit.setAmount((double) 5000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Surcharge Missuse");
+                    bit.setAmount((double) 5000);
+                    billItemTypeRepository.save(bit);
+
+                    bit = new BillItemType();
+                    bit.setName("Meter Servicing");
+                    bit.setAmount((double) 500);
+                    billItemTypeRepository.save(bit);
                 } catch (Exception ex) {
 
                 }
@@ -425,66 +441,66 @@ public class ReleaseManager {
                 //Meter sizes
                 MeterSize ms = new MeterSize();
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 50);
-//                    ms.setSize("0.5 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 50);
+                    ms.setSize("0.5 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 50);
-//                    ms.setSize("0.75 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 50);
+                    ms.setSize("0.75 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 250);
-//                    ms.setSize("1 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 250);
+                    ms.setSize("1 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 250);
-//                    ms.setSize("1.5 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 250);
+                    ms.setSize("1.5 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 250);
-//                    ms.setSize("2.5 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 250);
+                    ms.setSize("2.5 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 450);
-//                    ms.setSize("3 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 450);
+                    ms.setSize("3 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 450);
-//                    ms.setSize("3.5 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 450);
+                    ms.setSize("3.5 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
                 }
 
                 try {
-//                    ms = new MeterSize();
-//                    ms.setRentAmount((double) 800);
-//                    ms.setSize("4 INCH");
-//                    meterSizeRepository.save(ms);
+                    ms = new MeterSize();
+                    ms.setRentAmount((double) 800);
+                    ms.setSize("4 INCH");
+                    meterSizeRepository.save(ms);
                 } catch (Exception ex) {
 
                 }
@@ -492,15 +508,15 @@ public class ReleaseManager {
 
                 //Meter Owners
                 try {
-//                    MeterOwner mo = new MeterOwner();
-//                    mo.setName("Personal");
-//                    mo.setCharge(false);
-//                    meterOwnerRepository.save(mo);
-//
-//                    mo = new MeterOwner();
-//                    mo.setName("Organization");
-//                    mo.setCharge(true);
-//                    meterOwnerRepository.save(mo);
+                    MeterOwner mo = new MeterOwner();
+                    mo.setName("Personal");
+                    mo.setCharge(false);
+                    meterOwnerRepository.save(mo);
+
+                    mo = new MeterOwner();
+                    mo.setName("Organization");
+                    mo.setCharge(true);
+                    meterOwnerRepository.save(mo);
                 } catch (Exception ex) {
                 }
 

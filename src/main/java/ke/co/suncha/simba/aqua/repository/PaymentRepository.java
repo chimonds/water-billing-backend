@@ -30,6 +30,7 @@ import ke.co.suncha.simba.aqua.models.Payment;
 import ke.co.suncha.simba.aqua.models.PaymentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +43,7 @@ import java.util.List;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 public interface PaymentRepository extends PagingAndSortingRepository<Payment, Long> {
+
     Page<Payment> findAll(Pageable pageable);
 
     Page<Payment> findAllByReceiptNoContainsOrAccount_accNoContains(String receiptNo, String accNo, Pageable pageable);
@@ -72,4 +74,10 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 
     @Query(value = "SELECT payment_id FROM payments WHERE account_id =?1", nativeQuery = true)
     List<BigInteger> findAllByAccount(Long accountId);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE account_id =:accountId AND ref_no=:refNo", nativeQuery = true)
+    Double findSumByRefNo(@Param("accountId") Long accountId, @Param("refNo") String refNo);
+
+    @Query(value = "SELECT COUNT(payment_id) FROM payments WHERE receipt_no =:receiptNo", nativeQuery = true)
+    Integer countByReceiptNo(@Param("receiptNo") String receiptNo);
 }

@@ -19,7 +19,6 @@ import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -402,7 +401,7 @@ public class ReportService {
     }
 
 
-    @Scheduled(fixedDelay = 25000000)
+    //@Scheduled(fixedDelay = Integer.MAX_VALUE)
     @Transactional
     private void populateAgeingReport() {
         try {
@@ -744,7 +743,7 @@ public class ReportService {
                     ageingRecord.setCutOff("Inactive");
                 }
 
-                ageingRecord.setBalance(paymentService.getAccountBalance(acc.getAccountId()));
+                ageingRecord.setBalance(accountService.getAccountBalance(acc.getAccountId()));
                 //save
 
                 ageingRecordRepository.save(ageingRecord);

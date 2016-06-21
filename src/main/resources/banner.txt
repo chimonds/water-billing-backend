@@ -4,6 +4,5 @@
  ____) | | | | | | | |_) | (_| |
 |_____/|_|_| |_| |_|_.__/ \__,_|
 
- NOL TURESH
  :: Spring Boot ::        ${spring-boot.version}
  

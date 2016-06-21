@@ -33,6 +33,9 @@ public class SMS extends SimbaBaseEntity implements Serializable {
     @Column(name = "is_void")
     private Boolean isVoid = false;
 
+    @Column(name = "sms_cost")
+    private Double cost = 0d;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "date_send")
     private Calendar dateSend = Calendar.getInstance();
@@ -114,6 +117,14 @@ public class SMS extends SimbaBaseEntity implements Serializable {
 
     public void setIsVoid(Boolean isVoid) {
         this.isVoid = isVoid;
+    }
+
+    public Double getCost() {
+        return cost;
+    }
+
+    public void setCost(Double cost) {
+        this.cost = cost;
     }
 
     @Override

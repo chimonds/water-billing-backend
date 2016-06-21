@@ -469,7 +469,16 @@ public class SMSService {
                 message = message.replace("$receipt_no", payment.getReceiptNo().toUpperCase());
             }
             if (message.contains("$receipt_amount")) {
-                message = message.replace("$receipt_amount", this.formatNumber(payment.getAmount()));
+                if (payment.getIsMultiPart() == null) {
+                    message = message.replace("$receipt_amount", this.formatNumber(payment.getAmount()));
+                } else {
+                    if (payment.getIsMultiPart()) {
+                        Double amount = paymentRepository.findSumByRefNo(accountId, payment.getRefNo());
+                        message = message.replace("$receipt_amount", this.formatNumber(amount));
+                    } else {
+                        message = message.replace("$receipt_amount", this.formatNumber(payment.getAmount()));
+                    }
+                }
             }
         }
 
@@ -636,17 +645,25 @@ public class SMSService {
                             JSONArray results = gateway.sendMessage(sms.getMobileNumber(), sms.getMessage(), sms_sender_id, 1);
                             JSONObject result = results.getJSONObject(0);
                             String status = result.getString("status");
+                            Double cost = 0d;
+                            try {
+                                cost = Double.parseDouble(result.getString("cost").replace("KES",""));
+                            } catch (Exception ex) {
+                                cost = 0d;
+                            }
                             log.info("SMS Response:" + status);
                             if (status.compareTo("Success") == 0) {
                                 sms.setDateSend(Calendar.getInstance());
                                 sms.setResponse(status);
                                 sms.setSend(true);
+                                sms.setCost(cost);
                                 smsRepository.save(sms);
                                 log.info("SMS sent:" + sms.getMessage());
                                 smsSent++;
                             } else if (status.compareToIgnoreCase("User In BlackList") == 0) {
                                 sms.setDateSend(Calendar.getInstance());
                                 sms.setSend(true);
+                                sms.setCost(cost);
                                 sms.setResponse(status);
                                 smsRepository.save(sms);
                                 log.info("status: " + sms.getMessage());

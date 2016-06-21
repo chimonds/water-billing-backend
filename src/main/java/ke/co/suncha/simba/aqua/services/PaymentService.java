@@ -23,10 +23,6 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.List;
-
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -35,9 +31,11 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
-import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.models.Payment;
+import ke.co.suncha.simba.aqua.models.PaymentSource;
+import ke.co.suncha.simba.aqua.models.PaymentType;
 import ke.co.suncha.simba.aqua.repository.*;
-
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -51,6 +49,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Calendar;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -77,6 +79,9 @@ public class PaymentService {
     @Autowired
     private BillService billService;
 
+    @Autowired
+    AccountService accountService;
+
 
     @Autowired
     private AuthManager authManager;
@@ -93,13 +98,15 @@ public class PaymentService {
     @Autowired
     private SMSRepository smsRepository;
 
+    @Autowired
+    MbassadorService mbassadorService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
     public PaymentService() {
 
     }
-
 
     @Transactional
     public Double getAccountTotalPayments(Long accountId) {
@@ -119,50 +126,171 @@ public class PaymentService {
         return amount;
     }
 
-
-    @Transactional
-    public Double getAccountBalance(Long accountId) {
-
-        // update balances
-        Account account = accountRepository.findOne(accountId);
-        if (!account.isMetered()) {
-            account.setMeter(null);
+    private Payment getClone(Payment p) {
+        Payment payment = new Payment();
+        payment.setAmount(p.getAmount());
+        payment.setPaymentType(p.getPaymentType());
+        payment.setTransactionDate(p.getTransactionDate());
+        if (StringUtils.isNotEmpty(p.getNotes())) {
+            payment.setNotes(p.getNotes());
         }
-        Double balance = 0d;
+        payment.setAccount(p.getAccount());
+        payment.setBillingMonth(p.getBillingMonth());
+        payment.setPaymentSource(p.getPaymentSource());
+        payment.setReceiptNo(p.getReceiptNo());
+        return payment;
+    }
 
-        // add balance b/f
-        balance += account.getBalanceBroughtForward();
+    //used after user does all validation
+    //TODO; clean out
+    @Transactional
+    public Payment create(Payment payment, Long accountId) {
+        Payment pResult = new Payment();
+        Account account = accountRepository.findOne(accountId);
 
-        List<Bill> bills = account.getBills();
-        if (bills != null) if (!bills.isEmpty()) {
-            {
-                for (Bill bill : bills) {
-                    balance += bill.getAmount();
-                    balance += bill.getMeterRent();
+        if (account == null || payment == null) {
+            return null;
+        }
 
-                    if (bill.getBillItems() != null) {
-                        // get bill items
-                        List<BillItem> billItems = bill.getBillItems();
-                        if (!billItems.isEmpty()) {
-                            for (BillItem billItem : billItems) {
-                                balance += billItem.getAmount();
+        account = accountRepository.findByaccNo(account.getAccNo());
+
+        if (payment.getBillingMonth() == null || payment.getPaymentType() == null || payment.getPaymentSource() == null || payment.getTransactionDate() == null || StringUtils.isEmpty(payment.getReceiptNo())) {
+            return null;
+        }
+
+        PaymentType requestPaymentType = paymentTypeRepository.findOne(payment.getPaymentType().getPaymentTypeId());
+        if (requestPaymentType.getName().compareToIgnoreCase("Smart Receipt") == 0) {
+
+            UUID uuid = UUID.randomUUID();
+            String randomUUIDString = uuid.toString();
+
+            Double amountToAllocate = payment.getAmount();
+
+            if (account.getPenaltiesBalance() > 0) {
+                PaymentType pt = paymentTypeRepository.findByName("Fine");
+
+                //Penalties
+                if (amountToAllocate >= account.getPenaltiesBalance()) {
+                    amountToAllocate = amountToAllocate - account.getPenaltiesBalance();
+                    Payment p = getClone(payment);
+                    p.setPaymentType(pt);
+                    p.setRefNo(randomUUIDString);
+                    p.setIsMultiPart(true);
+                    p.setAmount(account.getPenaltiesBalance());
+                    pResult = paymentRepository.save(p);
+                } else {
+                    if (amountToAllocate > 0) {
+                        Payment p = getClone(payment);
+                        p.setPaymentType(pt);
+                        p.setAmount(amountToAllocate);
+                        p.setRefNo(randomUUIDString);
+                        p.setIsMultiPart(true);
+                        pResult = paymentRepository.save(p);
+                    }
+                    amountToAllocate = 0d;
+                }
+            }
+
+            if (account.getMeterRentBalance() > 0) {
+                PaymentType pt = paymentTypeRepository.findByName("Meter Rent");
+
+                //Meter Rent
+                if (amountToAllocate >= account.getMeterRentBalance()) {
+                    amountToAllocate = amountToAllocate - account.getMeterRentBalance();
+                    Payment p = getClone(payment);
+                    p.setPaymentType(pt);
+                    p.setAmount(account.getMeterRentBalance());
+                    p.setRefNo(randomUUIDString);
+                    p.setIsMultiPart(true);
+                    pResult = paymentRepository.save(p);
+                } else {
+                    if (amountToAllocate > 0) {
+                        Payment p = getClone(payment);
+                        p.setPaymentType(pt);
+                        p.setAmount(amountToAllocate);
+                        p.setRefNo(randomUUIDString);
+                        p.setIsMultiPart(true);
+                        pResult = paymentRepository.save(p);
+                    }
+                    amountToAllocate = 0d;
+                }
+            }
+
+            //Water sale
+            if (account.getWaterSaleBalance() > 0) {
+                PaymentType pt = paymentTypeRepository.findByName("Water Sale");
+
+                if (amountToAllocate >= account.getWaterSaleBalance()) {
+                    amountToAllocate = amountToAllocate - account.getWaterSaleBalance();
+                    Payment p = getClone(payment);
+                    p.setPaymentType(pt);
+                    p.setAmount(account.getWaterSaleBalance());
+                    p.setRefNo(randomUUIDString);
+                    p.setIsMultiPart(true);
+                    pResult = paymentRepository.save(p);
+                } else {
+                    if (amountToAllocate > 0) {
+                        Payment p = getClone(payment);
+                        p.setPaymentType(pt);
+                        p.setAmount(amountToAllocate);
+                        p.setRefNo(randomUUIDString);
+                        p.setIsMultiPart(true);
+                        pResult = paymentRepository.save(p);
+                    }
+                    amountToAllocate = 0d;
+                }
+            }
+
+            //check if any amount remaining to allocate
+            if (amountToAllocate > 0) {
+                //check if account is metered
+                if (account.getMeter() != null) {
+                    if (account.getMeter().getMeterOwner() != null) {
+                        if (account.getMeter().getMeterOwner().getCharge()) {
+                            if (account.getMeter().getMeterSize() != null) {
+                                Double meterRent = account.getMeter().getMeterSize().getRentAmount();
+                                PaymentType pt = paymentTypeRepository.findByName("Meter Rent");
+                                if (meterRent > 0) {
+                                    if (amountToAllocate >= meterRent) {
+                                        amountToAllocate = amountToAllocate - meterRent;
+                                        Payment p = getClone(payment);
+                                        p.setPaymentType(pt);
+                                        p.setAmount(account.getMeterRentBalance());
+                                        p.setRefNo(randomUUIDString);
+                                        p.setIsMultiPart(true);
+                                        pResult = paymentRepository.save(p);
+                                    } else {
+                                        amountToAllocate = amountToAllocate - meterRent;
+                                        if (amountToAllocate > 0) {
+                                            Payment p = getClone(payment);
+                                            p.setPaymentType(pt);
+                                            p.setAmount(amountToAllocate);
+                                            p.setRefNo(randomUUIDString);
+                                            p.setIsMultiPart(true);
+                                            pResult = paymentRepository.save(p);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+
+            //rest of money water sale
+            if (amountToAllocate > 0) {
+                Payment p = getClone(payment);
+                PaymentType pt = paymentTypeRepository.findByName("Water Sale");
+                p.setPaymentType(pt);
+                p.setAmount(amountToAllocate);
+                pResult = paymentRepository.save(p);
+            }
+        } else {
+            Payment p = getClone(payment);
+            pResult = paymentRepository.save(p);
         }
 
-        // get payments
-        List<Payment> payments = account.getPayments();
-        if (payments != null) {
-            if (!payments.isEmpty()) {
-                for (Payment p : payments) {
-                    balance = (balance - p.getAmount());
-                }
-            }
-        }
-        return balance;
+        return pResult;
     }
 
 
@@ -175,6 +303,8 @@ public class PaymentService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
+
+                accountService.updateBalance(accountId);
 
                 Account account = accountRepository.findOne(accountId);
                 if (account == null) {
@@ -280,17 +410,11 @@ public class PaymentService {
                 payment.setAccount(account);
                 payment.setPaymentType(paymentType);
                 payment.setPaymentSource(paymentSource);
-                Payment created = paymentRepository.save(payment);
+                Payment created = this.create(payment, accountId);
 
+                accountService.setUpdateBalance(accountId);
 
-                // update balances
-                account = accountRepository.findOne(accountId);
-
-                // update account outstanding balance
-                account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
-
-                //save account info before generating notification
-                accountRepository.save(account);
+                //
 
                 //send sms
                 if (!created.getPaymentType().hasComments()) {
@@ -309,8 +433,9 @@ public class PaymentService {
                 auditRecord.setParentObject("Payments");
                 auditRecord.setNotes("CREATED PAYMENT");
                 auditService.log(AuditOperation.CREATED, auditRecord);
-                //End - audit trail
 
+
+                //End - audit trail
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());
@@ -319,7 +444,6 @@ public class PaymentService {
         }
         return response;
     }
-
 
     @Transactional
     public RestResponse voidReceipt(RestRequestObject<Payment> requestObject) {
@@ -358,14 +482,17 @@ public class PaymentService {
                 payment.setNotes(requestObject.getObject().getNotes());
                 Payment created = paymentRepository.save(payment);
 
+                accountService.setUpdateBalance(created.getAccount().getAccountId());
+
+
                 // update balances
-                Account account = accountRepository.findOne(created.getAccount().getAccountId());
+                //Account account = accountRepository.findOne(created.getAccount().getAccountId());
 
                 // update account outstanding balance
-                account.setOutstandingBalance(this.getAccountBalance(account.getAccountId()));
+                //account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
 
                 //save account info before generating notification
-                accountRepository.save(account);
+                //accountRepository.save(account);
 
                 //send sms
                 if (!created.getPaymentType().hasComments()) {
@@ -564,13 +691,19 @@ public class PaymentService {
                 paymentRepository.save(payment2);
 
                 //calculate balances for both accounts
-                Account acc = accountRepository.findOne(accountId);
-                acc.setOutstandingBalance(this.getAccountBalance(acc.getAccountId()));
-                accountRepository.save(acc);
 
-                acc = accountRepository.findOne(account.getAccountId());
-                acc.setOutstandingBalance(this.getAccountBalance(acc.getAccountId()));
-                accountRepository.save(acc);
+                accountService.setUpdateBalance(accountId);
+                accountService.setUpdateBalance(account.getAccountId());
+
+
+                //Account acc = accountRepository.findOne(accountId);
+                //acc.setOutstandingBalance(accountService.getAccountBalance(acc.getAccountId()));
+                //accountRepository.save(acc);
+
+
+                //acc = accountRepository.findOne(account.getAccountId());
+                //acc.setOutstandingBalance(accountService.getAccountBalance(acc.getAccountId()));
+                //accountRepository.save(acc);
 
 
                 //audit trail
@@ -596,4 +729,11 @@ public class PaymentService {
         return response;
     }
 
+    public Boolean exits(String receiptNo) {
+        Boolean exists = false;
+        if (paymentRepository.countByReceiptNo(receiptNo) > 0) {
+            exists = Boolean.TRUE;
+        }
+        return exists;
+    }
 }

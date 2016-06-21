@@ -2,6 +2,7 @@ package ke.co.suncha.simba.aqua.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.postbank.PostBankFile;
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -62,18 +63,32 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
     @Column(name = "assigned")
     private Boolean assigned = false;
 
+
+    @Column(name = "account_valid")
+    private Boolean accountValid = Boolean.FALSE;
+
+    @Column(name = "receipt_valid")
+    private Boolean receiptValid = Boolean.FALSE;
+
+
     @Column(name = "notes", length = 1000)
-    private String notes="";
+    private String notes = "";
 
     @Column(name = "date_assigned")
     @Temporal(TemporalType.TIMESTAMP)
-    private Calendar dateAssigned= Calendar.getInstance();
+    private Calendar dateAssigned = Calendar.getInstance();
 
     // a payment has a payment type
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
     private Account account;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "file_id")
+    private PostBankFile postBankFile;
+
 
     public long getPostbankTransactionId() {
         return postbankTransactionId;
@@ -209,5 +224,29 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
 
     public void setAccount(Account account) {
         this.account = account;
+    }
+
+    public Boolean getAccountValid() {
+        return accountValid;
+    }
+
+    public void setAccountValid(Boolean accountValid) {
+        this.accountValid = accountValid;
+    }
+
+    public Boolean getReceiptValid() {
+        return receiptValid;
+    }
+
+    public void setReceiptValid(Boolean receiptValid) {
+        this.receiptValid = receiptValid;
+    }
+
+    public PostBankFile getPostBankFile() {
+        return postBankFile;
+    }
+
+    public void setPostBankFile(PostBankFile postBankFile) {
+        this.postBankFile = postBankFile;
     }
 }

@@ -23,31 +23,16 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
-import org.springframework.transaction.annotation.Transactional;
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -68,6 +53,9 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @NotNull
     @Column(name = "balance_bf")
     private Double balanceBroughtForward = (double) 0;
+
+    @Column(name = "update_balance")
+    private Boolean updateBalance = true;
 
     @NotNull
     @Column(name = "outstandingBalance")
@@ -91,6 +79,18 @@ public class Account extends SimbaBaseEntity implements Serializable {
 
     @Transient
     private Boolean metered = false;
+
+    @NotNull
+    @Column(name = "water_sale_balance")
+    private Double waterSaleBalance = 0d;
+
+    @NotNull
+    @Column(name = "meter_rent_balance")
+    private Double meterRentBalance = 0d;
+
+    @NotNull
+    @Column(name = "penalties_balance")
+    private Double penaltiesBalance = 0d;
 
     // account belongs to a consumer
     @JsonIgnore
@@ -382,6 +382,38 @@ public class Account extends SimbaBaseEntity implements Serializable {
 
     public void setAccountCategory(AccountCategory accountCategory) {
         this.accountCategory = accountCategory;
+    }
+
+    public Double getWaterSaleBalance() {
+        return waterSaleBalance;
+    }
+
+    public void setWaterSaleBalance(Double waterSaleBalance) {
+        this.waterSaleBalance = waterSaleBalance;
+    }
+
+    public Double getMeterRentBalance() {
+        return meterRentBalance;
+    }
+
+    public void setMeterRentBalance(Double meterRentBalance) {
+        this.meterRentBalance = meterRentBalance;
+    }
+
+    public Double getPenaltiesBalance() {
+        return penaltiesBalance;
+    }
+
+    public void setPenaltiesBalance(Double penaltiesBalance) {
+        this.penaltiesBalance = penaltiesBalance;
+    }
+
+    public Boolean getUpdateBalance() {
+        return updateBalance;
+    }
+
+    public void setUpdateBalance(Boolean updateBalance) {
+        this.updateBalance = updateBalance;
     }
 
     @Override

@@ -8,7 +8,6 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.admin.utils.Config;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MPESARequest;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -29,11 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URL;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by manyala on 6/6/15.
@@ -79,6 +74,9 @@ public class MPESAService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    AccountService accountService;
 
     @Autowired
     private AccountStatusHistoryRepository accountStatusHistoryRepository;
@@ -163,14 +161,25 @@ public class MPESAService {
                             mpesaTransaction.setMpesaacc("");
                         }
 
+                        if (mpesaTransaction.getMpesaamt() != null) {
+                            if (mpesaTransaction.getMpesaamt() <= 0) {
+                                //notify and delete transactions
+                                mpesaRepository.delete(mpesaTransaction);
+                            }
+                        }
+
                         //get account
                         Account account = accountRepository.findByaccNo(mpesaTransaction.getMpesaacc().trim());
 
                         if (account == null) {
-                            // log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
+                            //log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
                         }
 
                         if (account != null) {
+                            // update account balance
+                            accountService.setUpdateBalance(account.getAccountId());
+                            accountService.updateBalance(account.getAccountId());
+
                             Payment payment = new Payment();
                             payment.setAccount(account);
                             payment.setReceiptNo(mpesaTransaction.getMpesacode());
@@ -184,13 +193,21 @@ public class MPESAService {
                                 payment.setBillingMonth(billingMonth);
                             }
 
+                            PaymentType paymentType = null;
 
-                            PaymentType paymentType = paymentTypeRepository.findByName("Water Sale");
+                            Boolean smartReceipting = Boolean.parseBoolean(optionService.getOption("AUTO_SMART_RECEIPTING").getValue());
+
+                            if (smartReceipting) {
+                                paymentType = paymentTypeRepository.findByName("Smart Receipt");
+                            } else {
+                                paymentType = paymentTypeRepository.findByName("Water Sale");
+                            }
+
                             if (paymentType != null) {
                                 payment.setPaymentType(paymentType);
                             }
 
-                            PaymentSource paymentSource = paymentSourceRepository.findByName("M-PESA");
+                            PaymentSource paymentSource = paymentSource = paymentSourceRepository.findByName("M-PESA");
                             if (paymentSource != null) {
                                 payment.setPaymentSource(paymentSource);
                             }
@@ -207,12 +224,11 @@ public class MPESAService {
                                     log.error("MPESA transaction " + payment.getReceiptNo() + " already exists");
                                 } else if (payment1 == null) {
 
-                                    Payment created = paymentRepository.save(payment);
+                                    //
+                                    Payment created = paymentService.create(payment, account.getAccountId());
+                                    //Payment created = paymentRepository.save(payment);
                                     log.info("Assigned M-PESA payment " + payment.getReceiptNo() + " to " + account.getAccNo());
 
-                                    // update account balance
-                                    account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
-                                    account = accountRepository.save(account);
 
                                     //TODO;
                                     //send message to customer if real account found
@@ -226,6 +242,9 @@ public class MPESAService {
                                 mpesaTransaction.setDateAssigned(Calendar.getInstance());
                                 mpesaTransaction.setAccount(account);
                                 mpesaRepository.save(mpesaTransaction);
+
+                                accountService.setUpdateBalance(account.getAccountId());
+                                accountService.updateBalance(account.getAccountId());
                             }
                         }
 

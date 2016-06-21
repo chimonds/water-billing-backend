@@ -23,9 +23,6 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
-import java.math.BigInteger;
-import java.util.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
@@ -42,7 +39,6 @@ import ke.co.suncha.simba.aqua.reports.BalancesReport;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.repository.*;
-
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +52,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import scala.util.parsing.json.JSON;
+
+import java.math.BigInteger;
+import java.util.*;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -101,6 +99,186 @@ public class AccountService {
     private RestResponseObject responseObject = new RestResponseObject();
 
     public AccountService() {
+
+    }
+
+    @Transactional
+    public Account updateBalance(Long accountId) {
+
+        // update balances
+        Account account = accountRepository.findOne(accountId);
+
+        if (account == null) {
+            return null;
+        }
+
+        Boolean updateBalance = true;
+
+        try {
+            if (account.getUpdateBalance() != null) {
+                updateBalance = account.getUpdateBalance();
+            }
+        } catch (Exception ex) {
+
+        }
+
+        if (!updateBalance) {
+            return null;
+        }
+
+        if (!account.isMetered()) {
+            account.setMeter(null);
+        }
+        Double balance = 0d;
+
+        // add balance b/f
+        balance += account.getBalanceBroughtForward();
+
+        Double waterSaleTotal = balance;
+        Double meterRentTotal = 0d;
+        Double penaltiesTotal = 0d;
+
+        List<Bill> bills = account.getBills();
+        if (bills != null) if (!bills.isEmpty()) {
+            {
+                for (Bill bill : bills) {
+                    balance += bill.getAmount();
+                    balance += bill.getMeterRent();
+
+                    //granular balances
+                    waterSaleTotal += bill.getAmount();
+                    meterRentTotal += bill.getMeterRent();
+
+                    if (bill.getBillItems() != null) {
+                        // get bill items
+                        List<BillItem> billItems = bill.getBillItems();
+                        if (!billItems.isEmpty()) {
+                            for (BillItem billItem : billItems) {
+                                balance += billItem.getAmount();
+                                penaltiesTotal += billItem.getAmount();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Double totalPayments = 0d;
+        // get payments
+        List<Payment> payments = account.getPayments();
+        if (payments != null) {
+            if (!payments.isEmpty()) {
+                for (Payment p : payments) {
+                    balance = (balance - p.getAmount());
+                    totalPayments += p.getAmount();
+                }
+            }
+        }
+
+        account.setOutstandingBalance(balance);
+
+        Double moneyToAllocate = 0d;
+        //if balance
+        if (balance == 0) {
+            account.setOutstandingBalance(0d);
+            account.setPenaltiesBalance(0d);
+            account.setWaterSaleBalance(0d);
+            account.setMeterRentBalance(0d);
+        } else if (balance > 0) {
+            account.setPenaltiesBalance(penaltiesTotal);
+            account.setWaterSaleBalance(waterSaleTotal);
+            account.setMeterRentBalance(meterRentTotal);
+
+            //Penalties
+            moneyToAllocate = totalPayments - penaltiesTotal;
+            if (moneyToAllocate >= 0) {
+                account.setPenaltiesBalance(0d);
+            } else {
+                account.setPenaltiesBalance(Math.abs(moneyToAllocate));
+            }
+
+            //Meter Rent
+            if (moneyToAllocate > 0) {
+                moneyToAllocate = moneyToAllocate - meterRentTotal;
+                if (moneyToAllocate >= 0) {
+                    account.setMeterRentBalance(0d);
+                } else {
+                    account.setMeterRentBalance(Math.abs(moneyToAllocate));
+                }
+            }
+
+            //Water Sale
+            if (moneyToAllocate > 0) {
+                moneyToAllocate = moneyToAllocate - waterSaleTotal;
+                if (moneyToAllocate >= 0) {
+                    account.setWaterSaleBalance(0d);
+                } else {
+                    account.setWaterSaleBalance(Math.abs(moneyToAllocate));
+                }
+            }
+        }
+        account.setUpdateBalance(false);
+        account = accountRepository.save(account);
+
+        return account;
+    }
+
+    @Transactional
+    public Double getAccountBalance(Long accountId) {
+        //this.updateBalance(accountId);
+
+        // update balances
+        Account account = accountRepository.findOne(accountId);
+
+        return account.getOutstandingBalance();
+
+
+//        if (!account.isMetered()) {
+//            account.setMeter(null);
+//        }
+//        Double balance = 0d;
+//
+//        // add balance b/f
+//        balance += account.getBalanceBroughtForward();
+//
+//        Double waterSaleTotal = balance;
+//        Double meterRentTotal = 0d;
+//        Double penaltiesTotal = 0d;
+//
+//        List<Bill> bills = account.getBills();
+//        if (bills != null) if (!bills.isEmpty()) {
+//            {
+//                for (Bill bill : bills) {
+//                    balance += bill.getAmount();
+//                    balance += bill.getMeterRent();
+//
+//                    //granular balances
+//                    waterSaleTotal += bill.getAmount();
+//                    meterRentTotal += bill.getMeterRent();
+//
+//                    if (bill.getBillItems() != null) {
+//                        // get bill items
+//                        List<BillItem> billItems = bill.getBillItems();
+//                        if (!billItems.isEmpty()) {
+//                            for (BillItem billItem : billItems) {
+//                                balance += billItem.getAmount();
+//                                penaltiesTotal += billItem.getAmount();
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        Double totalPayments = 0d;
+//        // get payments
+//        List<Payment> payments = account.getPayments();
+//        if (payments != null) {
+//            if (!payments.isEmpty()) {
+//                for (Payment p : payments) {
+//                    balance = (balance - p.getAmount());
+//                    totalPayments += p.getAmount();
+//                }
+//            }
+//        }
 
     }
 
@@ -422,6 +600,13 @@ public class AccountService {
         return response;
     }
 
+    @Transactional
+    public void setUpdateBalance(Long accountId) {
+        Account account = accountRepository.findOne(accountId);
+        account.setUpdateBalance(true);
+        accountRepository.save(account);
+    }
+
     public RestResponse getById(RestRequestObject<RestPageRequest> requestObject, Long id) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -430,6 +615,7 @@ public class AccountService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
+                updateBalance(id);
                 Account account = accountRepository.findOne(id);
                 if (account == null) {
                     responseObject.setMessage("Invalid account number");
@@ -469,12 +655,15 @@ public class AccountService {
                 log.info("Find account by account no:" + acc.getAccNo());
                 Account account = accountRepository.findByaccNo(acc.getAccNo());
 
+
                 if (account == null) {
                     responseObject.setMessage("Invalid account number");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
                 } else {
+                    this.updateBalance(account.getAccountId());
+                    account = accountRepository.findOne(account.getAccountId());
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(account);
                     response = new RestResponse(responseObject, HttpStatus.OK);

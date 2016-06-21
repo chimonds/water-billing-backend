@@ -1,6 +1,5 @@
 package ke.co.suncha.simba.aqua.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -12,7 +11,6 @@ import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.stats.*;
 import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
-import ke.co.suncha.simba.aqua.utils.MobileClientResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-
 
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
@@ -79,6 +76,9 @@ public class StatsService {
 
     @Autowired
     GaugeService gaugeService;
+
+    @Autowired
+    AccountService accountService;
 
     @Autowired
     private PaymentService paymentService;
@@ -447,7 +447,7 @@ public class StatsService {
                     for (BigInteger accId : accountIds) {
                         Account account = accountRepository.findOne(Long.valueOf(accId.toString()));
                         //log.info("Start Getting account balance for "+ account.getAccNo());
-                        Double bal = paymentService.getAccountBalance(Long.valueOf(accId.toString()));
+                        Double bal = accountService.getAccountBalance(Long.valueOf(accId.toString()));
                         //log.info("End Getting account balance for "+ account.getAccNo());
                         if (bal != account.getOutstandingBalance()) {
                             account.setOutstandingBalance(bal);

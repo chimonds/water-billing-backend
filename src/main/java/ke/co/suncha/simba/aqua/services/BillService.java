@@ -94,16 +94,19 @@ public class BillService {
     GaugeService gaugeService;
 
     @Autowired
-    private SMSRepository smsRepository;
+    SMSRepository smsRepository;
 
     @Autowired
-    private AuditService auditService;
+    AuditService auditService;
 
     @Autowired
-    private SMSService smsService;
+    AccountService accountService;
 
     @Autowired
-    private MPESARepository mpesaRepository;
+    SMSService smsService;
+
+    @Autowired
+    MPESARepository mpesaRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -137,6 +140,9 @@ public class BillService {
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                     return response;
                 }
+
+                accountService.setUpdateBalance(accountId);
+                accountService.updateBalance(accountId);
 
                 if (!account.isActive()) {
                     responseObject.setMessage("Sorry we can not complete your request, the account is inactive.");
@@ -310,7 +316,7 @@ public class BillService {
                 account = accountRepository.findOne(accountId);
                 log.info("Getting balance for:" + account.getAccountId());
 
-                Double outstandingBalance = paymentService.getAccountBalance(account.getAccountId());
+                Double outstandingBalance = accountService.getAccountBalance(account.getAccountId());
                 log.info("Balance:" + outstandingBalance);
                 account.setOutstandingBalance(outstandingBalance);
                 account.setActive(accountIsActive);
@@ -326,6 +332,10 @@ public class BillService {
                 responseObject.setMessage("Account billed successfully");
                 responseObject.setPayload(bill);
                 response = new RestResponse(responseObject, HttpStatus.OK);
+
+
+                accountService.setUpdateBalance(accountId);
+
 
                 //Start - audit trail
                 AuditRecord auditRecord = new AuditRecord();
@@ -481,7 +491,7 @@ public class BillService {
 
                 //save outstanding balance
                 Account account = accountRepository.findOne(accountId);
-                account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
+                account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
                 accountRepository.save(account);
 
                 responseObject.setMessage("Bill deleted successfully.");
@@ -553,7 +563,6 @@ public class BillService {
         }
         return amount;
     }
-
 
     public RestResponse getMeterReadingsReport(RestRequestObject<ReportsParam> requestObject) {
         try {

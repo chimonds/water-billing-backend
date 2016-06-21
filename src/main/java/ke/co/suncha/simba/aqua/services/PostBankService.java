@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -73,6 +72,9 @@ public class PostBankService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    AccountService accountService;
 
     @Autowired
     private AccountStatusHistoryRepository accountStatusHistoryRepository;
@@ -195,7 +197,7 @@ public class PostBankService {
                                     log.info("Assigned PostBank payment " + payment.getReceiptNo() + " to " + account.getAccNo());
 
                                     // update account balance
-                                    account.setOutstandingBalance(paymentService.getAccountBalance(account.getAccountId()));
+                                    account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
                                     accountRepository.save(account);
 
                                     //TODO;

@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 /**
  * Created by manyala on 5/26/15.
  */
@@ -20,11 +23,11 @@ public class TaskExecutorConfig {
 //        return pool;
 //    }
 //
-//    @Bean(destroyMethod = "shutdown")
-//    public Executor taskScheduler() {
-//        Executor executor= Executors.newScheduledThreadPool(5);
-//        return executor;
-//    }
+    @Bean(destroyMethod = "shutdown")
+    public Executor taskScheduler() {
+        Executor executor= Executors.newScheduledThreadPool(3);
+        return executor;
+    }
 
     @Bean
     public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
