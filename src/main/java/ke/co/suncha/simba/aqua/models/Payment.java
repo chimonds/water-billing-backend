@@ -38,7 +38,7 @@ import java.util.Calendar;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", indexes = {@Index(name = "i_payments_trans_date", columnList = "transaction_date", unique = false),@Index(name = "i_payments_receipt_no", columnList = "receipt_no", unique = false)})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Payment extends SimbaBaseEntity implements Serializable {

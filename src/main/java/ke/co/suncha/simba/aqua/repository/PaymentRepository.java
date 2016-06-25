@@ -60,6 +60,12 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 
     List<Payment> findByTransactionDateBetween(Calendar from, Calendar to);
 
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE date(transaction_date)>=:startDate AND date(transaction_date)<=:endDate AND  payment_type_id IN(SELECT payment_type_id FROM payment_types WHERE is_unique=true)", nativeQuery = true)
+    Double getTotalAmountPaidByDate(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE date(transaction_date)=:transDate AND payment_type_id IN(SELECT payment_type_id FROM payment_types WHERE is_unique=true)", nativeQuery = true)
+    Double getTotalAmountPaidByDate(@Param("transDate") String transDate);
+
     List<Payment> findByTransactionDateBetweenAndAccount(Calendar from, Calendar to, Account account);
 
     List<Payment> findByAccount_accountIdAndTransactionDateBetween(Long accountId, Calendar from, Calendar to);
@@ -72,6 +78,7 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     @Query(value = "SELECT SUM(amount) FROM(SELECT payments.transaction_date, payments.account_id, payments.amount,accounts.zone_id, (SELECT name FROM zones WHERE zones.zone_id=accounts.zone_id) AS zone_code from payments LEFT JOIN (accounts) ON (accounts.account_id= payments.account_id)) AS temp WHERE zone_code =?1 AND transaction_date>=?2 AND transaction_date<=?3", nativeQuery = true)
     Double findByAmount(String zoneNo, String from, String to);
 
+
     @Query(value = "SELECT payment_id FROM payments WHERE account_id =?1", nativeQuery = true)
     List<BigInteger> findAllByAccount(Long accountId);
 
@@ -80,4 +87,11 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 
     @Query(value = "SELECT COUNT(payment_id) FROM payments WHERE receipt_no =:receiptNo", nativeQuery = true)
     Integer countByReceiptNo(@Param("receiptNo") String receiptNo);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE account_id IN (SELECT account_id FROM accounts WHERE zone_id=:zoneId) AND date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate AND payment_type_id IN(SELECT payment_type_id FROM payment_types WHERE is_unique=true)", nativeQuery = true)
+    Double getTotalAmountByZoneByDate(@Param("zoneId") Long zoneId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE payment_type_id=:paymentTypeId AND date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate AND payment_type_id IN(SELECT payment_type_id FROM payment_types WHERE is_unique=true)", nativeQuery = true)
+    Double getTotalAmountByPaymentTypeByDate(@Param("paymentTypeId") Long paymentTypeId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
 }

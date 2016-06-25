@@ -23,15 +23,14 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import java.io.Serializable;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -47,7 +46,7 @@ public class Zone extends SimbaBaseEntity implements Serializable {
 	@Id
 	@Column(name = "zone_id", nullable = false)
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long zoneId;
+	private Long zoneId;
 
 	@NotNull
 	@Column(name = "name", unique = true)
@@ -62,7 +61,7 @@ public class Zone extends SimbaBaseEntity implements Serializable {
 	/**
 	 * @return the zoneId
 	 */
-	public long getZoneId() {
+	public Long getZoneId() {
 		return zoneId;
 	}
 
@@ -70,7 +69,7 @@ public class Zone extends SimbaBaseEntity implements Serializable {
 	 * @param zoneId
 	 *            the zoneId to set
 	 */
-	public void setZoneId(long zoneId) {
+	public void setZoneId(Long zoneId) {
 		this.zoneId = zoneId;
 	}
 

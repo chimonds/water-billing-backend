@@ -293,7 +293,6 @@ public class PaymentService {
         return pResult;
     }
 
-
     @Transactional
     public RestResponse createByAccount(RestRequestObject<Payment> requestObject, Long accountId) {
         try {
@@ -413,6 +412,7 @@ public class PaymentService {
                 Payment created = this.create(payment, accountId);
 
                 accountService.setUpdateBalance(accountId);
+                accountService.updateBalance(accountId);
 
                 //
 

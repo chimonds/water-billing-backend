@@ -23,9 +23,9 @@
  */
 package ke.co.suncha.simba.aqua.api;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
@@ -34,20 +34,12 @@ import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.AccountStatusHistory;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.services.AccountService;
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -62,7 +54,7 @@ public class AccountController extends AbstractRestHandler {
     @RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.CREATED)
     @ApiOperation(value = "Create an account resource.", notes = "Returns the URL of the new resource in the Location header.")
-    public RestResponse create(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse create(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<Account> requestObject) {
         return this.accountService.create(requestObject, id);
     }
 

@@ -127,7 +127,7 @@ public class SMSService {
         sendSMS();
     }
 
-    //    @Scheduled(fixedDelay = 3000)
+    // @Scheduled(fixedDelay = 3000)
     @Transactional
     public void processSMSRequests() {
         try {
@@ -288,7 +288,7 @@ public class SMSService {
 
     }
 
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 30000)
     @Transactional
     public void explode() {
 
@@ -1022,7 +1022,7 @@ public class SMSService {
         return response;
     }
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = Integer.MAX_VALUE)
     @Transactional
     public void populateDefaultPaymentNotifications() {
         try {

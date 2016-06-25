@@ -25,12 +25,7 @@ package ke.co.suncha.simba.aqua.models;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -43,7 +38,7 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
  *
  */
 @Entity
-@Table(name = "payment_types")
+@Table(name = "payment_types", indexes = {@Index(name = "i_payments_types_is_unique", columnList = "is_unique", unique = false)})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class PaymentType extends SimbaBaseEntity implements Serializable {

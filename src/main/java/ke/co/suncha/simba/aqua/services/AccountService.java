@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -60,7 +59,6 @@ import java.util.*;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 @Service
-@Scope("prototype")
 public class AccountService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -84,22 +82,33 @@ public class AccountService {
     GaugeService gaugeService;
 
     @Autowired
-    private AuditService auditService;
+    AuditService auditService;
 
     @Autowired
-    private BillRepository billRepository;
+    BillRepository billRepository;
 
     @Autowired
-    private PaymentRepository paymentRepository;
+    PaymentRepository paymentRepository;
 
     @Autowired
-    private AccountStatusHistoryRepository accountStatusHistoryRepository;
+    AgeingRecordRepository ageingRecordRepository;
+
+    @Autowired
+    AccountStatusHistoryRepository accountStatusHistoryRepository;
+
+    @Autowired
+    MbassadorService mbassadorService;
+
+    @Autowired
+    BillService billService;
+
+    @Autowired
+    PaymentService paymentService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
     public AccountService() {
-
     }
 
     @Transactional
@@ -219,7 +228,352 @@ public class AccountService {
         account.setUpdateBalance(false);
         account = accountRepository.save(account);
 
+        //Publish message to update ageing report for the account
+        mbassadorService.bus.publishAsync(account.getAccNo());
+
         return account;
+    }
+
+    @Transactional
+    public void updateAccountAgeing(String accNo) {
+
+        AgeingRecord ageingRecord = ageingRecordRepository.findByAccNo(accNo);
+        if (ageingRecord == null) {
+            ageingRecord = ageingRecord = new AgeingRecord();
+        }
+
+        Account acc = accountRepository.findByaccNo(accNo);
+
+        try {
+            Long consumerId = accountRepository.findConsumerIdByAccountId(acc.getAccountId());
+            if (consumerId != null) {
+                Consumer consumer = consumerRepository.findOne(consumerId);
+                String fullName = "";
+                if (consumer.getFirstName() != null) {
+                    fullName += consumer.getFirstName().toUpperCase() + " ";
+                }
+                if (consumer.getMiddleName() != null) {
+                    fullName += consumer.getMiddleName().toUpperCase() + " ";
+                }
+                if (consumer.getLastName() != null) {
+                    fullName += consumer.getLastName().toUpperCase() + " ";
+                }
+                ageingRecord.setName(fullName);
+            }
+        } catch (Exception ex) {
+            log.info(ex.getMessage());
+        }
+        ageingRecord.setAccNo(acc.getAccNo());
+
+        //set
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.DAY_OF_MONTH, 24);
+
+
+        Calendar above180 = Calendar.getInstance();
+        above180.set(Calendar.DAY_OF_MONTH, 24);
+        above180.add(Calendar.MONTH, -6);
+        above180.set(Calendar.DAY_OF_MONTH, 23);
+
+
+        Calendar above120 = Calendar.getInstance();
+        above120.set(Calendar.DAY_OF_MONTH, 24);
+        above120.add(Calendar.MONTH, -4);
+        above120.set(Calendar.DAY_OF_MONTH, 23);
+
+        Calendar above90 = Calendar.getInstance();
+        above90.set(Calendar.DAY_OF_MONTH, 24);
+        above90.add(Calendar.MONTH, -3);
+        above90.set(Calendar.DAY_OF_MONTH, 23);
+
+        Calendar above60 = Calendar.getInstance();
+        above60.set(Calendar.DAY_OF_MONTH, 24);
+        above60.add(Calendar.MONTH, -2);
+        above60.set(Calendar.DAY_OF_MONTH, 23);
+
+        Calendar above30 = Calendar.getInstance();
+        above30.set(Calendar.DAY_OF_MONTH, 24);
+        above30.add(Calendar.MONTH, -1);
+        above30.set(Calendar.DAY_OF_MONTH, 23);
+
+        //get all payments to date
+        Double allocationBalance = 0d;
+        Double total_payments = paymentService.getAccountTotalPayments(acc.getAccountId());
+        Double BILLS_NOT_PAID = 0d;
+
+        //Start Bills above 180 days
+        //Double billsAbove180Days = billService.getAccountBillsByDate(acc.getAccountId(), above180);
+        Double billAbove180Days = billService.getAccountBillsByDate(acc.getAccountId(), above180);
+        Double balance180days = 0d;
+        BILLS_NOT_PAID = billAbove180Days;
+
+        Double BILL_ABOVE_180_DAYS = billAbove180Days;
+        Double balance_not_paid_above = BILL_ABOVE_180_DAYS;
+
+        //if payments are greater or == to bills
+        if (total_payments >= billAbove180Days) {
+            BILLS_NOT_PAID = 0d;
+            balance180days = 0d;//all bills have been paid
+            total_payments = total_payments - BILL_ABOVE_180_DAYS;
+        }
+        //payments less than bills but not zero
+        else if (total_payments < billAbove180Days && total_payments > 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_180_DAYS - total_payments;
+            balance180days = BILL_ABOVE_180_DAYS - total_payments;//all bills have been paid
+            //money finished
+            total_payments = 0d;
+        }
+        //no payment done
+        else if (total_payments == 0d) {
+            BILLS_NOT_PAID = billAbove180Days;
+            balance180days = billAbove180Days;
+            total_payments = 0d;
+        }
+
+        if (balance_not_paid_above > 0) {
+
+        }
+        //Start Bills above 180 days
+
+        //Start Bills above 120-180 days
+        Double billAbove120Days = billService.getAccountBillsByDate(acc.getAccountId(), above120);
+        Double balance120days = 0d;
+        Double BILL_ABOVE_120_DAYS = BILLS_NOT_PAID;
+        Double bills_not_paid_above_180_days = BILLS_NOT_PAID;
+
+        if (billAbove120Days > billAbove180Days) {
+            BILL_ABOVE_120_DAYS = (billAbove120Days - billAbove180Days) + BILLS_NOT_PAID;
+            //BILL_ABOVE_120_DAYS = (billAbove120Days - billAbove180Days);
+            balance120days = BILL_ABOVE_120_DAYS;
+        }
+
+
+        //if payments are greater or == to bills
+        if (total_payments >= BILL_ABOVE_120_DAYS) {
+            BILLS_NOT_PAID = 0d;
+            //all bills have been paid
+            balance120days = 0d;
+            total_payments = total_payments - BILL_ABOVE_120_DAYS;
+        }
+        //payments less than bills but not zero
+        else if (total_payments < BILL_ABOVE_120_DAYS && total_payments > 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_120_DAYS - total_payments;
+            balance120days = BILL_ABOVE_120_DAYS - total_payments;//all bills have been paid
+            //money finished
+            total_payments = 0d;
+        }
+        //no payment done
+        else if (total_payments == 0d) {
+            BILLS_NOT_PAID = BILL_ABOVE_120_DAYS;// billAbove120Days;
+            total_payments = 0d;
+        }
+
+
+        if (bills_not_paid_above_180_days > 0 && balance120days > 0) {
+            balance120days = balance120days - bills_not_paid_above_180_days;
+        }
+
+
+        //End Bills above 120-180 days
+
+        //Start Bills above 90-120 days
+        Double billAbove90Days = billService.getAccountBillsByDate(acc.getAccountId(), above90);
+        Double balance90days = 0d;
+
+        Double BILL_ABOVE_90_DAYS = BILLS_NOT_PAID;
+        Double bills_not_paid_above_90_days = BILLS_NOT_PAID;
+
+        if (billAbove90Days > billAbove120Days) {
+            BILL_ABOVE_90_DAYS = (billAbove90Days - billAbove120Days) + BILLS_NOT_PAID;
+            balance90days = BILL_ABOVE_90_DAYS;
+        }
+
+        //if payments are greater or == to bills
+        if (total_payments >= BILL_ABOVE_90_DAYS) {
+            BILLS_NOT_PAID = 0d;
+            //all bills have been paid
+            balance90days = 0d;
+            total_payments = total_payments - BILL_ABOVE_90_DAYS;
+        }
+        //payments less than bills but not zero
+        else if (total_payments < BILL_ABOVE_90_DAYS && total_payments > 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_90_DAYS - total_payments;
+            balance90days = BILL_ABOVE_90_DAYS - total_payments;//all bills have been paid
+            //money finished
+            total_payments = 0d;
+        }
+        //no payment done
+        else if (total_payments == 0d) {
+            BILLS_NOT_PAID = BILL_ABOVE_90_DAYS;// billAbove90Days;
+            total_payments = 0d;
+        }
+
+        if (bills_not_paid_above_90_days > 0 && balance90days > 0) {
+            balance90days = balance90days - bills_not_paid_above_90_days;
+        }
+        //End Bills above 90-120 days
+
+        //Start Bills above 60 days
+        Double billAbove60Days = billService.getAccountBillsByDate(acc.getAccountId(), above60);
+        Double balance60days = 0d;
+
+        Double BILL_ABOVE_60_DAYS = BILLS_NOT_PAID;
+        Double bills_not_paid_above_60_days = BILLS_NOT_PAID;
+
+        if (billAbove60Days > billAbove90Days) {
+            BILL_ABOVE_60_DAYS = (billAbove60Days - billAbove90Days) + BILLS_NOT_PAID;
+            balance60days = BILL_ABOVE_60_DAYS;
+        }
+
+        //if payments are greater or == to bills
+        if (total_payments >= BILL_ABOVE_60_DAYS) {
+            BILLS_NOT_PAID = 0d;
+            //billAbove60Days = 0;//all bills have been paid
+            balance60days = 0d;
+            total_payments = total_payments - BILL_ABOVE_60_DAYS;
+        }
+        //payments less than bills but not zero
+        else if (total_payments < BILL_ABOVE_60_DAYS && total_payments > 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_60_DAYS - total_payments;
+            balance60days = BILL_ABOVE_60_DAYS - total_payments;//all bills have been paid
+            //money finished
+            total_payments = 0d;
+        }
+        //no payment done
+        else if (total_payments == 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_60_DAYS;// billAbove60Days;
+            total_payments = 0d;
+        }
+
+        if (bills_not_paid_above_60_days > 0 && balance60days > 0) {
+            balance60days = balance60days - bills_not_paid_above_60_days;
+        }
+        //End Bills above 60 days
+
+        //Start Bills above 30 days
+        Double billAbove30Days = billService.getAccountBillsByDate(acc.getAccountId(), above30);
+        Double balance30days = 0d;
+
+        Double BILL_ABOVE_30_DAYS = BILLS_NOT_PAID;
+        Double bills_not_above_30_days = BILLS_NOT_PAID;
+
+        if (billAbove30Days > billAbove60Days) {
+            BILL_ABOVE_30_DAYS = (billAbove30Days - billAbove60Days) + BILLS_NOT_PAID;
+            balance30days = BILL_ABOVE_30_DAYS;
+        }
+
+
+        //if payments are greater or == to bills
+        if (total_payments >= BILL_ABOVE_30_DAYS) {
+            BILLS_NOT_PAID = 0d;
+            //billAbove30Days = 0;//all bills have been paid
+            balance30days = 0d;
+            total_payments = total_payments - BILL_ABOVE_30_DAYS;
+        }
+        //payments less than bills but not zero
+        else if (total_payments < BILL_ABOVE_30_DAYS && total_payments > 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_30_DAYS - total_payments;
+            balance30days = BILL_ABOVE_30_DAYS - total_payments;//all bills have been paid
+            //money finished
+            total_payments = 0d;
+        }
+        //no payment done
+        else if (total_payments == 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_30_DAYS;
+            total_payments = 0d;
+        }
+        if (bills_not_above_30_days > 0 && balance30days > 0) {
+            balance30days = balance30days - bills_not_above_30_days;
+        }
+        //End Bills above 30 days
+
+        //Start Bills above 0 days
+        Double billAbove0Days = billService.getAccountBillsByDate(acc.getAccountId(), today);
+        Double balance0days = 0d;
+
+        Double BILL_ABOVE_0_DAYS = BILLS_NOT_PAID;
+        Double bills_not_paid_above_0_days = BILLS_NOT_PAID;
+
+        if (billAbove0Days > billAbove30Days) {
+            BILL_ABOVE_0_DAYS = (billAbove0Days - billAbove30Days) + BILLS_NOT_PAID;
+            balance0days = BILL_ABOVE_0_DAYS;
+        } else {
+            BILL_ABOVE_0_DAYS = (billAbove0Days - billAbove30Days) + BILLS_NOT_PAID;
+            balance0days = BILL_ABOVE_0_DAYS;
+        }
+
+        //if payments are greater or == to bills
+        if (total_payments >= BILL_ABOVE_0_DAYS) {
+            BILLS_NOT_PAID = 0d;
+            //billAbove0Days = 0;//all bills have been paid
+            balance0days = 0d;
+            total_payments = total_payments - BILL_ABOVE_0_DAYS;
+        }
+        //payments less than bills but not zero
+        else if (total_payments < BILL_ABOVE_0_DAYS && total_payments > 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_0_DAYS - total_payments;
+            balance0days = BILL_ABOVE_0_DAYS - total_payments;//all bills have been paid
+            //money finished
+            total_payments = 0d;
+        }
+        //no payment done
+        else if (total_payments == 0) {
+            BILLS_NOT_PAID = BILL_ABOVE_0_DAYS;// billAbove0Days;
+            total_payments = 0d;
+        }
+
+        if (bills_not_paid_above_0_days > 0 && balance0days > 0) {
+            balance0days = balance0days - bills_not_paid_above_0_days;
+        }
+        //End Bills above 0 days
+
+
+        Account account = accountRepository.findOne(acc.getAccountId());
+        try {
+            if (account.getConsumer() != null) {
+                String fullName = "";
+                //log.info(account.getConsumer().getConsumerId() + "");
+
+                if (account.getConsumer().getFirstName() != null) {
+                    fullName = account.getConsumer().getFirstName();
+                }
+
+                if (account.getConsumer().getMiddleName() != null) {
+                    fullName = fullName + " " + account.getConsumer().getMiddleName();
+                }
+
+                if (account.getConsumer().getLastName() != null) {
+                    fullName = fullName + " " + account.getConsumer().getLastName();
+                }
+                ageingRecord.setName(fullName);
+            }
+        } catch (Exception ex) {
+
+        }
+
+        if (account.getZone() != null) {
+            ageingRecord.setZone(account.getZone().getName());
+        }
+
+
+        ageingRecord.setAbove0(balance0days);
+        ageingRecord.setAbove30(balance30days);
+        ageingRecord.setAbove60(balance60days);
+        ageingRecord.setAbove90(balance90days);
+        ageingRecord.setAbove120(balance120days);
+        ageingRecord.setAbove180(balance180days);
+        ageingRecord.setAccount(acc);
+        ageingRecord.setAccNo(acc.getAccNo());
+        if (acc.isActive()) {
+            ageingRecord.setCutOff("Active");
+        } else {
+            ageingRecord.setCutOff("Inactive");
+        }
+
+        ageingRecord.setBalance(getAccountBalance(acc.getAccountId()));
+        //save
+
+        ageingRecordRepository.save(ageingRecord);
     }
 
     @Transactional
@@ -1069,6 +1423,7 @@ public class AccountService {
                 }
 
                 List<BigInteger> accountList = accountRepository.findAllAccountIds();
+                //List<Account> accounts= accountRepository.findAll();
 
                 if (!accountList.isEmpty()) {
                     log.info(accountList.size() + " accounts found.");

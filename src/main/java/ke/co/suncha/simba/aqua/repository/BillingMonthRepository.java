@@ -29,25 +29,31 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Calendar;
 import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface BillingMonthRepository extends PagingAndSortingRepository<BillingMonth, Long> {
-	
-	Page<BillingMonth> findByIsEnabled(Integer isEnabled, Pageable pageable);
 
-	List<BillingMonth> findAllByIsEnabledOrderByMonthDesc(Integer isEnabled);
+    Page<BillingMonth> findByIsEnabled(Integer isEnabled, Pageable pageable);
+
+    List<BillingMonth> findAllByIsEnabledOrderByMonthDesc(Integer isEnabled);
 
 
-	BillingMonth findByCurrent(Integer isCurrent);
+    BillingMonth findByCurrent(Integer isCurrent);
 
-	@Query("select count(u) from BillingMonth u where u.current = ?1")
-	Long countWithCurrent(Integer current);
+    @Query("select count(u) from BillingMonth u where u.current = ?1")
+    Long countWithCurrent(Integer current);
 
-	BillingMonth findByMonth(Calendar calendar);
+    BillingMonth findByMonth(Calendar calendar);
+
+
+    @Query(value = "SELECT * FROM billing_months WHERE date(billing_month)=:billingMonth", nativeQuery = true)
+    BillingMonth findByMonth(@Param("billingMonth") String billingMonth);
+
+
 }

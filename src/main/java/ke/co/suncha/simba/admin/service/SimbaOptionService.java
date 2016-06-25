@@ -41,6 +41,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -64,6 +65,7 @@ public class SimbaOptionService {
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
+    @Transactional
     public SimbaOption getOption(String name) {
         SimbaOption option = optionRepository.findByName(name);
         if (option == null) {

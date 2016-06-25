@@ -11,4 +11,6 @@ import java.util.List;
  */
 public interface AgeingRecordRepository extends PagingAndSortingRepository<AgeingRecord, Long> {
     List<AgeingRecord> findAll();
+
+    AgeingRecord findByAccNo(String accNo);
 }

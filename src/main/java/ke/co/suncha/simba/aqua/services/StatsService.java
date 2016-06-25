@@ -7,24 +7,25 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.models.BillItemType;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
+import ke.co.suncha.simba.aqua.models.PaymentType;
+import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.stats.*;
 import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
-import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigInteger;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -34,7 +35,6 @@ import java.util.List;
  * @author Maitha Manyala <maitha.manyala at gmail.com> Created by manyala on 5/19/15.
  */
 @Service
-@Scope("singleton")
 public class StatsService {
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -93,7 +93,7 @@ public class StatsService {
     private ZonesBarGraph zonesBarGraph = new ZonesBarGraph();
     private ZoneBalances zoneBalances = new ZoneBalances();
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 300000)
     private void populateStats() {
         populateAccountsConsumersCount();
         populatePaidThisMonth();
@@ -148,19 +148,12 @@ public class StatsService {
 
     private void populatePaidThisMonth() {
         try {
-            Calendar toDate = this.getFirstDayThisMonth();
-            toDate.add(Calendar.MONTH, 1);
-            toDate.add(Calendar.DATE, -1);
-
-            Calendar fromDate = this.getFirstDayThisMonth();
-            List<Payment> payments = paymentRepository.findByTransactionDateBetween(fromDate, toDate);
+            DateTime fromDate = new DateTime().dayOfMonth().withMinimumValue();
+            DateTime endDate = new DateTime().dayOfMonth().withMaximumValue();
             Double total = 0.0;
-            if (!payments.isEmpty()) {
-                for (Payment payment : payments) {
-                    if (payment.getPaymentType().isUnique()) {
-                        total += payment.getAmount();
-                    }
-                }
+            Double dbAmount = paymentRepository.getTotalAmountPaidByDate(fromDate.toString("yyyy-MM-dd"), endDate.toString("yyyy-MM-dd"));
+            if (dbAmount != null) {
+                total = dbAmount;
             }
             topView.setPaidThisMonth(total);
         } catch (Exception ex) {
@@ -170,23 +163,11 @@ public class StatsService {
 
     private void populatePaidToday() {
         try {
-            Calendar toDate = Calendar.getInstance();
-            toDate.add(Calendar.DATE, 1);
-
-            Calendar fromDate = Calendar.getInstance();
-            fromDate.set(Calendar.HOUR_OF_DAY, 0);
-            fromDate.set(Calendar.MINUTE, 0);
-            fromDate.set(Calendar.SECOND, 0);
-            fromDate.set(Calendar.MILLISECOND, 0);
-
-            List<Payment> payments = paymentRepository.findByTransactionDateBetween(fromDate, toDate);
             Double total = 0.0;
-            if (!payments.isEmpty()) {
-                for (Payment payment : payments) {
-                    if (payment.getPaymentType().isUnique()) {
-                        total += payment.getAmount();
-                    }
-                }
+            DateTime today = new DateTime();
+            Double dbTotal = paymentRepository.getTotalAmountPaidByDate(today.toString("yyyy-MM-dd"));
+            if (dbTotal != null) {
+                total = dbTotal;
             }
             topView.setPaidToday(total);
         } catch (Exception ex) {
@@ -202,7 +183,6 @@ public class StatsService {
         } catch (Exception ex) {
 
         }
-
     }
 
     private void populatePaidLastMonth() {
@@ -212,34 +192,10 @@ public class StatsService {
             if (billingMonth == null) {
                 return;
             }
-//            List<Bill> bills = billRepository.findAllByBillingMonth(billingMonth);
-            List<BigInteger> billIds = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
-            if (billIds.isEmpty()) {
-                return;
+            Double dbTotal = billRepository.getTotalAmountByBillingMonth(billingMonth.getBillingMonthId());
+            if (dbTotal != null) {
+                total = dbTotal;
             }
-
-
-            for (BigInteger billId : billIds) {
-                Bill bill = billRepository.findOne(Long.valueOf(billId.toString()));
-                total += bill.getAmount();
-                total += bill.getMeterRent();
-            }
-
-
-//            Calendar fromDate = this.getFirstDayThisMonth();
-//            fromDate.add(Calendar.MONTH, -1);
-//
-//            Calendar toDate = this.getFirstDayThisMonth();
-//            toDate.add(Calendar.DATE, -1);
-//
-//            List<Payment> payments = paymentRepository.findByTransactionDateBetween(fromDate, toDate);
-//            if (!payments.isEmpty()) {
-//                for (Payment payment : payments) {
-//                    if (payment.getPaymentType().isUnique()) {
-//                        total += payment.getAmount();
-//                    }
-//                }
-//            }
             topView.setPaidLastMonth(total);
         } catch (Exception ex) {
             log.error(ex.getMessage());
@@ -271,18 +227,10 @@ public class StatsService {
             List<String> items = new ArrayList<>();
 
             //start date should be less 2 years
-            Calendar fromDate = this.getFirstDayThisMonth();
-            fromDate.add(Calendar.MONTH, this.getMonths());
-            Calendar today = Calendar.getInstance();
-
-            while (fromDate.before(today)) {
-
-                SimpleDateFormat format1 = new SimpleDateFormat("MMM yyyy");
-                String formatted = format1.format(fromDate.getTime());
-                //log.info("Date:" + formatted);
-                items.add(formatted);
-
-                fromDate.add(Calendar.MONTH, 1);
+            DateTime startDate = new DateTime().dayOfMonth().withMinimumValue().plusMonths(this.getMonths());
+            while (startDate.isBeforeNow()) {
+                items.add(startDate.toString("MMM yyyy"));
+                startDate = startDate.plusMonths(1);
             }
             xAxisMeta.setItems(items);
             billsPaymentsLineGraph.setxAxisMeta(xAxisMeta);
@@ -321,7 +269,6 @@ public class StatsService {
     private void populateZonesAccountBalancesBarGraph() {
         try {
             List<GraphSeries> seriesList = new ArrayList<>();
-
             //payments
             List<GraphSeries> series = this.getZoneAccountBalancesGraphData();
             if (!series.isEmpty()) {
@@ -344,7 +291,7 @@ public class StatsService {
             }
 
             //bills
-            series = this.getZonesBarGraphData();
+            series = this.getZonesBillsBarGraphData();
             if (!series.isEmpty()) {
                 seriesList.addAll(series);
             }
@@ -385,33 +332,27 @@ public class StatsService {
     }
 
     @Transactional
-    private List<GraphSeries> getZonesBarGraphData() {
-
+    private List<GraphSeries> getZonesBillsBarGraphData() {
         List<GraphSeries> seriesList = new ArrayList<>();
-
         GraphSeries billSeries = new GraphSeries();
         billSeries.setName("Bills");
         List<Double> billValues = new ArrayList<>();
-
         List<Zone> zones = zoneRepository.findAll();
+        DateTime today = new DateTime().dayOfMonth().withMaximumValue();
+        DateTime fromDate = new DateTime().dayOfMonth().withMinimumValue().plusMonths(this.getMonths());
+
         if (!zones.isEmpty()) {
             for (Zone zone : zones) {
-                Calendar today = Calendar.getInstance();
-                Calendar fromDate = this.getFirstDayThisMonth();
-                fromDate.add(Calendar.MONTH, this.getMonths());
-                SimpleDateFormat format1 = new SimpleDateFormat("yyyy-M-dd");
-                String formatted = format1.format(fromDate.getTime());
-
-                Double amountBilled = 0.0;
-                amountBilled = billRepository.findByContent(zone.getName(), format1.format(fromDate.getTime()).toString(), format1.format(today.getTime()).toString());
-                if (amountBilled == null) {
-                    amountBilled = 0.0;
+                Double total = 0.0;
+                Double dbTotal = billRepository.getTotalAmountByZoneByBillingMonth(zone.getZoneId(), fromDate.toString("yyyy-MM-dd"), today.toString("yyyy-MM-dd"));
+                //amountBilled = billRepository.findByContent(zone.getName(), format1.format(fromDate.getTime()).toString(), format1.format(today.getTime()).toString());
+                if (dbTotal != null) {
+                    total = dbTotal;
                 }
-                billValues.add(amountBilled);
+                billValues.add(total);
             }
             billSeries.setData(billValues);
             seriesList.add(billSeries);
-
         }
 
         return seriesList;
@@ -439,35 +380,25 @@ public class StatsService {
         if (!zones.isEmpty()) {
             for (Zone zone : zones) {
                 //Get accounts by zone
-                Double activeBal = 0d;
-                Double inactiveBal = 0d;
+                Double activeBalances = 0d;
+                Double inactiveBalances = 0d;
                 Double allBal = 0d;
-                List<BigInteger> accountIds = accountRepository.findAllAccountNumbersByZoneId(zone.getZoneId());
-                if (!accountIds.isEmpty()) {
-                    for (BigInteger accId : accountIds) {
-                        Account account = accountRepository.findOne(Long.valueOf(accId.toString()));
-                        //log.info("Start Getting account balance for "+ account.getAccNo());
-                        Double bal = accountService.getAccountBalance(Long.valueOf(accId.toString()));
-                        //log.info("End Getting account balance for "+ account.getAccNo());
-                        if (bal != account.getOutstandingBalance()) {
-                            account.setOutstandingBalance(bal);
-                            //save
-                            account = accountRepository.save(account);
-                        }
 
-                        if (account.isActive()) {
-                            activeBal += account.getOutstandingBalance();
-                        } else {
-                            inactiveBal += account.getOutstandingBalance();
-                        }
+                Double dbActiveBalances = accountRepository.getBalancesByStatusByZone(zone.getZoneId(), 1);
+                Double dbInActiveBalances = accountRepository.getBalancesByStatusByZone(zone.getZoneId(), 0);
 
-                        allBal += account.getOutstandingBalance();
-                    }
+                if (dbActiveBalances != null) {
+                    activeBalances = dbActiveBalances;
                 }
+
+                if (dbInActiveBalances != null) {
+                    inactiveBalances = dbInActiveBalances;
+                }
+
                 //add bill series values
-                inActiveValues.add(inactiveBal);
-                activeValues.add(activeBal);
-                allValues.add(allBal);
+                inActiveValues.add(inactiveBalances);
+                activeValues.add(activeBalances);
+                allValues.add(inactiveBalances + activeBalances);
             }
 
             activeSeries.setData(activeValues);
@@ -483,32 +414,24 @@ public class StatsService {
 
     @Transactional
     private List<GraphSeries> getZonesBarGraphDataPayments() {
-
         List<GraphSeries> seriesList = new ArrayList<>();
-
         GraphSeries billSeries = new GraphSeries();
         billSeries.setName("Payments");
-        List<Double> billValues = new ArrayList<>();
+        List<Double> paymentValues = new ArrayList<>();
+        DateTime today = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMaximumValue();
+        DateTime fromDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMinimumValue().plusMonths(this.getMonths());
 
         List<Zone> zones = zoneRepository.findAll();
         if (!zones.isEmpty()) {
             for (Zone zone : zones) {
-                Calendar today = Calendar.getInstance();
-                Calendar fromDate = this.getFirstDayThisMonth();
-                fromDate.add(Calendar.MONTH, this.getMonths());
-
-                SimpleDateFormat format1 = new SimpleDateFormat("yyyy-M-dd");
-                String formatted = format1.format(fromDate.getTime());
-                Double amountBilled = 0.0;
-                try {
-                    amountBilled = paymentRepository.findByAmount(zone.getName(), format1.format(fromDate.getTime()).toString(), format1.format(today.getTime()).toString());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    log.error(ex.getMessage());
+                Double total = 0.0;
+                Double dbTotal = paymentRepository.getTotalAmountByZoneByDate(zone.getZoneId(), fromDate.toString("yyyy-MM-dd"), today.toString("yyyy-MM-dd"));
+                if (dbTotal != null) {
+                    total = dbTotal;
                 }
-                billValues.add(amountBilled);
+                paymentValues.add(total);
             }
-            billSeries.setData(billValues);
+            billSeries.setData(paymentValues);
             seriesList.add(billSeries);
         }
         return seriesList;
@@ -525,38 +448,19 @@ public class StatsService {
             for (PaymentType paymentType : paymentTypes) {
                 GraphSeries series = new GraphSeries();
                 series.setName(paymentType.getName());
-
                 List<Double> values = new ArrayList<>();
-
-                Calendar today = Calendar.getInstance();
-
-                Calendar fromDate = this.getFirstDayThisMonth();
-                fromDate.add(Calendar.MONTH, this.getMonths());
-
-                Integer months = this.getMonths();
-
-                while (fromDate.before(today)) {
-
-                    Calendar dFromDate = this.getFirstDayThisMonth();
-                    dFromDate.add(Calendar.MONTH, months);
-
-                    months++;
-
-                    Calendar dTodate = this.getFirstDayThisMonth();
-                    dTodate.add(Calendar.MONTH, months);
-                    dTodate.add(Calendar.DATE, -1);
-
-                    List<Payment> payments = paymentRepository.findByTransactionDateBetweenAndPaymentType(dFromDate, dTodate, paymentType);
-                    Double amount = 0.0;
-                    if (!payments.isEmpty()) {
-                        for (Payment payment : payments) {
-                            amount += payment.getAmount();
-                        }
+                DateTime toDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMaximumValue();
+                DateTime fromDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMinimumValue().plusMonths(this.getMonths());
+                while (fromDate.isBefore(toDate)) {
+                    DateTime newToDate = fromDate.plusMonths(1).minusMinutes(1);
+                    Double total = 0.0;
+                    Double dbTotal = paymentRepository.getTotalAmountByPaymentTypeByDate(paymentType.getPaymentTypeId(), fromDate.toString("yyyy-MM-dd"), newToDate.toString("yyyy-MM-dd"));
+                    if (dbTotal != null) {
+                        total = dbTotal;
                     }
-                    values.add(amount);
-                    fromDate.add(Calendar.MONTH, 1);
+                    values.add(total);
+                    fromDate = fromDate.plusMonths(1);
                 }
-
                 series.setData(values);
                 seriesList.add(series);
             }
@@ -567,51 +471,41 @@ public class StatsService {
 
     @Transactional
     private List<GraphSeries> getBilledMeterRentData() {
-
         List<GraphSeries> seriesList = new ArrayList<>();
-
-        Calendar today = Calendar.getInstance();
-        Calendar fromDate = this.getFirstDayThisMonth();
-        fromDate.add(Calendar.MONTH, this.getMonths());
-
-        Integer months = this.getMonths();
 
         //graph details
         GraphSeries billSeries = new GraphSeries();
-        billSeries.setName("Bills");
+        billSeries.setName("Water Sale Bills");
         List<Double> billValues = new ArrayList<>();
 
         GraphSeries meterRentSeries = new GraphSeries();
-        meterRentSeries.setName("Meter Rent");
+        meterRentSeries.setName("Meter Rent Bills");
         List<Double> meterRentValues = new ArrayList<>();
 
+        DateTime toDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMaximumValue();
+        DateTime fromDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMinimumValue().plusMonths(this.getMonths());
+        while (fromDate.isBefore(toDate)) {
+            DateTime bMonth = fromDate.withDayOfMonth(24);
+            BillingMonth month = billingMonthRepository.findByMonth(bMonth.toString("yyyy-MM-dd"));
 
-        while (fromDate.before(today)) {
-            Calendar billingMonth = Calendar.getInstance();
+            Double billedTotal = 0d;
+            Double meterRentTotal = 0d;
 
-            billingMonth.set(Calendar.DATE, 24);
-            billingMonth.set(Calendar.MONTH, fromDate.get(Calendar.MONTH));
-            billingMonth.set(Calendar.YEAR, fromDate.get(Calendar.YEAR));
-
-
-            BillingMonth month = billingMonthRepository.findByMonth(billingMonth);
-            if (month == null) {
-                return null;
-            }
-            Double billed = 0.0;
-            Double meterRent = 0.0;
-            List<BigInteger> billIds = billRepository.findAllByBillingMonth(month.getBillingMonthId());
-            //List<Bill> bills = billRepository.findAllByBillingMonth(month);
-            if (!billIds.isEmpty()) {
-                for (BigInteger billId : billIds) {
-                    Bill bill = billRepository.findOne(Long.valueOf(billId.toString()));
-                    billed += bill.getAmount();
-                    meterRent += bill.getMeterRent();
+            if (month != null) {
+                //Billed Amount
+                Double billed = billRepository.getTotalAmountByBillingMonth(month.getBillingMonthId());
+                if (billed != null) {
+                    billedTotal += billed;
                 }
-                billValues.add(billed);
-                meterRentValues.add(meterRent);
+
+                Double meterRent = billRepository.getTotalMeterRentByBillingMonth(month.getBillingMonthId());
+                if (meterRent != null) {
+                    meterRentTotal += meterRent;
+                }
             }
-            fromDate.add(Calendar.MONTH, 1);
+            billValues.add(billedTotal);
+            meterRentValues.add(meterRentTotal);
+            fromDate = fromDate.plusMonths(1);
         }
 
         billSeries.setData(billValues);
@@ -624,54 +518,29 @@ public class StatsService {
 
     @Transactional
     private List<GraphSeries> getOtherChargesData() {
-
         List<GraphSeries> seriesList = new ArrayList<>();
-
         List<BillItemType> billItemTypes = billItemTypeRepository.findAll();
-
         if (!billItemTypes.isEmpty()) {
-
             for (BillItemType billItemType : billItemTypes) {
                 //graph details
                 GraphSeries series = new GraphSeries();
                 series.setName(billItemType.getName());
                 List<Double> values = new ArrayList<>();
+                DateTime toDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMaximumValue();
+                DateTime fromDate = new DateTime().withTimeAtStartOfDay().dayOfMonth().withMinimumValue().plusMonths(this.getMonths());
+                while (fromDate.isBefore(toDate)) {
+                    DateTime bMonth = fromDate.withDayOfMonth(24);
+                    BillingMonth month = billingMonthRepository.findByMonth(bMonth.toString("yyyy-MM-dd"));
 
-
-                Calendar today = Calendar.getInstance();
-                Calendar fromDate = this.getFirstDayThisMonth();
-                fromDate.add(Calendar.MONTH, this.getMonths());
-
-                Integer months = this.getMonths();
-                while (fromDate.before(today)) {
-                    Calendar billingMonth = Calendar.getInstance();
-
-                    billingMonth.set(Calendar.DATE, 24);
-                    billingMonth.set(Calendar.MONTH, fromDate.get(Calendar.MONTH));
-                    billingMonth.set(Calendar.YEAR, fromDate.get(Calendar.YEAR));
-
-
-                    BillingMonth month = billingMonthRepository.findByMonth(billingMonth);
-                    if (month == null) {
-                        return null;
-                    }
-                    Double amount = 0.0;
-//                    List<Bill> bills = billRepository.findAllByBillingMonth(month);
-                    List<BigInteger> billIds = billRepository.findAllByBillingMonth(month.getBillingMonthId());
-                    if (!billIds.isEmpty()) {
-                        for (BigInteger billId : billIds) {
-                            Bill bill = billRepository.findOne(Long.valueOf(billId.toString()));
-                            if (!bill.getBillItems().isEmpty()) {
-                                for (BillItem billItem : bill.getBillItems()) {
-                                    if (billItem.getBillItemType().getName().compareToIgnoreCase(billItemType.getName()) == 0) {
-                                        amount += billItem.getAmount();
-                                    }
-                                }
-                            }
+                    Double total = 0d;
+                    if (month != null) {
+                        Double dbTotal = billItemTypeRepository.getTotalByTypeByBillingMonth(billItemType.getBillTypeId(), month.getBillingMonthId());
+                        if (dbTotal != null) {
+                            total = dbTotal;
                         }
-                        values.add(amount);
                     }
-                    fromDate.add(Calendar.MONTH, 1);
+                    values.add(total);
+                    fromDate = fromDate.plusMonths(1);
                 }
                 series.setData(values);
                 seriesList.add(series);

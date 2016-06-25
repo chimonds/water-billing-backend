@@ -17,15 +17,15 @@ public class TaskExecutorConfig {
 //    @Bean
 //    public ThreadPoolTaskExecutor taskExecutor() {
 //        ThreadPoolTaskExecutor pool = new ThreadPoolTaskExecutor();
-//        pool.setCorePoolSize(10);
-//        pool.setMaxPoolSize(20);
+//        pool.setCorePoolSize(2);
+//        pool.setMaxPoolSize(5);
 //        pool.setWaitForTasksToCompleteOnShutdown(true);
 //        return pool;
 //    }
 //
     @Bean(destroyMethod = "shutdown")
     public Executor taskScheduler() {
-        Executor executor= Executors.newScheduledThreadPool(3);
+        Executor executor= Executors.newScheduledThreadPool(2);
         return executor;
     }
 

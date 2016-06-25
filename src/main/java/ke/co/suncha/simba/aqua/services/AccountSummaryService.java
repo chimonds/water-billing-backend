@@ -24,6 +24,7 @@ import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -245,13 +246,17 @@ public class AccountSummaryService {
         }
     }
 
-
-    //@Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
+    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
     public void populateOutstandingAccountBalances() {
         try {
             List<BigInteger> accountList = accountRepository.findAllAccountIds();
             if (!accountList.isEmpty()) {
                 for (BigInteger accountId : accountList) {
+                    Account account = accountRepository.findOne(accountId.longValue());
+                    if (account != null) {
+                        account.setUpdateBalance(Boolean.TRUE);
+                        accountRepository.save(account);
+                    }
                     accountService.updateBalance(accountId.longValue());
                 }
             }

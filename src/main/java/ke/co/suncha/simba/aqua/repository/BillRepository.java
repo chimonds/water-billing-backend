@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigInteger;
@@ -78,4 +79,14 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
     //@Transactional
     @Query(value = "SELECT transaction_date FROM bills  WHERE account_id =?1 AND bill_code=?2", nativeQuery = true)
     Timestamp findPreviousBillDate(Long accountId, Integer billCode);
+
+    @Query(value = "SELECT SUM(amount) FROM bills WHERE  billing_month_id=:billingMonthId", nativeQuery = true)
+    Double getTotalAmountByBillingMonth(@Param("billingMonthId") Long billingMonthId);
+
+    @Query(value = "SELECT SUM(meter_rent) FROM bills WHERE  billing_month_id=:billingMonthId", nativeQuery = true)
+    Double getTotalMeterRentByBillingMonth(@Param("billingMonthId") Long billingMonthId);
+
+    @Query(value = "SELECT SUM(amount) FROM bills WHERE account_id IN (SELECT account_id FROM accounts WHERE zone_id=:zoneId) AND billing_month_id IN (SELECT billing_month_id FROM billing_months WHERE billing_month>=:startDate AND billing_month<=:endDate )", nativeQuery = true)
+    Double getTotalAmountByZoneByBillingMonth(@Param("zoneId") Long zoneId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
 }

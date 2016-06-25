@@ -24,7 +24,7 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     @Id
     @Column(name = "recid", nullable = false)
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long recordId;
+    private Long recordId;
 
     @NotNull
     @Column(name = "id", unique = true)
@@ -98,11 +98,11 @@ public class MPESATransaction extends SimbaBaseEntity implements Serializable {
     @JoinColumn(name = "account_id")
     private Account account;
 
-    public long getRecordId() {
+    public Long getRecordId() {
         return recordId;
     }
 
-    public void setRecordId(long recordId) {
+    public void setRecordId(Long recordId) {
         this.recordId = recordId;
     }
 

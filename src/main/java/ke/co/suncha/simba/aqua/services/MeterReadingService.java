@@ -2,8 +2,6 @@ package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ke.co.suncha.simba.admin.helpers.AuditOperation;
-import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -12,13 +10,9 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.admin.utils.Config;
-import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
-import ke.co.suncha.simba.aqua.utils.MobileClientResponse;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -84,7 +76,7 @@ public class MeterReadingService {
 
     }
 
-    @Scheduled(fixedDelay = 3000)
+    //@Scheduled(fixedDelay = 3000)
     public void poolRemoteMeterReadings() {
         try {
             Boolean notifyClient = false;

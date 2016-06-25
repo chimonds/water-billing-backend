@@ -27,7 +27,9 @@ import ke.co.suncha.simba.aqua.models.BillItemType;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -38,4 +40,8 @@ import java.util.List;
 public interface BillItemTypeRepository extends PagingAndSortingRepository<BillItemType, Long>  {
 	Page<BillItemType> findAll(Pageable pageable);
 	List<BillItemType> findAll();
+
+	@Query(value = "SELECT SUM(amount) FROM bill_items WHERE bill_item_type_id=:billItemTypeId AND bill_id IN (SELECT bill_id FROM bills WHERE billing_month_id=:billingMonthId)", nativeQuery = true)
+	Double getTotalByTypeByBillingMonth(@Param("billItemTypeId") Long billItemTypeId, @Param("billingMonthId") Long billingMonthId);
+
 }

@@ -24,6 +24,7 @@
 package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.models.Meter;
 
 import ke.co.suncha.simba.aqua.models.Zone;
@@ -99,4 +100,7 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is null", nativeQuery = true)
     Integer getActiveUnMeteredAccounts();
 
+
+    @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE cut_off =:cutOff AND zone_id=:zoneId AND outstanding_balance>0", nativeQuery = true)
+    Double getBalancesByStatusByZone(@Param("zoneId") Long zoneId, @Param("cutOff") Integer cutOff);
 }
