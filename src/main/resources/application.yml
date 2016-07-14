@@ -1,0 +1,34 @@
+spring:
+  profiles.active: dev
+---
+spring:
+    profiles: dev
+    datasource:
+      url: jdbc:log4jdbc:mysql://localhost:3306/aqua
+      username: root
+      password: Kenya@2012
+    jpa:
+      hibernate.ddl-auto: update
+      hibernate.dialect: org.hibernate.dialect.MySQL5Dialect
+server:
+  port: 9090
+---
+spring:
+    profiles: kimawasco
+    datasource:
+      url: jdbc:log4jdbc:mysql://10.131.73.144:3306/kimawasco
+      username: temboservice
+      password: JzkRH4UJU64VBHmM
+    jpa:
+      hibernate.ddl-auto: update
+      hibernate.dialect: org.hibernate.dialect.MySQL5Dialect
+---
+  spring:
+      profiles: wowasco
+      datasource:
+        url: jdbc:log4jdbc:mysql://10.131.73.144:3306/wowasco
+        username: temboservice
+        password: JzkRH4UJU64VBHmM
+      jpa:
+        hibernate.ddl-auto: update
+        hibernate.dialect: org.hibernate.dialect.MySQL5Dialect

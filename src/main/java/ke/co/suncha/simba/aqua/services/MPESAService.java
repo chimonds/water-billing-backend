@@ -288,8 +288,6 @@ public class MPESAService {
                         mpesaTransaction.setDateAssigned(Calendar.getInstance());
                         mpesaTransaction.setAccount(account);
                         mpesaRepository.save(mpesaTransaction);
-
-
                     }
                 }
 

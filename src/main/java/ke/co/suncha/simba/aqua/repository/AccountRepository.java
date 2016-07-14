@@ -92,15 +92,40 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE cut_off =?1", nativeQuery = true)
     Double getOutstandingBalancesByStatus(Integer cutOff);
 
-    @Transactional
-    @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is not null", nativeQuery = true)
-    Integer getActiveMeteredAccounts();
 
     @Transactional
-    @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is null", nativeQuery = true)
-    Integer getActiveUnMeteredAccounts();
+    @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE outstanding_balance>0", nativeQuery = true)
+    Double getAllBalances();
+
+    @Transactional
+    @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE outstanding_balance<0", nativeQuery = true)
+    Double getAllCreditBalances();
+
+
+    @Transactional
+    @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is not null AND  date(created_on)<=:createdOn", nativeQuery = true)
+    Integer getActiveMeteredAccounts(@Param("createdOn") String createdOn);
+
+    @Transactional
+    @Query(value = "SELECT count(*) FROM accounts WHERE cut_off=1 AND meter_id is null AND date(created_on)<=:createdOn", nativeQuery = true)
+    Integer getActiveUnMeteredAccounts(@Param("createdOn") String createdOn);
 
 
     @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE cut_off =:cutOff AND zone_id=:zoneId AND outstanding_balance>0", nativeQuery = true)
     Double getBalancesByStatusByZone(@Param("zoneId") Long zoneId, @Param("cutOff") Integer cutOff);
+
+    @Query(value = "SELECT consumer_id FROM accounts WHERE account_id=:accountId", nativeQuery = true)
+    Long getCustomerId(@Param("accountId") Long accountId);
+
+    @Query(value = "SELECT acc_no FROM accounts WHERE account_id=:accountId", nativeQuery = true)
+    String getAccountNo(@Param("accountId") Long accountId);
+
+    @Query(value = "SELECT cut_off FROM accounts WHERE account_id=:accountId", nativeQuery = true)
+    Integer getAccountStatus(@Param("accountId") Long accountId);
+
+    @Query(value = "SELECT COUNT(account_id) FROM accounts WHERE date(created_on)<=:createdOn AND cut_off=:cutOff", nativeQuery = true)
+    Long getCountByCreatedOn(@Param("createdOn") String createdOn, @Param("cutOff") Integer cutOff);
+
+    @Query(value = "SELECT SUM(outstanding_balance) FROM accounts WHERE date(created_on)<=:createdOn AND cut_off=:cutOff AND outstanding_balance>0", nativeQuery = true)
+    Double getTotalBalanceByCreatedOn(@Param("createdOn") String createdOn, @Param("cutOff") Integer cutOff);
 }

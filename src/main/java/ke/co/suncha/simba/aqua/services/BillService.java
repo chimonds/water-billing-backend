@@ -40,6 +40,8 @@ import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.BillMeta;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
+import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,6 +110,9 @@ public class BillService {
     @Autowired
     MPESARepository mpesaRepository;
 
+    @Autowired
+    MeterRepository meterRepository;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -141,8 +146,8 @@ public class BillService {
                     return response;
                 }
 
-                accountService.setUpdateBalance(accountId);
-                accountService.updateBalance(accountId);
+                //accountService.setUpdateBalance(accountId);
+                //accountService.updateBalance(accountId);
 
                 if (!account.isActive()) {
                     responseObject.setMessage("Sorry we can not complete your request, the account is inactive.");
@@ -186,8 +191,6 @@ public class BillService {
                 Bill bill = new Bill();
 
                 //set
-
-
                 //Only allow editing of previous reading if user has a role
                 if (lastBill != null) {
                     response = authManager.grant(requestObject.getToken(), "bill_edit_previous_reading");
@@ -207,7 +210,18 @@ public class BillService {
 
                 //get units consumed
                 Integer unitsConsumed = bill.getCurrentReading() - bill.getPreviousReading();
-                if (unitsConsumed > 0) {
+
+                Integer billOnAverageUnits = 0;
+                try {
+                    billOnAverageUnits = Integer.parseInt(optionService.getOption("BILL_ON_AVERAGE_UNITS").getValue());
+                } catch (Exception ex) {
+
+                }
+                if (billOnAverageUnits == null) {
+                    billOnAverageUnits = 0;
+                }
+
+                if (unitsConsumed > billOnAverageUnits) {
                     bill.setConsumptionType("Actual");
                 } else {
                     unitsConsumed = account.getAverageConsumption();
@@ -221,6 +235,13 @@ public class BillService {
                 if (account.isMetered()) {
                     if (account.getMeter().getMeterOwner().getCharge()) {
                         bill.setMeterRent(account.getMeter().getMeterSize().getRentAmount());
+                    }
+
+                    //
+                    Meter dbMeter = meterRepository.findOne(account.getMeter().getMeterId());
+                    if (dbMeter != null) {
+                        dbMeter.setIsNew(Boolean.FALSE);
+                        meterRepository.save(dbMeter);
                     }
                 }
 
@@ -313,14 +334,11 @@ public class BillService {
 
                 //save outstanding balance
                 log.info("Saving outstanding balance...");
-                account = accountRepository.findOne(accountId);
-                log.info("Getting balance for:" + account.getAccountId());
-
-                Double outstandingBalance = accountService.getAccountBalance(account.getAccountId());
-                log.info("Balance:" + outstandingBalance);
-                account.setOutstandingBalance(outstandingBalance);
                 account.setActive(accountIsActive);
-                accountRepository.save(account);
+                account.setUpdateBalance(Boolean.TRUE);
+                account = accountRepository.save(account);
+
+                accountService.updateBalance(account.getAccountId());
 
                 //send sms
                 log.info("Saving SMS notification...");
@@ -332,9 +350,6 @@ public class BillService {
                 responseObject.setMessage("Account billed successfully");
                 responseObject.setPayload(bill);
                 response = new RestResponse(responseObject, HttpStatus.OK);
-
-
-                accountService.setUpdateBalance(accountId);
 
 
                 //Start - audit trail
@@ -419,9 +434,16 @@ public class BillService {
                 lastBill.setBilled(false);
             }
         } else {
-
             lastBill = bills.getContent().get(0);
             log.info("Most current bill:" + lastBill.toString());
+
+            if(account.getMeter()!=null){
+                if(account.getMeter().getIsNew()!=null){
+                    if(account.getMeter().getIsNew()){
+                        lastBill.setCurrentReading(account.getMeter().getInitialReading());
+                    }
+                }
+            }
 
             lastBill.setBilled(true);
 
@@ -526,6 +548,17 @@ public class BillService {
             log.error(ex.getLocalizedMessage());
         }
         return response;
+    }
+
+
+    @Transactional
+    public Double getAccountBillsByDate(Long accountId, DateTime toDate) {
+        Double amount = 0d;
+        Double dbAmount = billRepository.getTotalBilledByDate(accountId, toDate.toString("yyyy-MM-dd"));
+        if (dbAmount != null) {
+            amount = dbAmount;
+        }
+        return amount;
     }
 
     @Transactional
@@ -1104,4 +1137,25 @@ public class BillService {
         return response;
     }
 
+    public RestResponse getBillOnAverageUnits() {
+        try {
+            Integer units = 0;
+            try {
+                String dbUnits = optionService.getOption("BILL_ON_AVERAGE_UNITS").getValue();
+                if (StringUtils.isNumeric(dbUnits)) {
+                    units = Integer.valueOf(dbUnits);
+                }
+            } catch (Exception ex) {
+
+            }
+            responseObject.setPayload(units);
+            responseObject.setMessage("");
+            response = new RestResponse(responseObject, HttpStatus.OK);
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

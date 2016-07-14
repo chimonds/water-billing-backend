@@ -20,6 +20,7 @@ import ke.co.suncha.simba.aqua.services.PaymentService;
 import ke.co.suncha.simba.aqua.services.SMSService;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,7 +195,7 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                                     payment.setAmount(transaction.getPaidAmount());
 
                                     //transaction date
-                                    payment.setTransactionDate(Calendar.getInstance());
+                                    payment.setTransactionDate(transaction.getTransDate());
 
                                     if (billingMonth != null) {
                                         payment.setBillingMonth(billingMonth);
@@ -288,10 +289,13 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                 if (file.isEmpty()) {
                     responseObject.setMessage("File can not be empty");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                } else if (file.getContentType().compareToIgnoreCase("text/csv") != 0) {
-                    responseObject.setMessage("Sorry we can not process your request. We only allow text/csv files");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                } else {
+                }
+                // else if (file.getContentType().compareToIgnoreCase("text/csv") != 0) {
+                //                    responseObject.setMessage("Sorry we can not process your request. We only allow text/csv files");
+                //                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                //                }
+                else {
+                    log.info(file.getContentType());
                     PostBankFile postBankFile = new PostBankFile();
                     postBankFile.setName(file.getOriginalFilename());
                     postBankFile.setSize(file.getSize());
@@ -314,6 +318,24 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                                 postBankTransaction.setAccNo(StringUtils.trim(line[8]));
                                 postBankTransaction.setPayeeNames(StringUtils.trim(line[9]));
                                 postBankTransaction.setPaidAmount(Double.parseDouble(StringUtils.trim(line[6])));
+
+                                //20160627
+                                String stringDate = StringUtils.trim(line[2]);
+
+                                String year = stringDate.substring(0, 4);
+                                String month = stringDate.substring(4, 6);
+                                String day = stringDate.substring(6, 8);
+
+                                DateTime dateTime = new DateTime().withYear(Integer.valueOf(year)).withMonthOfYear(Integer.valueOf(month)).withDayOfMonth(Integer.valueOf(day)).withTimeAtStartOfDay();
+
+
+                                Calendar calendar = Calendar.getInstance();
+                                calendar.setTimeInMillis(dateTime.getMillis());
+
+
+                                postBankTransaction.setTransDate(calendar);
+
+
                                 Boolean accValid = Boolean.TRUE;
                                 Boolean receiptValid = Boolean.TRUE;
 
@@ -373,11 +395,14 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                     response = new RestResponse(responseObject, HttpStatus.CREATED);
                 }
             }
-        } catch (Exception ex) {
+        } catch (Exception ex)
+
+        {
             responseObject.setMessage(ex.getLocalizedMessage());
             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
             log.error(ex.getLocalizedMessage());
         }
+
         return response;
     }
 

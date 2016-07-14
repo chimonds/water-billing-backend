@@ -40,6 +40,7 @@ import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.repository.*;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,10 +101,16 @@ public class AccountService {
     MbassadorService mbassadorService;
 
     @Autowired
+    ZoneRepository zoneRepository;
+
+    @Autowired
     BillService billService;
 
     @Autowired
     PaymentService paymentService;
+
+    @Autowired
+    AgeingDataRepository ageingDataRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -574,6 +581,181 @@ public class AccountService {
         //save
 
         ageingRecordRepository.save(ageingRecord);
+    }
+
+    @Transactional
+    public void updateAccountAgeingCustom(Long userId, Long accountId, DateTime toDate) {
+
+        //Get account customer id
+        Long consumerId = accountRepository.getCustomerId(accountId);
+
+        //Get customer name based on customer id
+        String consumerName = consumerRepository.getConsumerName(consumerId).toUpperCase();
+
+
+        //Get account number
+        String accNo = accountRepository.getAccountNo(accountId);
+
+
+        DateTime today = toDate.hourOfDay().withMaximumValue();
+        DateTime sixMonthsAgo = today.minusMonths(6);
+        DateTime fourMonthsAgo = today.minusMonths(4);
+        DateTime threeMonthsAgo = today.minusMonths(3);
+        DateTime twoMonthsAgo = today.minusMonths(2);
+        DateTime oneMonthAgo = today.minusMonths(1);
+        Double billsNotPaid = 0d;
+
+        //Balances
+        Double balanceSixMonthsAgo = 0d;
+        Double balanceFourMonthsAgo = 0d;
+        Double balanceThreeMonthsAgo = 0d;
+        Double balanceTwoMonthsAgo = 0d;
+        Double balanceOneMonthsAgo = 0d;
+        Double balanceToday = 0d;
+
+        //Get all payments unit today (Today is supplied by the user)
+        Double totalPayments = paymentService.getTotalByAccountByDate(accountId, today);
+
+        //get bills above 180 days
+        Double billsSixMonthsAgo = billService.getAccountBillsByDate(accountId, sixMonthsAgo);
+        if (totalPayments >= billsSixMonthsAgo) {
+            balanceSixMonthsAgo = 0d;
+            totalPayments = totalPayments - billsSixMonthsAgo;
+        } else if (totalPayments > 0) {
+            billsNotPaid = billsSixMonthsAgo - totalPayments;
+            balanceSixMonthsAgo = billsSixMonthsAgo - totalPayments;
+            totalPayments = 0d;
+        } else {
+            //Nothing paid
+            billsNotPaid = billsSixMonthsAgo;
+            balanceSixMonthsAgo = billsSixMonthsAgo;
+            totalPayments = 0d;
+        }
+
+        //Four months ago
+        Double billsFourMonthsAgo = billService.getAccountBillsByDate(accountId, fourMonthsAgo);
+        if (billsFourMonthsAgo > billsSixMonthsAgo) {
+            billsFourMonthsAgo = (billsFourMonthsAgo - billsSixMonthsAgo) + billsNotPaid;
+        }
+
+        if (totalPayments >= billsFourMonthsAgo) {
+            balanceFourMonthsAgo = 0d;
+            totalPayments = totalPayments - billsFourMonthsAgo;
+        } else if (totalPayments > 0) {
+            billsNotPaid = billsFourMonthsAgo - totalPayments;
+            balanceFourMonthsAgo = billsFourMonthsAgo - totalPayments;
+            totalPayments = 0d;
+        } else {
+            //Nothing paid
+            billsNotPaid = billsFourMonthsAgo;
+            balanceFourMonthsAgo = billsFourMonthsAgo;
+            totalPayments = 0d;
+        }
+
+        //Three Months
+        Double billsThreeMonthsAgo = billService.getAccountBillsByDate(accountId, threeMonthsAgo);
+        if (billsThreeMonthsAgo > billsFourMonthsAgo) {
+            billsThreeMonthsAgo = (billsThreeMonthsAgo - billsFourMonthsAgo) + billsNotPaid;
+        }
+        if (totalPayments >= billsThreeMonthsAgo) {
+            balanceThreeMonthsAgo = 0d;
+            totalPayments = totalPayments - billsThreeMonthsAgo;
+        } else if (totalPayments > 0) {
+            billsNotPaid = billsThreeMonthsAgo - totalPayments;
+            balanceThreeMonthsAgo = billsThreeMonthsAgo - totalPayments;
+            totalPayments = 0d;
+        } else {
+            //Nothing paid
+            billsNotPaid = billsThreeMonthsAgo;
+            balanceThreeMonthsAgo = billsThreeMonthsAgo;
+            totalPayments = 0d;
+        }
+
+        //Two Months
+        Double billsTwoMonthsAgo = billService.getAccountBillsByDate(accountId, twoMonthsAgo);
+        if (billsTwoMonthsAgo > billsThreeMonthsAgo) {
+            billsTwoMonthsAgo = (billsTwoMonthsAgo - billsThreeMonthsAgo) + billsNotPaid;
+        }
+        if (totalPayments >= billsTwoMonthsAgo) {
+            balanceTwoMonthsAgo = 0d;
+            totalPayments = totalPayments - billsTwoMonthsAgo;
+        } else if (totalPayments > 0) {
+            billsNotPaid = billsTwoMonthsAgo - totalPayments;
+            balanceTwoMonthsAgo = billsTwoMonthsAgo - totalPayments;
+            totalPayments = 0d;
+        } else {
+            //Nothing paid
+            billsNotPaid = billsTwoMonthsAgo;
+            balanceTwoMonthsAgo = billsTwoMonthsAgo;
+            totalPayments = 0d;
+        }
+
+        //One Month
+        Double billsOneMonthAgo = billService.getAccountBillsByDate(accountId, oneMonthAgo);
+        if (billsOneMonthAgo > billsTwoMonthsAgo) {
+            billsOneMonthAgo = (billsOneMonthAgo - billsTwoMonthsAgo) + billsNotPaid;
+        }
+        if (totalPayments >= billsOneMonthAgo) {
+            balanceOneMonthsAgo = 0d;
+            totalPayments = totalPayments - billsOneMonthAgo;
+        } else if (totalPayments > 0) {
+            billsNotPaid = billsOneMonthAgo - totalPayments;
+            balanceOneMonthsAgo = billsOneMonthAgo - totalPayments;
+            totalPayments = 0d;
+        } else {
+            //Nothing paid
+            billsNotPaid = billsTwoMonthsAgo;
+            balanceOneMonthsAgo = billsOneMonthAgo;
+            totalPayments = 0d;
+        }
+
+        //Today
+        Double billsToday = billService.getAccountBillsByDate(accountId, today);
+        if (billsToday > billsOneMonthAgo) {
+            billsToday = (billsToday - billsOneMonthAgo) + billsNotPaid;
+        }
+        if (totalPayments >= billsToday) {
+            balanceToday = 0d;
+            totalPayments = totalPayments - billsToday;
+        } else if (totalPayments > 0) {
+            billsNotPaid = billsToday - totalPayments;
+            balanceToday = billsToday - totalPayments;
+            totalPayments = 0d;
+        } else {
+            //Nothing paid
+            billsNotPaid = billsToday;
+            balanceToday = billsToday;
+            totalPayments = 0d;
+        }
+
+        Integer cutOff = accountRepository.getAccountStatus(accountId);
+        String accStatus = "Active";
+        if (cutOff == 0) {
+            accStatus = "Inactive";
+        }
+        String zone = zoneRepository.getByAccountId(accountId);
+
+        Long recordId = ageingDataRepository.getRecordId(accountId, userId);
+        AgeingData ageingRecord = new AgeingData();
+        if (recordId != null) {
+            ageingRecord = ageingDataRepository.findOne(recordId);
+        }
+
+        log.info("Ageing report for " + accNo);
+        ageingRecord.setName(consumerName);
+        ageingRecord.setAccNo(accNo);
+        ageingRecord.setAbove0(balanceToday);
+        ageingRecord.setAbove30(balanceOneMonthsAgo);
+        ageingRecord.setAbove60(balanceTwoMonthsAgo);
+        ageingRecord.setAbove90(balanceThreeMonthsAgo);
+        ageingRecord.setAbove120(balanceFourMonthsAgo);
+        ageingRecord.setAbove180(balanceSixMonthsAgo);
+        ageingRecord.setAccountId(accountId);
+        ageingRecord.setUserId(userId);
+        ageingRecord.setAccNo(accNo);
+        ageingRecord.setCutOff(accStatus);
+        ageingRecord.setBalance(balanceToday);
+        ageingDataRepository.save(ageingRecord);
     }
 
     @Transactional

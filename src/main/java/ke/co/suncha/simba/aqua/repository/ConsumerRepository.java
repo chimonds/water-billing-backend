@@ -28,20 +28,24 @@ import ke.co.suncha.simba.aqua.models.Consumer;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 public interface ConsumerRepository extends PagingAndSortingRepository<Consumer, Long> {
-	Page<Consumer> findByFirstNameContainsOrLastNameContainsOrMiddleNameContains(String firstname, String lastname, String middlename, Pageable pageable);
+    Page<Consumer> findByFirstNameContainsOrLastNameContainsOrMiddleNameContains(String firstname, String lastname, String middlename, Pageable pageable);
 
-	Consumer findByIdentityNo(String identityNo);
+    Consumer findByIdentityNo(String identityNo);
 
-	Page<Consumer> findAll(Pageable pageable);
+    Page<Consumer> findAll(Pageable pageable);
 
-	List<Consumer> findAllByPhoneNumber(String phoneNumber);
+    List<Consumer> findAllByPhoneNumber(String phoneNumber);
+
+    @Query(value = "SELECT CONCAT_WS(' ',firstname,middlename, lastname) FROM consumers WHERE consumer_id=:consumerId", nativeQuery = true)
+    String getConsumerName(@Param("consumerId") Long consumerId);
 }

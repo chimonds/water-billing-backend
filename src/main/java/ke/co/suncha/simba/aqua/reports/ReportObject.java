@@ -21,6 +21,8 @@ public class ReportObject {
     private String heading2;
     private String heading3;
     private String heading4;
+    private String address;
+    private String imageUrl;
 
     public String getHeading1() {
         return heading1;
@@ -118,5 +120,21 @@ public class ReportObject {
 
     public void setUnits(Integer units) {
         this.units = units;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

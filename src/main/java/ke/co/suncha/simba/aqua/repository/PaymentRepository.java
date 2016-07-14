@@ -94,4 +94,14 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     @Query(value = "SELECT SUM(amount) FROM payments WHERE payment_type_id=:paymentTypeId AND date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate AND payment_type_id IN(SELECT payment_type_id FROM payment_types WHERE is_unique=true)", nativeQuery = true)
     Double getTotalAmountByPaymentTypeByDate(@Param("paymentTypeId") Long paymentTypeId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE payment_type_id=:paymentTypeId AND date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate", nativeQuery = true)
+    Double getTotalByPaymentTypeByDate(@Param("paymentTypeId") Long paymentTypeId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE  date(transaction_date) <=:endDate AND account_id=:accountId", nativeQuery = true)
+    Double getTotalByAccountByDate(@Param("accountId") Long accountId,@Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE  date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate AND payment_type_id IN (SELECT payment_type_id FROM payment_types WHERE is_unique=TRUE)", nativeQuery = true)
+    Double getTotalReceiptsByDate(@Param("startDate") String startDate,@Param("endDate") String endDate);
+
 }

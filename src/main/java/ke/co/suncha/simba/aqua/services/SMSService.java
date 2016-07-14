@@ -586,15 +586,22 @@ public class SMSService {
             return;
         }
 
-        String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), accountId, paymentId, billId);
+        Boolean saveSMS = Boolean.TRUE;
+        Payment payment = paymentRepository.findOne(paymentId);
+        if (payment != null) {
+            if (!payment.getPaymentSource().getAcknowledgeSMS()) {
+                saveSMS = Boolean.FALSE;
+            }
+        }
 
         //set message
-        sms.setMessage(message);
-
-        //save sms
-        sms = smsRepository.save(sms);
-        sms.setSmsGroup(smsGroup);
-        sms = smsRepository.save(sms);
+        if (saveSMS) {
+            String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), accountId, paymentId, billId);
+            sms.setMessage(message);
+            sms = smsRepository.save(sms);
+            sms.setSmsGroup(smsGroup);
+            sms = smsRepository.save(sms);
+        }
     }
 
     /**
@@ -639,6 +646,8 @@ public class SMSService {
                             smsRepository.save(sms);
                         }
 
+                        //Check if acknoweledge SMS
+
                         if (sendSMS) {
 
                             log.info("Sending SMS to:" + sms.getMobileNumber());
@@ -647,7 +656,7 @@ public class SMSService {
                             String status = result.getString("status");
                             Double cost = 0d;
                             try {
-                                cost = Double.parseDouble(result.getString("cost").replace("KES",""));
+                                cost = Double.parseDouble(result.getString("cost").replace("KES", ""));
                             } catch (Exception ex) {
                                 cost = 0d;
                             }

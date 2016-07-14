@@ -23,24 +23,17 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import java.io.Serializable;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Entity
 @Table(name = "payment_sources")
@@ -48,45 +41,53 @@ import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class PaymentSource extends SimbaBaseEntity implements Serializable {
 
-	private static final long serialVersionUID = 4536954085077053415L;
+    private static final long serialVersionUID = 4536954085077053415L;
 
-	@Id
-	@Column(name = "payment_source_id", nullable = false)
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long paymentSourceId;
+    @Id
+    @Column(name = "payment_source_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long paymentSourceId;
 
-	@NotNull
-	@Column(name = "name", unique = true)
-	private String name;
+    @NotNull
+    @Column(name = "name", unique = true)
+    private String name;
 
-	/**
-	 * @return the paymentSourceId
-	 */
-	public long getPaymentSourceId() {
-		return paymentSourceId;
-	}
+    @Column(name = "acknowledge_sms")
+    private Boolean acknowledgeSMS = Boolean.TRUE;
 
-	/**
-	 * @param paymentSourceId
-	 *            the paymentSourceId to set
-	 */
-	public void setPaymentSourceId(long paymentSourceId) {
-		this.paymentSourceId = paymentSourceId;
-	}
+    /**
+     * @return the paymentSourceId
+     */
+    public long getPaymentSourceId() {
+        return paymentSourceId;
+    }
 
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+     * @param paymentSourceId the paymentSourceId to set
+     */
+    public void setPaymentSourceId(long paymentSourceId) {
+        this.paymentSourceId = paymentSourceId;
+    }
 
-	/**
-	 * @param name
-	 *            the name to set
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
 
+    /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Boolean getAcknowledgeSMS() {
+        return acknowledgeSMS;
+    }
+
+    public void setAcknowledgeSMS(Boolean acknowledgeSMS) {
+        this.acknowledgeSMS = acknowledgeSMS;
+    }
 }

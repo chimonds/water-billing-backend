@@ -38,6 +38,7 @@ import ke.co.suncha.simba.aqua.models.PaymentType;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,6 +107,16 @@ public class PaymentService {
 
     public PaymentService() {
 
+    }
+
+    @Transactional
+    public Double getTotalByAccountByDate(Long accountId, DateTime toDate) {
+        Double total = 0d;
+        Double dbTotal = paymentRepository.getTotalByAccountByDate(accountId, toDate.toString("yyyy-MM-dd"));
+        if (dbTotal != null) {
+            total = dbTotal;
+        }
+        return total;
     }
 
     @Transactional
@@ -290,6 +301,9 @@ public class PaymentService {
             pResult = paymentRepository.save(p);
         }
 
+        //Update balance
+        accountService.setUpdateBalance(account.getAccountId());
+        accountService.updateBalance(account.getAccountId());
         return pResult;
     }
 

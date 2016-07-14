@@ -117,6 +117,8 @@ public class StatsService {
             topView.setConsumers(consumerRepository.count());
             topView.setActive(accountRepository.countByActive(true));
             topView.setInactive(accountRepository.countByActive(false));
+            topView.setBalances(accountRepository.getAllBalances());
+            topView.setCreditBalances(accountRepository.getAllCreditBalances());
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
@@ -151,7 +153,9 @@ public class StatsService {
             DateTime fromDate = new DateTime().dayOfMonth().withMinimumValue();
             DateTime endDate = new DateTime().dayOfMonth().withMaximumValue();
             Double total = 0.0;
-            Double dbAmount = paymentRepository.getTotalAmountPaidByDate(fromDate.toString("yyyy-MM-dd"), endDate.toString("yyyy-MM-dd"));
+            //Double dbAmount = paymentRepository.getTotalAmountPaidByDate(fromDate.toString("yyyy-MM-dd"), endDate.toString("yyyy-MM-dd"));
+            Double dbAmount = paymentRepository.getTotalReceiptsByDate(fromDate.toString("yyyy-MM-dd"), endDate.toString("yyyy-MM-dd"));
+
             if (dbAmount != null) {
                 total = dbAmount;
             }
@@ -585,6 +589,14 @@ public class StatsService {
 
                 if (authManager.grant(requestObject.getToken(), "stats_paid_today").getStatusCode() == HttpStatus.OK) {
                     topView1.setPaidToday(this.topView.getPaidToday());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_credit_balances").getStatusCode() == HttpStatus.OK) {
+                    topView1.setCreditBalances(this.topView.getCreditBalances());
+                }
+
+                if (authManager.grant(requestObject.getToken(), "stats_balances").getStatusCode() == HttpStatus.OK) {
+                    topView1.setBalances(this.topView.getBalances());
                 }
 
                 if (authManager.grant(requestObject.getToken(), "stats_payments_not_allocated").getStatusCode() == HttpStatus.OK) {

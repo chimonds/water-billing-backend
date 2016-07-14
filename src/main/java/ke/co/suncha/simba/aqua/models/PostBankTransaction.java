@@ -78,6 +78,11 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar dateAssigned = Calendar.getInstance();
 
+    @Column(name = "trans_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar transDate = Calendar.getInstance();
+
+
     // a payment has a payment type
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
@@ -248,5 +253,13 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
 
     public void setPostBankFile(PostBankFile postBankFile) {
         this.postBankFile = postBankFile;
+    }
+
+    public Calendar getTransDate() {
+        return transDate;
+    }
+
+    public void setTransDate(Calendar transDate) {
+        this.transDate = transDate;
     }
 }

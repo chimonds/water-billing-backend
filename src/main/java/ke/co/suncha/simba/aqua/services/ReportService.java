@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
@@ -62,6 +63,9 @@ public class ReportService {
     private AuthManager authManager;
 
     @Autowired
+    AgeingDataRepository ageingDataRepository;
+
+    @Autowired
     private PaymentService paymentService;
 
     @Autowired
@@ -75,6 +79,12 @@ public class ReportService {
 
     @Autowired
     AccountService accountService;
+
+    @Autowired
+    PaymentTypeRepository paymentTypeRepository;
+
+    @Autowired
+    UserRepository userRepository;
 
 
     private RestResponse response;
@@ -383,7 +393,8 @@ public class ReportService {
                 report.setHeading2(this.optionService.getOption("MONTHLY_WATER_BILL:HEADER2").getValue());
                 report.setHeading3(this.optionService.getOption("MONTHLY_WATER_BILL:HEADER3").getValue());
                 report.setHeading4(this.optionService.getOption("MONTHLY_WATER_BILL:PAY_BEFORE").getValue());
-
+                report.setImageUrl(this.optionService.getOption("MONTHLY_WATER_BILL:IMAGE_URL").getValue());
+                report.setAddress(this.optionService.getOption("MONTHLY_WATER_BILL:ADDRESS").getValue());
 
                 responseObject.setMessage("Fetched data successfully");
                 responseObject.setPayload(report);
@@ -467,6 +478,63 @@ public class ReportService {
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:AGEING").getValue());
                     report.setContent(records);
+                    log.info("Sending Payload send to client...");
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(report);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
+        }
+        return response;
+    }
+
+    public RestResponse getAgeingWithDateReport(RestRequestObject<ReportsParam> requestObject) {
+        try {
+            log.info("Generating ageing report");
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_ageing");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                ReportsParam request = requestObject.getObject();
+                Map<String, String> params = new HashMap<>();
+
+                if (request.getFields() != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(request.getFields());
+                    params = mapper.readValue(jsonString, Map.class);
+                }
+
+                DateTime toDate = new DateTime();
+                String emailAddress = authManager.getEmailFromToken(requestObject.getToken());
+                Long userId = userRepository.findByEmailAddress(emailAddress).getUserId();
+                List<BigInteger> accountIds = accountRepository.findAllAccountIds();
+                if (!accountIds.isEmpty()) {
+                    for (BigInteger accountId : accountIds) {
+                        accountService.updateAccountAgeingCustom(userId, accountId.longValue(), toDate);
+                    }
+                }
+
+                List<AgeingData> ageingRecords = ageingDataRepository.findAll();
+
+                if (!ageingRecords.isEmpty()) {
+                    log.info("Packaged report data...");
+                    ReportObject report = new ReportObject();
+                    report.setDate(Calendar.getInstance());
+                    ageingRecords = null;
+                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                    report.setTitle(this.optionService.getOption("REPORT:AGEING").getValue());
+                    report.setContent(ageingRecords);
                     log.info("Sending Payload send to client...");
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(report);
@@ -577,6 +645,7 @@ public class ReportService {
                             }
                         }
                     }
+
                     log.info("Packaged report data...");
 
                     ReportObject report = new ReportObject();
@@ -755,6 +824,7 @@ public class ReportService {
                         if (include) {
 
                             totalAmountBilled += b.getAmount();
+                            totalAmountBilled += b.getMeterRent();
                             totalMeterRent += b.getMeterRent();
                             //amount billed
                             if (b.getConsumptionType().compareToIgnoreCase("Actual") == 0) {
@@ -788,30 +858,29 @@ public class ReportService {
                             }
                         }
                     }
-                    List<Payment> payments;
-                    payments = paymentRepository.findByBillingMonth(billingMonth);
 
-                    if (!payments.isEmpty()) {
-
-                        for (Payment p : payments) {
-                            //payments
-                            Boolean include = true;
-                            if (params.containsKey("zoneId")) {
-                                Object zoneId = params.get("zoneId");
-                                if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                                    include = false;
-                                }
-                            }
-
-                            if (include) {
-                                if (p.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
-                                    bsr.setCreditAdjustments(bsr.getCreditAdjustments() + Math.abs(p.getAmount()));
-                                } else if (p.getPaymentType().getName().compareToIgnoreCase("Debit") == 0) {
-                                    bsr.setDebitAdjustments(bsr.getDebitAdjustments() + Math.abs(p.getAmount()));
-                                }
-                            }
-                        }
+                    //Get
+                    Long zoneId = 0L;
+                    if (params.containsKey("zoneId")) {
+                        Object zoneObj = params.get("zoneId");
+                        zoneId = Long.valueOf(zoneObj.toString());
                     }
+
+                    PaymentType credit = paymentTypeRepository.findByName("CREDIT");
+                    PaymentType debit = paymentTypeRepository.findByName("DEBIT");
+                    Double creditAdjustmentTotal = 0d;
+                    Double debitAdjustmentTotal = 0d;
+                    DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis()).withTimeAtStartOfDay().withDayOfMonth(1);
+                    DateTime toDate = fromDate.plusMonths(1).minusMillis(1);
+
+                    if (zoneId > 0) {
+
+                    } else {
+                        creditAdjustmentTotal = paymentRepository.getTotalByPaymentTypeByDate(credit.getPaymentTypeId(), fromDate.toString("yyyy-MM-dd"), toDate.toString("yyyy-MM-dd"));
+                        debitAdjustmentTotal = paymentRepository.getTotalByPaymentTypeByDate(debit.getPaymentTypeId(), fromDate.toString("yyyy-MM-dd"), toDate.toString("yyyy-MM-dd"));
+                    }
+                    bsr.setCreditAdjustments(creditAdjustmentTotal);
+                    bsr.setDebitAdjustments(debitAdjustmentTotal);
 
                     //send report
                     ReportObject report = new ReportObject();
@@ -1252,46 +1321,73 @@ public class ReportService {
                             }
                         }
                     }
-                    List<Payment> payments;
-                    payments = paymentRepository.findByBillingMonth(billingMonth);
 
-                    if (!payments.isEmpty()) {
 
-                        for (Payment p : payments) {
-                            //payments
-                            Boolean include = true;
-                            if (params.containsKey("zoneId")) {
-                                Object zoneId = params.get("zoneId");
-                                if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                                    include = false;
-                                }
-                            }
+//                    List<Payment> payments;
+//                    payments = paymentRepository.findByBillingMonth(billingMonth);
+//                    if (!payments.isEmpty()) {
+//
+//                        for (Payment p : payments) {
+//                            //payments
+//                            Boolean include = true;
+//                            if (params.containsKey("zoneId")) {
+//                                Object zoneId = params.get("zoneId");
+//                                if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
+//                                    include = false;
+//                                }
+//                            }
+//
+//                            if (include) {
+//                                if (p.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
+//                                    //bsr.setCreditAdjustments(bsr.getCreditAdjustments() + Math.abs(p.getAmount()));
+//                                } else if (p.getPaymentType().getName().compareToIgnoreCase("Debit") == 0) {
+//                                    // bsr.setDebitAdjustments(bsr.getDebitAdjustments() + Math.abs(p.getAmount()));
+//                                } else {
+//                                    //total payments
+//                                    bsr.setTotalPayments(bsr.getTotalPayments() + p.getAmount());
+//                                }
+//                            }
+//                        }
+//                    }
 
-                            if (include) {
-                                if (p.getPaymentType().getName().compareToIgnoreCase("Credit") == 0) {
-                                    bsr.setCreditAdjustments(bsr.getCreditAdjustments() + Math.abs(p.getAmount()));
-                                } else if (p.getPaymentType().getName().compareToIgnoreCase("Debit") == 0) {
-                                    bsr.setDebitAdjustments(bsr.getDebitAdjustments() + Math.abs(p.getAmount()));
-                                } else {
-                                    //total payments
-                                    bsr.setTotalPayments(bsr.getTotalPayments() + p.getAmount());
-                                }
-                            }
-                        }
+
+                    Long zoneId = 0L;
+                    if (params.containsKey("zoneId")) {
+                        Object zoneObj = params.get("zoneId");
+                        zoneId = Long.valueOf(zoneObj.toString());
                     }
 
+                    PaymentType credit = paymentTypeRepository.findByName("CREDIT");
+                    PaymentType debit = paymentTypeRepository.findByName("DEBIT");
+                    Double creditAdjustmentTotal = 0d;
+                    Double debitAdjustmentTotal = 0d;
+                    DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis()).withTimeAtStartOfDay().dayOfMonth().withMinimumValue();
+                    DateTime toDate = fromDate.dayOfMonth().withMaximumValue();
+
+                    if (zoneId > 0) {
+
+                    } else {
+                        creditAdjustmentTotal = paymentRepository.getTotalByPaymentTypeByDate(credit.getPaymentTypeId(), fromDate.toString("yyyy-MM-dd"), toDate.toString("yyyy-MM-dd"));
+                        debitAdjustmentTotal = paymentRepository.getTotalByPaymentTypeByDate(debit.getPaymentTypeId(), fromDate.toString("yyyy-MM-dd"), toDate.toString("yyyy-MM-dd"));
+                    }
+                    bsr.setCreditAdjustments(creditAdjustmentTotal);
+                    bsr.setDebitAdjustments(debitAdjustmentTotal);
+
+                    //Get all payments for the month
+                    Double totalReceipts = paymentRepository.getTotalReceiptsByDate(fromDate.toString("yyyy-MM-dd"), toDate.toString("yyyy-MM-dd"));
+                    bsr.setTotalPayments(totalReceipts);
+
+
                     //bsr.set
+                    //Get active and inactive based on the last date of billing month
+                    bsr.setActiveAccounts(accountRepository.getCountByCreatedOn(toDate.toString("yyyy-MM-dd"), 1).intValue());
+                    bsr.setInactiveAccounts(accountRepository.getCountByCreatedOn(toDate.toString("yyyy-MM-dd"), 0).intValue());
 
-                    bsr.setActiveAccounts(Integer.valueOf(accountRepository.countByActive(true).toString()));
-                    bsr.setInactiveAccounts(Integer.valueOf(accountRepository.countByActive(false).toString()));
+                    bsr.setBalancesActiveAccounts(accountRepository.getTotalBalanceByCreatedOn(toDate.toString("yyyy-MM-dd"), 1));
+                    bsr.setBalancesInactiveAccounts(accountRepository.getTotalBalanceByCreatedOn(toDate.toString("yyyy-MM-dd"), 0));
 
-                    bsr.setBalancesActiveAccounts(accountRepository.getOutstandingBalancesByStatus(1));
-                    bsr.setBalancesInactiveAccounts(accountRepository.getOutstandingBalancesByStatus(0));
-
-
-                    bsr.setActiveMeteredAccounts(accountRepository.getActiveMeteredAccounts());
-                    bsr.setActiveUnMeteredAccounts(accountRepository.getActiveUnMeteredAccounts());
-
+                    bsr.setActiveMeteredAccounts(accountRepository.getActiveMeteredAccounts(toDate.toString("yyyy-MM-dd")));
+                    bsr.setActiveUnMeteredAccounts(accountRepository.getActiveUnMeteredAccounts(toDate.toString("yyyy-MM-dd")));
 
                     //send report
                     ReportObject report = new ReportObject();

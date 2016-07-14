@@ -48,7 +48,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @Id
     @Column(name = "account_id", nullable = false)
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long accountId;
+    private Long accountId;
 
     @NotNull
     @Column(name = "balance_bf")
@@ -323,7 +323,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
     /**
      * @return the accountId
      */
-    public long getAccountId() {
+    public Long getAccountId() {
         return accountId;
     }
 

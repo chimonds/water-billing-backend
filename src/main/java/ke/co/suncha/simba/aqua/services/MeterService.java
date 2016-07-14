@@ -89,6 +89,9 @@ public class MeterService {
     @Autowired
     private AuditService auditService;
 
+    @Autowired
+    BillService billService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -262,6 +265,10 @@ public class MeterService {
                             meterAllocation.setAllocationType("Allocated");
                             meterAllocation.setReading(m.getInitialReading());
                             meterAllocationRepository.save(meterAllocation);
+
+                            //save meter as new > this will
+                            m.setIsNew(Boolean.TRUE);
+                            meterRepository.save(m);
 
                             responseObject.setMessage("Meter  allocation updated successfully");
                             responseObject.setPayload(m);

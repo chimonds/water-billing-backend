@@ -13,6 +13,9 @@ public class TopView {
     private Long active = 0L;
     private Long inactive = 0L;
     private String smsBalance = "";
+    private Double balances = 0d;
+    private Double creditBalances = 0d;
+
 
     public Double getPaidToday() {
         return paidToday;
@@ -84,6 +87,22 @@ public class TopView {
 
     public void setSmsBalance(String smsBalance) {
         this.smsBalance = smsBalance;
+    }
+
+    public Double getBalances() {
+        return balances;
+    }
+
+    public void setBalances(Double balances) {
+        this.balances = balances;
+    }
+
+    public Double getCreditBalances() {
+        return creditBalances;
+    }
+
+    public void setCreditBalances(Double creditBalances) {
+        this.creditBalances = creditBalances;
     }
 
     @Override

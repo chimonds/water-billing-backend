@@ -13,4 +13,6 @@ public interface AgeingRecordRepository extends PagingAndSortingRepository<Agein
     List<AgeingRecord> findAll();
 
     AgeingRecord findByAccNo(String accNo);
+
+    //AgeingRecord findByAccountId(Long accountId);
 }

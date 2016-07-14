@@ -23,30 +23,16 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -92,6 +78,9 @@ public class Meter extends SimbaBaseEntity implements Serializable {
 
     @Transient
     private Boolean assigned = false;
+
+    @Column(name = "is_new")
+    private Boolean isNew = Boolean.FALSE;
 
     @Transient
     private String accountId = "Not Available";
@@ -270,6 +259,14 @@ public class Meter extends SimbaBaseEntity implements Serializable {
 
     public void setCanBeAllocated(Boolean canBeAllocated) {
         this.canBeAllocated = canBeAllocated;
+    }
+
+    public Boolean getIsNew() {
+        return isNew;
+    }
+
+    public void setIsNew(Boolean isNew) {
+        this.isNew = isNew;
     }
 
     @Override
