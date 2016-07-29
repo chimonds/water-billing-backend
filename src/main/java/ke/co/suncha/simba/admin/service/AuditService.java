@@ -4,8 +4,8 @@ import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.repositories.AuditRecordRepository;
 import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
-import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +40,12 @@ public class AuditService {
 
     public void log(AuditOperation auditOperation, AuditRecord auditRecord) {
         try {
-            //log.info("Adding audit:"+ auditRecord.ge);
-            if (auditOperation != AuditOperation.ACCESSED && auditOperation!= AuditOperation.VIEWED) {
-                auditRecord.setAuthor(currentUserService.getCurrent().getEmailAddress());
-                auditRecord.setOperation(auditOperation.name());
-                auditRecordRepository.save(auditRecord);
+            if (!StringUtils.containsIgnoreCase("DASHBOARD_VIEW", auditRecord.getNotes())) {
+                if (auditOperation != AuditOperation.ACCESSED && auditOperation != AuditOperation.VIEWED) {
+                    auditRecord.setAuthor(currentUserService.getCurrent().getEmailAddress());
+                    auditRecord.setOperation(auditOperation.name());
+                    auditRecordRepository.save(auditRecord);
+                }
             }
         } catch (Exception ex) {
             log.error(ex.getMessage());

@@ -624,7 +624,7 @@ public class SMSService {
                 return;
             }
 
-            log.info("Processing:" + smsList.size() + " SMSs");
+            //log.info("Processing:" + smsList.size() + " SMSs");
             String sms_username = optionService.getOption("SMS_USERNAME").getValue();
             String sms_api_key = optionService.getOption("SMS_API_KEY").getValue();
             String sms_sender_id = optionService.getOption("SMS_SENDER_ID").getValue();

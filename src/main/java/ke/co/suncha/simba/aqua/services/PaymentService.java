@@ -31,10 +31,7 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.Payment;
-import ke.co.suncha.simba.aqua.models.PaymentSource;
-import ke.co.suncha.simba.aqua.models.PaymentType;
+import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
@@ -83,6 +80,8 @@ public class PaymentService {
     @Autowired
     AccountService accountService;
 
+    @Autowired
+    AccountsUpdateRepository accountsUpdateRepository;
 
     @Autowired
     private AuthManager authManager;
@@ -170,7 +169,11 @@ public class PaymentService {
         }
 
         PaymentType requestPaymentType = paymentTypeRepository.findOne(payment.getPaymentType().getPaymentTypeId());
-        if (requestPaymentType.getName().compareToIgnoreCase("Smart Receipt") == 0) {
+        log.info("*******Adding Receipt************");
+        log.info("Payment Type:" + requestPaymentType.getName());
+        log.info("Payment Source:" + payment.getPaymentSource().getName());
+
+        if (StringUtils.equalsIgnoreCase(requestPaymentType.getName(), "Smart Receipt")) {
 
             UUID uuid = UUID.randomUUID();
             String randomUUIDString = uuid.toString();
@@ -302,8 +305,12 @@ public class PaymentService {
         }
 
         //Update balance
-        accountService.setUpdateBalance(account.getAccountId());
-        accountService.updateBalance(account.getAccountId());
+        //accountService.setUpdateBalance(account.getAccountId());
+        //accountService.updateBalance(account.getAccountId());
+
+        AccountUpdate accountUpdate = new AccountUpdate();
+        accountUpdate.setAccountId(account.getAccountId());
+        accountsUpdateRepository.save(accountUpdate);
         return pResult;
     }
 
@@ -425,7 +432,7 @@ public class PaymentService {
                 payment.setPaymentSource(paymentSource);
                 Payment created = this.create(payment, accountId);
 
-                accountService.setUpdateBalance(accountId);
+                accountService.setUpdateBalance(account.getAccountId());
                 accountService.updateBalance(accountId);
 
                 //
@@ -705,11 +712,6 @@ public class PaymentService {
                 paymentRepository.save(payment2);
 
                 //calculate balances for both accounts
-
-                accountService.setUpdateBalance(accountId);
-                accountService.setUpdateBalance(account.getAccountId());
-
-
                 //Account acc = accountRepository.findOne(accountId);
                 //acc.setOutstandingBalance(accountService.getAccountBalance(acc.getAccountId()));
                 //accountRepository.save(acc);
@@ -729,6 +731,10 @@ public class PaymentService {
 //                auditRecord.setNotes("DELETED BILL FOR:" + bill.getAccount().getAccNo());
 //                auditService.log(AuditOperation.DELETED, auditRecord);
                 //End - audit trail
+
+                AccountUpdate accountUpdate = new AccountUpdate();
+                accountUpdate.setAccountId(account.getAccountId());
+                accountsUpdateRepository.save(accountUpdate);
 
 
                 responseObject.setMessage("Payment transferred successfully.");

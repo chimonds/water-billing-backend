@@ -25,6 +25,9 @@ package ke.co.suncha.simba.aqua.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.account.OnStatus;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -61,6 +64,9 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @Column(name = "outstandingBalance")
     private Double outstandingBalance = (double) 0;
 
+    @Column(name = "on_status")
+    private Integer onStatus = OnStatus.REGISTERED;
+
     @NotNull
     @Column(name = "acc_no", unique = true, length = 20)
     private String accNo;
@@ -75,7 +81,10 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private Integer averageConsumption = 0;
 
     @Column(name = "cut_off")
-    private Boolean active = true;
+    private Boolean active = Boolean.FALSE;
+
+    @Transient
+    private Boolean cutOff;
 
     @Transient
     private Boolean metered = false;
@@ -97,7 +106,6 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "consumer_id")
     private Consumer consumer;
-
 
     // an account has a location
     @ManyToOne(fetch = FetchType.EAGER)
@@ -136,6 +144,25 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AccountStatusHistory> accountStatusHistoryList;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "date_turned_on")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime dateTurnedOn = new DateTime();
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "date_turned_off")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime dateTurnedOff = new DateTime();
+
+    @Column(name = "notes")
+    private String notes;
+
+    @Column(name = "turned_on_by")
+    private String turnedOnBy;
+
+    @Column(name = "turned_off_by")
+    private String turnedOffBy;
 
     public List<AccountStatusHistory> getAccountStatusHistoryList() {
         return accountStatusHistoryList;
@@ -414,6 +441,63 @@ public class Account extends SimbaBaseEntity implements Serializable {
 
     public void setUpdateBalance(Boolean updateBalance) {
         this.updateBalance = updateBalance;
+    }
+
+    public Integer getOnStatus() {
+        return onStatus;
+    }
+
+    public void setOnStatus(Integer onStatus) {
+        this.onStatus = onStatus;
+    }
+
+    public Boolean getIsCutOff() {
+        if (active) {
+            cutOff = Boolean.FALSE;
+        } else {
+            cutOff = Boolean.TRUE;
+        }
+        return cutOff;
+    }
+
+    public DateTime getDateTurnedOn() {
+        return dateTurnedOn;
+    }
+
+    public void setDateTurnedOn(DateTime dateTurnedOn) {
+        this.dateTurnedOn = dateTurnedOn;
+    }
+
+    public DateTime getDateTurnedOff() {
+        return dateTurnedOff;
+    }
+
+    public void setDateTurnedOff(DateTime dateTurnedOff) {
+        this.dateTurnedOff = dateTurnedOff;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public String getTurnedOnBy() {
+        return turnedOnBy;
+    }
+
+    public void setTurnedOnBy(String turnedOnBy) {
+        this.turnedOnBy = turnedOnBy;
+    }
+
+    public String getTurnedOffBy() {
+        return turnedOffBy;
+    }
+
+    public void setTurnedOffBy(String turnedOffBy) {
+        this.turnedOffBy = turnedOffBy;
     }
 
     @Override

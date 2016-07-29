@@ -521,7 +521,8 @@ public class ReportService {
                 List<BigInteger> accountIds = accountRepository.findAllAccountIds();
                 if (!accountIds.isEmpty()) {
                     for (BigInteger accountId : accountIds) {
-                        accountService.updateAccountAgeingCustom(userId, accountId.longValue(), toDate);
+//                        accountService.updateAccountAgeingCustom(userId, accountId.longValue(), toDate);
+                        accountService.updateAccountAgeingCustom( accountId.longValue(), toDate);
                     }
                 }
 

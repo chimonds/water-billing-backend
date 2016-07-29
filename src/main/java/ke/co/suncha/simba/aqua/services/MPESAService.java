@@ -1,7 +1,6 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ke.co.suncha.simba.admin.models.SimbaOption;
 import ke.co.suncha.simba.admin.repositories.SimbaOptionRepository;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
@@ -9,6 +8,7 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
+import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MPESARequest;
@@ -72,6 +72,9 @@ public class MPESAService {
     CounterService counterService;
 
     @Autowired
+    SimbaOptionService optionService;
+
+    @Autowired
     GaugeService gaugeService;
 
     @Autowired
@@ -90,18 +93,6 @@ public class MPESAService {
 
     private RestResponseObject responseObject = new RestResponseObject();
 
-    @Transactional
-    public SimbaOption getOption(String name) {
-        SimbaOption option = optionRepository.findByName(name);
-        if (option == null) {
-            option = new SimbaOption();
-            option.setName(name);
-            option.setValue(name);
-            option = optionRepository.save(option);
-        }
-        return option;
-    }
-
     @Scheduled(fixedDelay = 5000)
     public void pollMPESATransactions() {
         pollTransactions();
@@ -113,7 +104,7 @@ public class MPESAService {
         try {
             Boolean pollMpesaTransactions = Boolean.FALSE;
             try {
-                String b = getOption("MPESA_ENABLE").getValue();
+                String b = optionService.getOption("MPESA_ENABLE").getValue();
                 pollMpesaTransactions = Boolean.parseBoolean(b);
             } catch (Exception ex) {
                 log.error(ex.getMessage());
@@ -124,17 +115,16 @@ public class MPESAService {
 
             RestTemplate restTemplate = new RestTemplate();
             MPESARequest mpesaRequest = new MPESARequest();
-            mpesaRequest.setPay_bill(getOption("MPESA_PAYBILL").getValue());
-            mpesaRequest.setKey(getOption("MPESA_KEY").getValue());
+            mpesaRequest.setPay_bill(optionService.getOption("MPESA_PAYBILL").getValue());
+            mpesaRequest.setKey(optionService.getOption("MPESA_KEY").getValue());
 
-            String url = getOption("MPESA_TRANSACTIONS_ENDPOINT").getValue();
+            String url = optionService.getOption("MPESA_TRANSACTIONS_ENDPOINT").getValue();
             String jsonResponse = restTemplate.postForObject(url, mpesaRequest, String.class);
 
             //2. Convert JSON to Java object
             ObjectMapper mapper = new ObjectMapper();
             MPESAResponse mpesaResponse = mapper.readValue(jsonResponse, MPESAResponse.class);
 
-            //log.info("MPESA:" + mpesaResponse.getMessage());
             if (!mpesaResponse.getError()) {
                 if (!mpesaResponse.getPayload().isEmpty()) {
                     for (MPESATransaction mpesaTransaction : mpesaResponse.getPayload()) {
@@ -148,7 +138,7 @@ public class MPESAService {
                                 //mbassadorService.bus.publishAsync(mpesaTransaction);
                             }
 
-                            url = getOption("MPESA_UPDATE_TRANSACTION_ENDPOINT").getValue();
+                            url = optionService.getOption("MPESA_UPDATE_TRANSACTION_ENDPOINT").getValue();
                             mpesaRequest.setRecord_id(mpesaTransaction.getId().toString());
                             jsonResponse = restTemplate.postForObject(url, mpesaRequest, String.class);
                             mpesaResponse = mapper.readValue(jsonResponse, MPESAResponse.class);
@@ -197,9 +187,6 @@ public class MPESAService {
             if (mpesaTransaction.getAssigned()) {
                 return;
             }
-
-            log.info("Assigning MPESA transaction " + mpesaTransaction.getMpesacode());
-
             try {
 
                 if (mpesaTransaction.getMpesaacc() == null) {
@@ -240,13 +227,15 @@ public class MPESAService {
 
                     PaymentType paymentType = null;
 
-                    Boolean smartReceipting = Boolean.parseBoolean(getOption("AUTO_SMART_RECEIPTING").getValue());
+                    Boolean smartReceipting = Boolean.parseBoolean(optionService.getOption("AUTO_SMART_RECEIPTING").getValue());
 
                     if (smartReceipting) {
                         paymentType = paymentTypeRepository.findByName("Smart Receipt");
                     } else {
                         paymentType = paymentTypeRepository.findByName("Water Sale");
                     }
+
+                    log.info("SMART RECEIPTING ON MPESA:"+ smartReceipting);
 
                     if (paymentType != null) {
                         payment.setPaymentType(paymentType);

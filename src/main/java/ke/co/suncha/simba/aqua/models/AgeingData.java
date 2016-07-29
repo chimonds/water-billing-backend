@@ -10,82 +10,109 @@ import java.io.Serializable;
  * Created by maitha.manyala on 7/12/16.
  */
 @Entity
-@Table(name = "ageing_data", uniqueConstraints = @UniqueConstraint(columnNames = {"accountId", "userId"}))
+@Table(name = "ageing_data")
+//uniqueConstraints = @UniqueConstraint(columnNames = {"accountId", "userId"})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class AgeingData implements Serializable {
     @Id
     @Column(name = "record_id", nullable = false)
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long ageingDataId;
-    private Double above0 = 0d;
-    private Double above30 = 0d;
-    private Double above60 = 0d;
-    private Double above90 = 0d;
-    private Double above120 = 0d;
-    private Double above180 = 0d;
+    private Long ageingDataId;
+
+    @Column(name = "balance_today")
+    private Double balanceToday = 0d;
+
+    @Column(name = "balance_one_month_ago")
+    private Double balanceOneMonthsAgo = 0d;
+
+    @Column(name = "balance_two_months_ago")
+    private Double balanceTwoMonthsAgo = 0d;
+
+    @Column(name = "balance_three_months_ago")
+    private Double balanceThreeMonthsAgo = 0d;
+
+    @Column(name = "balance_four_months_ago")
+    private Double balanceFourMonthsAgo = 0d;
+
+    @Column(name = "balance_six_months_ago")
+    private Double balanceSixMonthsAgo = 0d;
+
+    @Column(name = "balance")
     private Double balance = 0d;
+
+    @Column(name = "cut_off")
     private String cutOff;
+
+    @Column(name = "name")
     private String name;
+
+    @Column(name = "zone")
     private String zone;
+
+    @Column(name = "acc_no")
     private String accNo;
+
+    @Column(name = "account_id")
     private Long accountId;
+
+    @Column(name = "user_id")
     private Long userId;
 
-    public long getAgeingDataId() {
+    public Long getAgeingDataId() {
         return ageingDataId;
     }
 
-    public void setAgeingDataId(long ageingDataId) {
+    public void setAgeingDataId(Long ageingDataId) {
         this.ageingDataId = ageingDataId;
     }
 
-    public Double getAbove0() {
-        return above0;
+    public Double getBalanceToday() {
+        return balanceToday;
     }
 
-    public void setAbove0(Double above0) {
-        this.above0 = above0;
+    public void setBalanceToday(Double balanceToday) {
+        this.balanceToday = balanceToday;
     }
 
-    public Double getAbove30() {
-        return above30;
+    public Double getBalanceOneMonthsAgo() {
+        return balanceOneMonthsAgo;
     }
 
-    public void setAbove30(Double above30) {
-        this.above30 = above30;
+    public void setBalanceOneMonthsAgo(Double balanceOneMonthsAgo) {
+        this.balanceOneMonthsAgo = balanceOneMonthsAgo;
     }
 
-    public Double getAbove60() {
-        return above60;
+    public Double getBalanceTwoMonthsAgo() {
+        return balanceTwoMonthsAgo;
     }
 
-    public void setAbove60(Double above60) {
-        this.above60 = above60;
+    public void setBalanceTwoMonthsAgo(Double balanceTwoMonthsAgo) {
+        this.balanceTwoMonthsAgo = balanceTwoMonthsAgo;
     }
 
-    public Double getAbove90() {
-        return above90;
+    public Double getBalanceThreeMonthsAgo() {
+        return balanceThreeMonthsAgo;
     }
 
-    public void setAbove90(Double above90) {
-        this.above90 = above90;
+    public void setBalanceThreeMonthsAgo(Double balanceThreeMonthsAgo) {
+        this.balanceThreeMonthsAgo = balanceThreeMonthsAgo;
     }
 
-    public Double getAbove120() {
-        return above120;
+    public Double getBalanceFourMonthsAgo() {
+        return balanceFourMonthsAgo;
     }
 
-    public void setAbove120(Double above120) {
-        this.above120 = above120;
+    public void setBalanceFourMonthsAgo(Double balanceFourMonthsAgo) {
+        this.balanceFourMonthsAgo = balanceFourMonthsAgo;
     }
 
-    public Double getAbove180() {
-        return above180;
+    public Double getBalanceSixMonthsAgo() {
+        return balanceSixMonthsAgo;
     }
 
-    public void setAbove180(Double above180) {
-        this.above180 = above180;
+    public void setBalanceSixMonthsAgo(Double balanceSixMonthsAgo) {
+        this.balanceSixMonthsAgo = balanceSixMonthsAgo;
     }
 
     public Double getBalance() {

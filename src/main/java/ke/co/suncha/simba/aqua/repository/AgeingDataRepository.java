@@ -14,5 +14,8 @@ public interface AgeingDataRepository extends PagingAndSortingRepository<AgeingD
     @Query(value = "SELECT record_id FROM ageing_data WHERE account_id=:accountId AND user_id=:userId", nativeQuery = true)
     Long getRecordId(@Param("accountId") Long accountId, @Param("userId") Long userId);
 
+    @Query(value = "SELECT record_id FROM ageing_data WHERE account_id=:accountId", nativeQuery = true)
+    Long getRecordId(@Param("accountId") Long accountId);
+
     List<AgeingData> findAll();
 }

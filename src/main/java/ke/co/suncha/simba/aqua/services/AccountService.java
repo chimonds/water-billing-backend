@@ -33,6 +33,9 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.aqua.account.OnStatus;
+import ke.co.suncha.simba.aqua.account.scheme.Scheme;
+import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.AccountRecord;
 import ke.co.suncha.simba.aqua.reports.BalancesReport;
@@ -60,6 +63,7 @@ import java.util.*;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 @Service
+@Transactional
 public class AccountService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -112,6 +116,12 @@ public class AccountService {
     @Autowired
     AgeingDataRepository ageingDataRepository;
 
+    @Autowired
+    AccountsUpdateRepository accountsUpdateRepository;
+
+    @Autowired
+    SchemeRepository schemeRepository;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -120,124 +130,129 @@ public class AccountService {
 
     @Transactional
     public Account updateBalance(Long accountId) {
-
         // update balances
         Account account = accountRepository.findOne(accountId);
 
-        if (account == null) {
-            return null;
-        }
-
-        Boolean updateBalance = true;
-
         try {
-            if (account.getUpdateBalance() != null) {
-                updateBalance = account.getUpdateBalance();
+            if (account == null) {
+                return null;
             }
-        } catch (Exception ex) {
 
-        }
+            Boolean updateBalance = true;
 
-        if (!updateBalance) {
-            return null;
-        }
+            try {
+                if (account.getUpdateBalance() != null) {
+                    updateBalance = account.getUpdateBalance();
+                }
+            } catch (Exception ex) {
 
-        if (!account.isMetered()) {
-            account.setMeter(null);
-        }
-        Double balance = 0d;
+            }
 
-        // add balance b/f
-        balance += account.getBalanceBroughtForward();
+            if (!updateBalance) {
+                return null;
+            }
 
-        Double waterSaleTotal = balance;
-        Double meterRentTotal = 0d;
-        Double penaltiesTotal = 0d;
+            if (!account.isMetered()) {
+                account.setMeter(null);
+            }
+            Double balance = 0d;
 
-        List<Bill> bills = account.getBills();
-        if (bills != null) if (!bills.isEmpty()) {
-            {
-                for (Bill bill : bills) {
-                    balance += bill.getAmount();
-                    balance += bill.getMeterRent();
+            // add balance b/f
+            balance += account.getBalanceBroughtForward();
 
-                    //granular balances
-                    waterSaleTotal += bill.getAmount();
-                    meterRentTotal += bill.getMeterRent();
+            Double waterSaleTotal = 0d;
+            waterSaleTotal += balance;
 
-                    if (bill.getBillItems() != null) {
-                        // get bill items
-                        List<BillItem> billItems = bill.getBillItems();
-                        if (!billItems.isEmpty()) {
-                            for (BillItem billItem : billItems) {
-                                balance += billItem.getAmount();
-                                penaltiesTotal += billItem.getAmount();
+            Double meterRentTotal = 0d;
+            Double penaltiesTotal = 0d;
+
+            List<Bill> bills = account.getBills();
+            if (bills != null) if (!bills.isEmpty()) {
+                {
+                    for (Bill bill : bills) {
+                        balance += bill.getAmount();
+                        balance += bill.getMeterRent();
+
+                        //granular balances
+                        waterSaleTotal += bill.getAmount();
+                        meterRentTotal += bill.getMeterRent();
+
+                        if (bill.getBillItems() != null) {
+                            // get bill items
+                            List<BillItem> billItems = bill.getBillItems();
+                            if (!billItems.isEmpty()) {
+                                for (BillItem billItem : billItems) {
+                                    balance += billItem.getAmount();
+                                    penaltiesTotal += billItem.getAmount();
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        Double totalPayments = 0d;
-        // get payments
-        List<Payment> payments = account.getPayments();
-        if (payments != null) {
-            if (!payments.isEmpty()) {
-                for (Payment p : payments) {
-                    balance = (balance - p.getAmount());
-                    totalPayments += p.getAmount();
+            Double totalPayments = 0d;
+            // get payments
+            List<Payment> payments = account.getPayments();
+            if (payments != null) {
+                if (!payments.isEmpty()) {
+                    for (Payment p : payments) {
+                        balance = (balance - p.getAmount());
+                        totalPayments += p.getAmount();
+                    }
                 }
             }
-        }
 
-        account.setOutstandingBalance(balance);
+            account.setOutstandingBalance(balance);
 
-        Double moneyToAllocate = 0d;
-        //if balance
-        if (balance == 0) {
-            account.setOutstandingBalance(0d);
-            account.setPenaltiesBalance(0d);
-            account.setWaterSaleBalance(0d);
-            account.setMeterRentBalance(0d);
-        } else if (balance > 0) {
-            account.setPenaltiesBalance(penaltiesTotal);
-            account.setWaterSaleBalance(waterSaleTotal);
-            account.setMeterRentBalance(meterRentTotal);
-
-            //Penalties
-            moneyToAllocate = totalPayments - penaltiesTotal;
-            if (moneyToAllocate >= 0) {
+            Double moneyToAllocate = 0d;
+            //if balance
+            if (balance == 0) {
+                account.setOutstandingBalance(0d);
                 account.setPenaltiesBalance(0d);
-            } else {
-                account.setPenaltiesBalance(Math.abs(moneyToAllocate));
-            }
+                account.setWaterSaleBalance(0d);
+                account.setMeterRentBalance(0d);
+            } else if (balance > 0) {
+                account.setPenaltiesBalance(penaltiesTotal);
+                account.setWaterSaleBalance(waterSaleTotal);
+                account.setMeterRentBalance(meterRentTotal);
 
-            //Meter Rent
-            if (moneyToAllocate > 0) {
-                moneyToAllocate = moneyToAllocate - meterRentTotal;
+                //Penalties
+                moneyToAllocate = totalPayments - penaltiesTotal;
                 if (moneyToAllocate >= 0) {
-                    account.setMeterRentBalance(0d);
+                    account.setPenaltiesBalance(0d);
                 } else {
-                    account.setMeterRentBalance(Math.abs(moneyToAllocate));
+                    account.setPenaltiesBalance(Math.abs(moneyToAllocate));
+                }
+
+                //Meter Rent
+                if (moneyToAllocate > 0) {
+                    moneyToAllocate = moneyToAllocate - meterRentTotal;
+                    if (moneyToAllocate >= 0) {
+                        account.setMeterRentBalance(0d);
+                    } else {
+                        account.setMeterRentBalance(Math.abs(moneyToAllocate));
+                    }
+                }
+
+                //Water Sale
+                if (moneyToAllocate > 0) {
+                    moneyToAllocate = moneyToAllocate - waterSaleTotal;
+                    if (moneyToAllocate >= 0) {
+                        account.setWaterSaleBalance(0d);
+                    } else {
+                        account.setWaterSaleBalance(Math.abs(moneyToAllocate));
+                    }
                 }
             }
+            account.setUpdateBalance(Boolean.FALSE);
+            account = accountRepository.save(account);
 
-            //Water Sale
-            if (moneyToAllocate > 0) {
-                moneyToAllocate = moneyToAllocate - waterSaleTotal;
-                if (moneyToAllocate >= 0) {
-                    account.setWaterSaleBalance(0d);
-                } else {
-                    account.setWaterSaleBalance(Math.abs(moneyToAllocate));
-                }
-            }
+            //Publish message to update ageing report for the account
+            mbassadorService.bus.publishAsync(account.getAccNo());
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
         }
-        account.setUpdateBalance(false);
-        account = accountRepository.save(account);
-
-        //Publish message to update ageing report for the account
-        mbassadorService.bus.publishAsync(account.getAccNo());
-
         return account;
     }
 
@@ -563,7 +578,7 @@ public class AccountService {
         }
 
 
-        ageingRecord.setAbove0(balance0days);
+        ageingRecord.setAbove0(acc.getOutstandingBalance());
         ageingRecord.setAbove30(balance30days);
         ageingRecord.setAbove60(balance60days);
         ageingRecord.setAbove90(balance90days);
@@ -584,20 +599,17 @@ public class AccountService {
     }
 
     @Transactional
-    public void updateAccountAgeingCustom(Long userId, Long accountId, DateTime toDate) {
+    public void updateAccountAgeingCustom(Long accountId, DateTime toDate) {
+        Account account = accountRepository.findOne(accountId);
+        String accNo = account.getAccNo();
+        String consumerName = account.getAccName();
+        Long consumerId = account.getConsumer().getConsumerId();
 
-        //Get account customer id
-        Long consumerId = accountRepository.getCustomerId(accountId);
+        // accountRepository.getAccountNo(accountId);
+        // consumerRepository.getConsumerName(consumerId).toUpperCase();
+        //accountRepository.getCustomerId(accountId);
 
-        //Get customer name based on customer id
-        String consumerName = consumerRepository.getConsumerName(consumerId).toUpperCase();
-
-
-        //Get account number
-        String accNo = accountRepository.getAccountNo(accountId);
-
-
-        DateTime today = toDate.hourOfDay().withMaximumValue();
+        DateTime today = toDate.withMonthOfYear(6).dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
         DateTime sixMonthsAgo = today.minusMonths(6);
         DateTime fourMonthsAgo = today.minusMonths(4);
         DateTime threeMonthsAgo = today.minusMonths(3);
@@ -613,19 +625,29 @@ public class AccountService {
         Double balanceOneMonthsAgo = 0d;
         Double balanceToday = 0d;
 
+        Double balanceBroughtForward = account.getBalanceBroughtForward();
+
         //Get all payments unit today (Today is supplied by the user)
-        Double totalPayments = paymentService.getTotalByAccountByDate(accountId, today);
+        //TODO;
+        Double totalPayments = paymentService.getTotalByAccountByDate(accountId, new DateTime());
 
         //get bills above 180 days
-        Double billsSixMonthsAgo = billService.getAccountBillsByDate(accountId, sixMonthsAgo);
+        Double billsSixMonthsAgo = billService.getAccountBillsByDate(accountId, sixMonthsAgo) + balanceBroughtForward;
+        Double billsSixMonthsAgoX = billsSixMonthsAgo;
+
         if (totalPayments >= billsSixMonthsAgo) {
+            billsNotPaid = 0d;
             balanceSixMonthsAgo = 0d;
             totalPayments = totalPayments - billsSixMonthsAgo;
-        } else if (totalPayments > 0) {
+        }
+        //payments less than bills but not zero
+        else if (totalPayments < billsSixMonthsAgo && totalPayments > 0) {
             billsNotPaid = billsSixMonthsAgo - totalPayments;
             balanceSixMonthsAgo = billsSixMonthsAgo - totalPayments;
             totalPayments = 0d;
-        } else {
+        }
+        //No payments done
+        else {
             //Nothing paid
             billsNotPaid = billsSixMonthsAgo;
             balanceSixMonthsAgo = billsSixMonthsAgo;
@@ -633,100 +655,127 @@ public class AccountService {
         }
 
         //Four months ago
-        Double billsFourMonthsAgo = billService.getAccountBillsByDate(accountId, fourMonthsAgo);
-        if (billsFourMonthsAgo > billsSixMonthsAgo) {
-            billsFourMonthsAgo = (billsFourMonthsAgo - billsSixMonthsAgo) + billsNotPaid;
+        Double billsFourMonthsAgo = billService.getAccountBillsByDate(accountId, fourMonthsAgo) + balanceBroughtForward;
+        Double billsFourMonthsAgoX = billsFourMonthsAgo;
+
+        if (billsFourMonthsAgo > billsSixMonthsAgoX) {
+            billsFourMonthsAgo = billsFourMonthsAgo - billsSixMonthsAgoX;
+            balanceFourMonthsAgo = billsNotPaid;
+
+            if (totalPayments >= billsFourMonthsAgo) {
+                billsNotPaid = 0d;
+                balanceFourMonthsAgo = 0d;
+                totalPayments = totalPayments - billsFourMonthsAgo;
+            } else if (totalPayments < billsFourMonthsAgo && totalPayments > 0) {
+                billsNotPaid = billsFourMonthsAgo - totalPayments;
+                balanceFourMonthsAgo = billsFourMonthsAgo - totalPayments;
+                totalPayments = 0d;
+            } else {
+                //Nothing paid
+                billsNotPaid = billsFourMonthsAgo;
+                balanceFourMonthsAgo = billsFourMonthsAgo;
+                totalPayments = 0d;
+            }
         }
 
-        if (totalPayments >= billsFourMonthsAgo) {
-            balanceFourMonthsAgo = 0d;
-            totalPayments = totalPayments - billsFourMonthsAgo;
-        } else if (totalPayments > 0) {
-            billsNotPaid = billsFourMonthsAgo - totalPayments;
-            balanceFourMonthsAgo = billsFourMonthsAgo - totalPayments;
-            totalPayments = 0d;
-        } else {
-            //Nothing paid
-            billsNotPaid = billsFourMonthsAgo;
-            balanceFourMonthsAgo = billsFourMonthsAgo;
-            totalPayments = 0d;
-        }
 
         //Three Months
-        Double billsThreeMonthsAgo = billService.getAccountBillsByDate(accountId, threeMonthsAgo);
-        if (billsThreeMonthsAgo > billsFourMonthsAgo) {
-            billsThreeMonthsAgo = (billsThreeMonthsAgo - billsFourMonthsAgo) + billsNotPaid;
+        Double billsThreeMonthsAgo = billService.getAccountBillsByDate(accountId, threeMonthsAgo) + balanceBroughtForward;
+        Double billsThreeMonthsAgoX = billsThreeMonthsAgo;
+
+        if (billsThreeMonthsAgo > billsFourMonthsAgoX) {
+            billsThreeMonthsAgo = billsThreeMonthsAgo - billsFourMonthsAgoX;
+            balanceThreeMonthsAgo = billsNotPaid;
+
+            if (totalPayments >= billsThreeMonthsAgo) {
+                billsNotPaid = 0d;
+                balanceThreeMonthsAgo = 0d;
+                totalPayments = totalPayments - billsThreeMonthsAgo;
+            } else if (totalPayments < billsThreeMonthsAgo && totalPayments > 0) {
+                billsNotPaid = billsThreeMonthsAgo - totalPayments;
+                balanceThreeMonthsAgo = billsThreeMonthsAgo - totalPayments;
+                totalPayments = 0d;
+            } else {
+                //Nothing paid
+                billsNotPaid = billsThreeMonthsAgo;
+                balanceThreeMonthsAgo = billsThreeMonthsAgo;
+                totalPayments = 0d;
+            }
         }
-        if (totalPayments >= billsThreeMonthsAgo) {
-            balanceThreeMonthsAgo = 0d;
-            totalPayments = totalPayments - billsThreeMonthsAgo;
-        } else if (totalPayments > 0) {
-            billsNotPaid = billsThreeMonthsAgo - totalPayments;
-            balanceThreeMonthsAgo = billsThreeMonthsAgo - totalPayments;
-            totalPayments = 0d;
-        } else {
-            //Nothing paid
-            billsNotPaid = billsThreeMonthsAgo;
-            balanceThreeMonthsAgo = billsThreeMonthsAgo;
-            totalPayments = 0d;
-        }
+
 
         //Two Months
-        Double billsTwoMonthsAgo = billService.getAccountBillsByDate(accountId, twoMonthsAgo);
-        if (billsTwoMonthsAgo > billsThreeMonthsAgo) {
-            billsTwoMonthsAgo = (billsTwoMonthsAgo - billsThreeMonthsAgo) + billsNotPaid;
+        Double billsTwoMonthsAgo = billService.getAccountBillsByDate(accountId, twoMonthsAgo) + balanceBroughtForward;
+        Double billsTwoMonthsAgoX = billsTwoMonthsAgo;
+
+        if (billsTwoMonthsAgo > billsThreeMonthsAgoX) {
+            billsTwoMonthsAgo = billsTwoMonthsAgo - billsThreeMonthsAgoX;
+            balanceTwoMonthsAgo = billsNotPaid;
+
+            if (totalPayments >= billsTwoMonthsAgo) {
+                billsNotPaid = 0d;
+                balanceTwoMonthsAgo = 0d;
+                totalPayments = totalPayments - billsTwoMonthsAgo;
+            } else if (totalPayments < billsTwoMonthsAgo && totalPayments > 0) {
+                billsNotPaid = billsTwoMonthsAgo - totalPayments;
+                balanceTwoMonthsAgo = billsTwoMonthsAgo - totalPayments;
+                totalPayments = 0d;
+            } else {
+                //Nothing paid
+                billsNotPaid = billsTwoMonthsAgo;
+                balanceTwoMonthsAgo = billsTwoMonthsAgo;
+                totalPayments = 0d;
+            }
         }
-        if (totalPayments >= billsTwoMonthsAgo) {
-            balanceTwoMonthsAgo = 0d;
-            totalPayments = totalPayments - billsTwoMonthsAgo;
-        } else if (totalPayments > 0) {
-            billsNotPaid = billsTwoMonthsAgo - totalPayments;
-            balanceTwoMonthsAgo = billsTwoMonthsAgo - totalPayments;
-            totalPayments = 0d;
-        } else {
-            //Nothing paid
-            billsNotPaid = billsTwoMonthsAgo;
-            balanceTwoMonthsAgo = billsTwoMonthsAgo;
-            totalPayments = 0d;
-        }
+
 
         //One Month
-        Double billsOneMonthAgo = billService.getAccountBillsByDate(accountId, oneMonthAgo);
-        if (billsOneMonthAgo > billsTwoMonthsAgo) {
-            billsOneMonthAgo = (billsOneMonthAgo - billsTwoMonthsAgo) + billsNotPaid;
-        }
-        if (totalPayments >= billsOneMonthAgo) {
-            balanceOneMonthsAgo = 0d;
-            totalPayments = totalPayments - billsOneMonthAgo;
-        } else if (totalPayments > 0) {
-            billsNotPaid = billsOneMonthAgo - totalPayments;
-            balanceOneMonthsAgo = billsOneMonthAgo - totalPayments;
-            totalPayments = 0d;
-        } else {
-            //Nothing paid
-            billsNotPaid = billsTwoMonthsAgo;
-            balanceOneMonthsAgo = billsOneMonthAgo;
-            totalPayments = 0d;
+        Double billsOneMonthAgo = billService.getAccountBillsByDate(accountId, oneMonthAgo) + balanceBroughtForward;
+        Double billsOneMonthAgoX = billsOneMonthAgo;
+
+        if (billsOneMonthAgo > billsTwoMonthsAgoX) {
+            billsOneMonthAgo = billsOneMonthAgo - billsTwoMonthsAgoX;
+            balanceOneMonthsAgo = billsNotPaid;
+
+            if (totalPayments >= billsOneMonthAgo) {
+                billsNotPaid = 0d;
+                balanceOneMonthsAgo = 0d;
+                totalPayments = totalPayments - billsOneMonthAgo;
+            } else if (totalPayments < billsOneMonthAgo && totalPayments > 0) {
+                billsNotPaid = billsOneMonthAgo - totalPayments;
+                balanceOneMonthsAgo = billsOneMonthAgo - totalPayments;
+                totalPayments = 0d;
+            } else {
+                //Nothing paid
+                billsNotPaid = billsOneMonthAgo;
+                balanceOneMonthsAgo = billsOneMonthAgo;
+                totalPayments = 0d;
+            }
         }
 
+
         //Today
-        Double billsToday = billService.getAccountBillsByDate(accountId, today);
-        if (billsToday > billsOneMonthAgo) {
-            billsToday = (billsToday - billsOneMonthAgo) + billsNotPaid;
+        Double billsToday = billService.getAccountBillsByDate(accountId, today) + balanceBroughtForward;
+        if (billsToday > billsOneMonthAgoX) {
+            billsToday = billsToday - billsOneMonthAgoX;
+            balanceToday = billsNotPaid;
+
+            if (totalPayments >= billsToday) {
+                billsNotPaid = 0d;
+                balanceToday = 0d;
+                totalPayments = totalPayments - billsToday;
+            } else if (totalPayments < billsToday && totalPayments > 0) {
+                billsNotPaid = billsToday - totalPayments;
+                balanceToday = billsToday - totalPayments;
+                totalPayments = 0d;
+            } else {
+                //Nothing paid
+                billsNotPaid = billsToday;
+                balanceToday = billsToday;
+                totalPayments = 0d;
+            }
         }
-        if (totalPayments >= billsToday) {
-            balanceToday = 0d;
-            totalPayments = totalPayments - billsToday;
-        } else if (totalPayments > 0) {
-            billsNotPaid = billsToday - totalPayments;
-            balanceToday = billsToday - totalPayments;
-            totalPayments = 0d;
-        } else {
-            //Nothing paid
-            billsNotPaid = billsToday;
-            balanceToday = billsToday;
-            totalPayments = 0d;
-        }
+
 
         Integer cutOff = accountRepository.getAccountStatus(accountId);
         String accStatus = "Active";
@@ -735,26 +784,34 @@ public class AccountService {
         }
         String zone = zoneRepository.getByAccountId(accountId);
 
-        Long recordId = ageingDataRepository.getRecordId(accountId, userId);
+        Long recordId = ageingDataRepository.getRecordId(accountId);
         AgeingData ageingRecord = new AgeingData();
         if (recordId != null) {
             ageingRecord = ageingDataRepository.findOne(recordId);
         }
 
-        log.info("Ageing report for " + accNo);
+
+        Double balance = 0d;
+        if (totalPayments > 0) {
+            balance = (-1 * totalPayments);
+        } else {
+            balance = balanceToday + balanceOneMonthsAgo + balanceTwoMonthsAgo + balanceThreeMonthsAgo + balanceFourMonthsAgo + balanceSixMonthsAgo;
+        }
+
+        //log.info("Ageing report for " + accNo);
         ageingRecord.setName(consumerName);
         ageingRecord.setAccNo(accNo);
-        ageingRecord.setAbove0(balanceToday);
-        ageingRecord.setAbove30(balanceOneMonthsAgo);
-        ageingRecord.setAbove60(balanceTwoMonthsAgo);
-        ageingRecord.setAbove90(balanceThreeMonthsAgo);
-        ageingRecord.setAbove120(balanceFourMonthsAgo);
-        ageingRecord.setAbove180(balanceSixMonthsAgo);
+        ageingRecord.setBalanceToday(balanceToday);
+        ageingRecord.setBalanceOneMonthsAgo(balanceOneMonthsAgo);
+        ageingRecord.setBalanceTwoMonthsAgo(balanceTwoMonthsAgo);
+        ageingRecord.setBalanceThreeMonthsAgo(balanceThreeMonthsAgo);
+        ageingRecord.setBalanceFourMonthsAgo(balanceFourMonthsAgo);
+        ageingRecord.setBalanceSixMonthsAgo(balanceSixMonthsAgo);
         ageingRecord.setAccountId(accountId);
-        ageingRecord.setUserId(userId);
+        //ageingRecord.setUserId(userId);
         ageingRecord.setAccNo(accNo);
         ageingRecord.setCutOff(accStatus);
-        ageingRecord.setBalance(balanceToday);
+        ageingRecord.setBalance(balance);//To
         ageingDataRepository.save(ageingRecord);
     }
 
@@ -837,7 +894,6 @@ public class AccountService {
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                 } else if (consumer == null) {
                     responseObject.setMessage("Invalid consumer");
-
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                 } else {
                     // create resource
@@ -853,6 +909,7 @@ public class AccountService {
                     created.setTariff(account.getTariff());
                     created.setConsumer(consumer);
                     created.setAccountCategory(account.getAccountCategory());
+                    //created.setScheme(account.getScheme());
                     accountRepository.save(created);
 
                     //Start - audit trail
@@ -893,13 +950,16 @@ public class AccountService {
                 if (acc == null) {
                     responseObject.setMessage("Account not found");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else if (acc.getOnStatus() == OnStatus.TURNED_OFF) {
+                    responseObject.setMessage("Sorry, we could not complete your request, the account has been turned off.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                 } else {
                     // setup resource
                     // TODO;
                     acc.setLocation(account.getLocation());
                     acc.setZone(account.getZone());
                     acc.setTariff(account.getTariff());
-
+                    acc.setOnStatus(account.getOnStatus());
                     acc.setAccNo(account.getAccNo());
                     acc.setAverageConsumption(account.getAverageConsumption());
                     //acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
@@ -935,6 +995,7 @@ public class AccountService {
         }
         return response;
     }
+
 
     @Transactional
     public RestResponse updateStatus(RestRequestObject<AccountStatusHistory> requestObject, Long accountId) {
@@ -997,6 +1058,103 @@ public class AccountService {
                     auditRecord.setParentObject("Account");
                     auditRecord.setCurrentData(account.toString());
                     auditRecord.setNotes("UPDATED ACCOUNT");
+                    auditService.log(AuditOperation.UPDATED, auditRecord);
+                    //End - audit trail
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            responseObject.setPayload("");
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    @Transactional
+    public RestResponse turnOnOffAccount(RestRequestObject<AccountStatusHistory> requestObject, Long accountId) {
+        try {
+            String emailAddress = "";
+            String actionName = "TURNED ON";
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "account_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                Account account = accountRepository.findOne(accountId);
+
+                emailAddress = authManager.getEmailFromToken(requestObject.getToken());
+
+                if (account == null) {
+                    responseObject.setMessage("Account not found");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                } else {
+                    if (account.getOnStatus() == OnStatus.TURNED_OFF) {
+                        responseObject.setMessage("Sorry we can not complete your request. Account already turned off.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+
+                    AccountStatusHistory accountStatusHistory = requestObject.getObject();
+                    if (accountStatusHistory.getNotes().isEmpty()) {
+                        responseObject.setMessage("Notes missing");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+                    accountStatusHistory.setAccount(account);
+
+                    if (account.getOnStatus() == OnStatus.REGISTERED) {
+                        response = authManager.grant(requestObject.getToken(), "account_turnOn");
+                        if (response.getStatusCode() != HttpStatus.OK) {
+                            return response;
+                        }
+
+                        accountStatusHistory.setStatusType("TURNED_ON");
+                        account.setActive(Boolean.TRUE);
+                        account.setOnStatus(OnStatus.TURNED_ON);
+                        account.setTurnedOnBy(emailAddress);
+                        account.setDateTurnedOn(new DateTime());
+                        actionName = "TURNED ON";
+                    } else if (account.getOnStatus() == OnStatus.TURNED_ON) {
+                        response = authManager.grant(requestObject.getToken(), "account_turnOff");
+                        if (response.getStatusCode() != HttpStatus.OK) {
+                            return response;
+                        }
+                        accountStatusHistory.setStatusType("TURNED_OFF");
+                        account.setActive(Boolean.FALSE);
+                        account.setOnStatus(OnStatus.TURNED_OFF);
+                        account.setTurnedOffBy(emailAddress);
+                        account.setDateTurnedOff(new DateTime());
+                        account.setNotes(accountStatusHistory.getNotes());
+                        actionName = "TURNED OFF";
+                    }
+
+                    // save
+
+                    account = accountRepository.save(account);
+
+                    accountStatusHistory.setAccount(account);
+
+                    //save history
+                    accountStatusHistoryRepository.save(accountStatusHistory);
+
+                    //send back payload
+                    responseObject.setMessage("Account  updated successfully");
+                    responseObject.setPayload(account);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(account.getAccountId()));
+                    auditRecord.setParentObject("Account");
+                    auditRecord.setCurrentData(account.toString());
+                    auditRecord.setNotes("UPDATED ACCOUNT - " + actionName);
                     auditService.log(AuditOperation.UPDATED, auditRecord);
                     //End - audit trail
                 }
@@ -1125,6 +1283,30 @@ public class AccountService {
                         responseObject.setPayload("");
                         response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
                     }
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+            ex.printStackTrace();
+        }
+        return response;
+    }
+
+    public RestResponse getSchemeList(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                List<Scheme> schemeList = schemeRepository.findAll();
+                if (schemeList.isEmpty()) {
+                    responseObject.setMessage("Your search did not match any records");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(schemeList);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
                 }
             }
         } catch (Exception ex) {

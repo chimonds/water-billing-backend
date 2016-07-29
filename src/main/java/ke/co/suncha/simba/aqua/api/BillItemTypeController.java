@@ -23,22 +23,20 @@
  */
 package ke.co.suncha.simba.aqua.api;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.models.BillItemType;
 import ke.co.suncha.simba.aqua.services.BillItemTypeService;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -55,5 +53,12 @@ public class BillItemTypeController {
 	@ApiOperation(value = "Get a list of all bill item types.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
 	public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
 		return service.getAll(requestObject);
+	}
+
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = { "application/json" }, produces = { "application/json" })
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@ApiOperation(value = "Update a bill item type resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+	public RestResponse update(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<BillItemType> requestObject, HttpServletRequest request, HttpServletResponse response) {
+		return service.update(requestObject);
 	}
 }

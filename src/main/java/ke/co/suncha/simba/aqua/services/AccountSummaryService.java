@@ -9,14 +9,12 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.AccountSummary;
-import ke.co.suncha.simba.aqua.models.Consumer;
-import ke.co.suncha.simba.aqua.models.Zone;
+import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
 import ke.co.suncha.simba.aqua.utils.MobileClientResponse;
 import ke.co.suncha.simba.aqua.utils.RemoteUser;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +75,9 @@ public class AccountSummaryService {
 
     @Autowired
     AccountService accountService;
+
+    @Autowired
+    AccountsUpdateRepository accountsUpdateRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -258,6 +259,48 @@ public class AccountSummaryService {
                         accountRepository.save(account);
                     }
                     accountService.updateBalance(accountId.longValue());
+                }
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
+    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
+    public void updateAgeing() {
+        List<BigInteger> accountIds = accountRepository.findAllAccountIds();
+        DateTime dateTime = new DateTime();
+        log.info("Start:"+dateTime);
+        if (!accountIds.isEmpty()) {
+            for (BigInteger accountId : accountIds) {
+                accountService.updateAccountAgeingCustom(accountId.longValue(), dateTime);
+            }
+        }
+        log.info("End:"+new DateTime());
+    }
+
+    @Scheduled(initialDelay = 1000, fixedDelay = 3000)
+    public void updateAccounts() {
+        try {
+            List<BigInteger> accountUpdateList = accountsUpdateRepository.findAllByPending();
+            if (!accountUpdateList.isEmpty()) {
+                for (BigInteger recordId : accountUpdateList) {
+                    try {
+                        AccountUpdate accountUpdate = accountsUpdateRepository.findOne(recordId.longValue());
+                        Long accountId = accountUpdate.getAccountId();
+                        Account account = accountRepository.findOne(accountUpdate.getAccountId());
+                        if (account != null) {
+                            account.setUpdateBalance(Boolean.TRUE);
+                            accountRepository.save(account);
+                            accountService.updateBalance(accountId);
+                        }
+                        accountUpdate.setStatus(1);
+                        accountUpdate.setUpdatedOn(new DateTime());
+                        accountsUpdateRepository.save(accountUpdate);
+                    } catch (Exception ex) {
+                        log.error(ex.getMessage());
+                        ex.printStackTrace();
+                    }
                 }
             }
         } catch (Exception ex) {

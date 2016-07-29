@@ -79,12 +79,18 @@ public class AccountController extends AbstractRestHandler {
         return accountService.getById(requestObject, id);
     }
 
-
     @RequestMapping(value = "status/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiOperation(value = "Update account status.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
     public RestResponse updateStatus(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<AccountStatusHistory> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return accountService.updateStatus(requestObject, accountId);
+    }
+
+    @RequestMapping(value = "turnOnOff/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiOperation(value = "Update account status.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
+    public RestResponse turnOnOffAccount(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<AccountStatusHistory> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.turnOnOffAccount(requestObject, accountId);
     }
 
 
@@ -106,6 +112,12 @@ public class AccountController extends AbstractRestHandler {
     @ApiOperation(value = "Get a paginated list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
     public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return accountService.getAllByFilter(requestObject);
+    }
+
+    @RequestMapping(value = "/schemeList", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a paginated list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
+    public RestResponse getSchemeList(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return accountService.getSchemeList(requestObject);
     }
 
     @RequestMapping(value = "/accountsReceivables", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})

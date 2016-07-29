@@ -86,10 +86,10 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
     @Query(value = "SELECT SUM(meter_rent) FROM bills WHERE  billing_month_id=:billingMonthId", nativeQuery = true)
     Double getTotalMeterRentByBillingMonth(@Param("billingMonthId") Long billingMonthId);
 
-    @Query(value = "SELECT SUM(amount) FROM bills WHERE account_id IN (SELECT account_id FROM accounts WHERE zone_id=:zoneId) AND billing_month_id IN (SELECT billing_month_id FROM billing_months WHERE billing_month>=:startDate AND billing_month<=:endDate )", nativeQuery = true)
+    @Query(value = "SELECT SUM(amount) FROM bills WHERE account_id IN (SELECT account_id FROM accounts WHERE zone_id=:zoneId) AND billing_month_id IN (SELECT billing_month_id FROM billing_months WHERE date(billing_month)>=:startDate AND date(billing_month)<=:endDate )", nativeQuery = true)
     Double getTotalAmountByZoneByBillingMonth(@Param("zoneId") Long zoneId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
-    @Query(value = "SELECT SUM(total_billed) FROM bills WHERE account_id =:accountId AND billing_month_id IN (SELECT billing_month_id FROM billing_months WHERE  billing_month<=:endDate )", nativeQuery = true)
+    @Query(value = "SELECT SUM(total_billed) FROM bills WHERE account_id =:accountId AND billing_month_id IN (SELECT billing_month_id FROM billing_months WHERE  date(billing_month)<=:endDate )", nativeQuery = true)
     Double getTotalBilledByDate(@Param("accountId") Long accountId,  @Param("endDate") String endDate);
 
 }

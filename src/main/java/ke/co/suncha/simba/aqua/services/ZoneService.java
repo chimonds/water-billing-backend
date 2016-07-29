@@ -31,6 +31,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
+import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.repository.ZoneRepository;
 
@@ -48,150 +49,167 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @Service
 public class ZoneService {
 
-	protected final Logger log = LoggerFactory.getLogger(this.getClass());
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private ZoneRepository zoneRepository;
+    @Autowired
+    private ZoneRepository zoneRepository;
 
-	@Autowired
-	private AuthManager authManager;
+    @Autowired
+    private AuthManager authManager;
 
-	@Autowired
-	CounterService counterService;
+    @Autowired
+    CounterService counterService;
 
-	@Autowired
-	GaugeService gaugeService;
+    @Autowired
+    GaugeService gaugeService;
 
-	@Autowired
-	private AuditService auditService;
+    @Autowired
+    private AuditService auditService;
 
-	private RestResponse response;
-	private RestResponseObject responseObject = new RestResponseObject();
+    @Autowired
+    SchemeRepository schemeRepository;
 
-	public ZoneService() {
+    private RestResponse response;
+    private RestResponseObject responseObject = new RestResponseObject();
 
-	}
+    public ZoneService() {
 
-	@Transactional
-	public RestResponse create(RestRequestObject<Zone> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "zones_create");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
+    }
 
-				Zone zone = requestObject.getObject();
-				Zone z = zoneRepository.findByName(zone.getName());
-				if (z != null) {
-					responseObject.setMessage("Zone already exists");
-					response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-				} else {
-					// create resource
-					Zone created = zoneRepository.save(zone);
+    @Transactional
+    public RestResponse create(RestRequestObject<Zone> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "zones_create");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
-					// package response
-					responseObject.setMessage("Zone created successfully. ");
-					responseObject.setPayload(created);
-					response = new RestResponse(responseObject, HttpStatus.CREATED);
+                Zone zone = requestObject.getObject();
+                Zone z = zoneRepository.findByName(zone.getName());
+                if (z != null) {
+                    responseObject.setMessage("Zone already exists");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                } else if (zone.getScheme() == null) {
+                    responseObject.setMessage("Zone schema empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else if (schemeRepository.findOne(zone.getScheme().getSchemeId()) == null) {
+                    responseObject.setMessage("Invalid schema empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else {
+                    // create resource
+                    Zone created = zoneRepository.save(zone);
 
-					//Start - audit trail
-					AuditRecord auditRecord = new AuditRecord();
-					auditRecord.setParentID(String.valueOf(created.getZoneId()));
-					auditRecord.setCurrentData(created.toString());
-					auditRecord.setParentObject("Zones");
-					auditRecord.setNotes("CREATED ZONE");
-					auditService.log(AuditOperation.CREATED, auditRecord);
-					//End - audit trail
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // package response
+                    responseObject.setMessage("Zone created successfully. ");
+                    responseObject.setPayload(created);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
 
-	@Transactional
-	public RestResponse update(RestRequestObject<Zone> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "zones_update");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
-				Zone zone = requestObject.getObject();
-				Zone z = zoneRepository.findOne(zone.getZoneId());
-				if (z == null) {
-					responseObject.setMessage("Zone not found");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				} else {
-					// setup resource
-					z.setName(zone.getName());
-					z.setDescription(zone.getDescription());
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(created.getZoneId()));
+                    auditRecord.setCurrentData(created.toString());
+                    auditRecord.setParentObject("Zones");
+                    auditRecord.setNotes("CREATED ZONE");
+                    auditService.log(AuditOperation.CREATED, auditRecord);
+                    //End - audit trail
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-					// save
-					zoneRepository.save(z);
-					responseObject.setMessage("Zone  updated successfully");
-					responseObject.setPayload(z);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+    @Transactional
+    public RestResponse update(RestRequestObject<Zone> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "zones_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                Zone zone = requestObject.getObject();
+                Zone z = zoneRepository.findOne(zone.getZoneId());
+                if (z == null) {
+                    responseObject.setMessage("Zone not found");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else if (zone.getScheme() == null) {
+                    responseObject.setMessage("Zone schema empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else if (schemeRepository.findOne(zone.getScheme().getSchemeId()) == null) {
+                    responseObject.setMessage("Invalid schema empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                } else {
+                    // setup resource
+                    z.setName(zone.getName());
+                    z.setDescription(zone.getDescription());
+                    if (zone.getScheme() != null) {
+                        z.setScheme(schemeRepository.findOne(zone.getScheme().getSchemeId()));
+                    }
 
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                    // save
+                    zoneRepository.save(z);
+                    responseObject.setMessage("Zone  updated successfully");
+                    responseObject.setPayload(z);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
 
-	private Sort sortByDateAddedDesc() {
-		return new Sort(Sort.Direction.DESC, "createdOn");
-	}
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
-	public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
-		try {
-			response = authManager.tokenValid(requestObject.getToken());
-			if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-				response = authManager.grant(requestObject.getToken(), "zones_view");
-				if (response.getStatusCode() != HttpStatus.OK) {
-					return response;
-				}
+    private Sort sortByDateAddedDesc() {
+        return new Sort(Sort.Direction.DESC, "createdOn");
+    }
 
-				RestPageRequest p = requestObject.getObject();
+    public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "zones_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
 
-				Page<Zone> page;
-				if (p.getFilter().isEmpty()) {
-					page = zoneRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-				} else {
-					page = zoneRepository.findByNameContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                RestPageRequest p = requestObject.getObject();
 
-				}
-				if (page.hasContent()) {
+                Page<Zone> page;
+                if (p.getFilter().isEmpty()) {
+                    page = zoneRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                } else {
+                    page = zoneRepository.findByNameContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
-					responseObject.setMessage("Fetched data successfully");
-					responseObject.setPayload(page);
-					response = new RestResponse(responseObject, HttpStatus.OK);
-				} else {
-					responseObject.setMessage("Your search did not match any records");
-					response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-				}
-			}
-		} catch (Exception ex) {
-			responseObject.setMessage(ex.getLocalizedMessage());
-			response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-			log.error(ex.getLocalizedMessage());
-		}
-		return response;
-	}
+                }
+                if (page.hasContent()) {
+
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(page);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+                } else {
+                    responseObject.setMessage("Your search did not match any records");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 
 }
