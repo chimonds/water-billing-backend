@@ -65,7 +65,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private Double outstandingBalance = (double) 0;
 
     @Column(name = "on_status")
-    private Integer onStatus = OnStatus.REGISTERED;
+    private Integer onStatus = OnStatus.PENDING;
 
     @NotNull
     @Column(name = "acc_no", unique = true, length = 20)

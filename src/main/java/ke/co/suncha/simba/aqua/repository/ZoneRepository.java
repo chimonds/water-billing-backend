@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
+import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.models.Zone;
 
 import org.springframework.data.domain.Page;
@@ -44,6 +45,8 @@ public interface ZoneRepository extends PagingAndSortingRepository<Zone, Long> {
     Page<Zone> findAll(Pageable pageable);
 
     List<Zone> findAll();
+
+    List<Zone> findAllByScheme(Scheme scheme);
 
     @Query(value = "SELECT name FROM zones WHERE zone_id = (SELECT zone_id FROM accounts WHERE account_id=:accountId)", nativeQuery = true)
     String getByAccountId(@Param("accountId") Long accountId);

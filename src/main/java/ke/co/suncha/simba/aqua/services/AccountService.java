@@ -24,6 +24,7 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -37,10 +38,7 @@ import ke.co.suncha.simba.aqua.account.OnStatus;
 import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.*;
-import ke.co.suncha.simba.aqua.reports.AccountRecord;
-import ke.co.suncha.simba.aqua.reports.BalancesReport;
-import ke.co.suncha.simba.aqua.reports.ReportObject;
-import ke.co.suncha.simba.aqua.reports.ReportsParam;
+import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -899,7 +897,8 @@ public class AccountService {
                     // create resource
                     acc = new Account();
                     acc.setAccNo(account.getAccNo());
-                    acc.setActive(true);
+                    acc.setActive(Boolean.FALSE);
+                    acc.setOnStatus(OnStatus.PENDING);
                     acc.setAverageConsumption(account.getAverageConsumption());
                     acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
                     Account created = accountRepository.save(acc);
@@ -959,7 +958,6 @@ public class AccountService {
                     acc.setLocation(account.getLocation());
                     acc.setZone(account.getZone());
                     acc.setTariff(account.getTariff());
-                    acc.setOnStatus(account.getOnStatus());
                     acc.setAccNo(account.getAccNo());
                     acc.setAverageConsumption(account.getAverageConsumption());
                     //acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
@@ -1109,7 +1107,7 @@ public class AccountService {
                     }
                     accountStatusHistory.setAccount(account);
 
-                    if (account.getOnStatus() == OnStatus.REGISTERED) {
+                    if (account.getOnStatus() == OnStatus.PENDING) {
                         response = authManager.grant(requestObject.getToken(), "account_turnOn");
                         if (response.getStatusCode() != HttpStatus.OK) {
                             return response;
@@ -1768,7 +1766,7 @@ public class AccountService {
         return response;
     }
 
-    public RestResponse getAccountsReport(RestRequestObject<ReportsParam> requestObject) {
+    public RestResponse getAccountsReport(RestRequestObject<AccountsReportRequest> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -1777,89 +1775,69 @@ public class AccountService {
                     return response;
                 }
 
-                ReportsParam request = requestObject.getObject();
-                Map<String, String> params = new HashMap<>();
+                AccountsReportRequest accountsReportRequest = requestObject.getObject();
 
-                if (request.getFields() != null) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    String jsonString = mapper.writeValueAsString(request.getFields());
-                    params = mapper.readValue(jsonString, Map.class);
+                BooleanBuilder builder = new BooleanBuilder();
+                if (accountsReportRequest.getOnStatus() != null) {
+                    builder.and(QAccount.account.onStatus.eq(accountsReportRequest.getOnStatus()));
                 }
 
-                List<BigInteger> accountList = accountRepository.findAllAccountIds();
-                //List<Account> accounts= accountRepository.findAll();
+                if (accountsReportRequest.getIsCutOff() != null) {
+                    Boolean isActive = Boolean.TRUE;
+                    if (accountsReportRequest.getIsCutOff()) {
+                        isActive = Boolean.FALSE;
+                    }
+                    builder.and(QAccount.account.active.eq(isActive));
+                }
 
-                if (!accountList.isEmpty()) {
-                    log.info(accountList.size() + " accounts found.");
-                    List<AccountRecord> accountRecords = new ArrayList<>();
+                if (accountsReportRequest.getSchemeId() != null) {
+                    builder.and(QAccount.account.zone.scheme.schemeId.eq(accountsReportRequest.getSchemeId()));
+                }
 
-                    for (BigInteger accountId : accountList) {
-                        Account acc = accountRepository.findOne(accountId.longValue());
-                        AccountRecord ar = new AccountRecord();
-                        ar.setAccName(acc.getAccName());
-                        ar.setAccNo(acc.getAccNo());
-                        ar.setZone(acc.getZone().getName());
-                        ar.setLocation(acc.getLocation().getName());
-                        ar.setActive(acc.isActive());
-                        ar.setCreatedOn(acc.getCreatedOn());
+                if (accountsReportRequest.getZoneId() != null) {
+                    builder.and(QAccount.account.zone.zoneId.eq(accountsReportRequest.getZoneId()));
+                }
 
-                        if (acc.isMetered()) {
-                            ar.setMeterNo(acc.getMeter().getMeterNo());
-                            ar.setMeterOwner(acc.getMeter().getMeterOwner().getName());
-                        }
-                        if (acc.getConsumer() != null) {
-                            if (StringUtils.isNotEmpty(acc.getConsumer().getPhoneNumber())) {
-                                ar.setPhoneNo(acc.getConsumer().getPhoneNumber());
-                            }
-                        }
+                Iterable<Account> accounts = accountRepository.findAll(builder);
 
-                        Boolean include = true;
-                        if (params != null) {
-                            if (!params.isEmpty()) {
-                                //zone id
-                                if (params.containsKey("zoneId")) {
-                                    Object zoneId = params.get("zoneId");
-                                    if (acc.getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                                        include = false;
-                                    }
-                                }
+                List<AccountRecord> accountRecords = new ArrayList<>();
+                for (Account acc : accounts) {
+                    //Account acc = accountRepository.findOne(accountId.longValue());
+                    AccountRecord ar = new AccountRecord();
+                    ar.setAccName(acc.getAccName());
+                    ar.setAccNo(acc.getAccNo());
+                    ar.setZone(acc.getZone().getName());
+                    ar.setLocation(acc.getLocation().getName());
+                    ar.setActive(acc.isActive());
+                    ar.setCreatedOn(acc.getCreatedOn());
 
-                                //account status
-                                if (params.containsKey("accountStatus")) {
-                                    String status = params.get("accountStatus");
-                                    if (status.compareToIgnoreCase("inactive") == 0) {
-                                        if (acc.isActive()) {
-                                            include = false;
-                                        }
-                                    } else if (status.compareToIgnoreCase("active") == 0) {
-                                        if (!acc.isActive()) {
-                                            include = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (include) {
-                            accountRecords.add(ar);
+                    if (acc.isMetered()) {
+                        ar.setMeterNo(acc.getMeter().getMeterNo());
+                        ar.setMeterOwner(acc.getMeter().getMeterOwner().getName());
+                    }
+                    if (acc.getConsumer() != null) {
+                        if (StringUtils.isNotEmpty(acc.getConsumer().getPhoneNumber())) {
+                            ar.setPhoneNo(acc.getConsumer().getPhoneNumber());
                         }
                     }
-                    log.info("Packaged report data...");
-
-                    ReportObject report = new ReportObject();
-                    report.setDate(Calendar.getInstance());
-
-                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
-                    report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS").getValue());
-                    report.setContent(accountRecords);
-                    log.info("Sending Payload send to client...");
-                    responseObject.setMessage("Fetched data successfully");
-                    responseObject.setPayload(report);
-                    response = new RestResponse(responseObject, HttpStatus.OK);
-                } else {
-                    responseObject.setMessage("Your search did not match any records");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    accountRecords.add(ar);
                 }
+
+                log.info("Packaged report data...");
+                ReportObject report = new ReportObject();
+                report.setDate(Calendar.getInstance());
+
+                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS").getValue());
+                report.setContent(accountRecords);
+                log.info("Sending Payload send to client...");
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(report);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+
+                //responseObject.setMessage("Your search did not match any records");
+                //response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

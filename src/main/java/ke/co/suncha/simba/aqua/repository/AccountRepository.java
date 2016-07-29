@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
+import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.models.Meter;
@@ -31,6 +32,7 @@ import ke.co.suncha.simba.aqua.models.Zone;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +44,7 @@ import java.util.List;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 @Transactional
-public interface AccountRepository extends PagingAndSortingRepository<Account, Long> {
+public interface AccountRepository extends PagingAndSortingRepository<Account, Long>, QueryDslPredicateExecutor<Account> {
 
     Account findByaccNo(String accoutNo);
 
@@ -53,7 +55,10 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
 
     Page<Account> findByAccNo(String accNo, Pageable pageable);
 
-    List<Account> findAll();
+   // List<Account> findAll();
+
+    //List<Account> findAll(BooleanBuilder booleanBuilder);
+
 
     List<Account> findAllByZone(Zone zone);
 

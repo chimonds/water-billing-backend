@@ -32,6 +32,7 @@ import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.AccountStatusHistory;
+import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,7 +141,7 @@ public class AccountController extends AbstractRestHandler {
 
     @RequestMapping(value = "/accounts", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of all accounts.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse accounts(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse accounts(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return accountService.getAccountsReport(requestObject);
     }
 }

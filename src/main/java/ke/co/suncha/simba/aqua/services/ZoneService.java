@@ -31,6 +31,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
+import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.repository.ZoneRepository;
@@ -46,6 +47,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -192,16 +195,48 @@ public class ZoneService {
                     page = zoneRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 } else {
                     page = zoneRepository.findByNameContains(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-
                 }
                 if (page.hasContent()) {
-
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(page);
                     response = new RestResponse(responseObject, HttpStatus.OK);
                 } else {
                     responseObject.setMessage("Your search did not match any records");
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    @Transactional
+    public RestResponse getAllByScheme(RestRequestObject<Scheme> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "zones_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                Scheme scheme = requestObject.getObject();
+                Scheme dbScheme = schemeRepository.findOne(scheme.getSchemeId());
+                if (dbScheme == null) {
+                    responseObject.setMessage("Invalid zone scheme");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    List<Zone> zones = zoneRepository.findAllByScheme(scheme);
+                    if (zones.isEmpty()) {
+                        responseObject.setMessage("Your search did not match any records");
+                        response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    } else {
+                        responseObject.setMessage("Fetched data successfully");
+                        responseObject.setPayload(zones);
+                        response = new RestResponse(responseObject, HttpStatus.OK);
+                    }
                 }
             }
         } catch (Exception ex) {
