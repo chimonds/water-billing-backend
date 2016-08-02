@@ -12,6 +12,7 @@ public class ReportObject {
     private Calendar date;
     private String title;
     private Double amount;
+    private Double amount1;
     private Double meterRent;
     private Double charges;
     private Integer units;
@@ -136,5 +137,13 @@ public class ReportObject {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public Double getAmount1() {
+        return amount1;
+    }
+
+    public void setAmount1(Double amount1) {
+        this.amount1 = amount1;
     }
 }

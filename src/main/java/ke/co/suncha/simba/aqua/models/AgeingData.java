@@ -1,5 +1,8 @@
 package ke.co.suncha.simba.aqua.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeader;
+
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -56,8 +59,10 @@ public class AgeingData implements Serializable {
     @Column(name = "account_id")
     private Long accountId;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "report_header_id")
+    private ReportHeader reportHeader;
 
     public Long getAgeingDataId() {
         return ageingDataId;
@@ -163,11 +168,11 @@ public class AgeingData implements Serializable {
         this.accountId = accountId;
     }
 
-    public Long getUserId() {
-        return userId;
+    public ReportHeader getReportHeader() {
+        return reportHeader;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setReportHeader(ReportHeader reportHeader) {
+        this.reportHeader = reportHeader;
     }
 }

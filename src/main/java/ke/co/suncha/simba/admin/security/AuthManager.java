@@ -23,12 +23,12 @@
  */
 package ke.co.suncha.simba.admin.security;
 
-import java.util.*;
-
+import com.auth0.jwt.JWTSigner;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.JWTVerifyException;
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.ObjectMapper;
 import com.auth0.jwt.internal.org.apache.commons.codec.binary.Base64;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.models.SystemAction;
@@ -36,28 +36,23 @@ import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
 import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
-import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
-
+import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.CurrentUserService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.audit.AuditEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import com.auth0.jwt.JWTSigner;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.JWTVerifyException;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.*;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -162,7 +157,6 @@ public class AuthManager {
                             AuditRecord auditRecord = new AuditRecord();
                             auditRecord.setNotes(action.toUpperCase());
                             auditService.log(AuditOperation.ACCESSED, auditRecord);
-                            log.info(user.getEmailAddress() + " allowed to perform: " + action.toUpperCase());
                         }
 
                         obj.setMessage("Ok");

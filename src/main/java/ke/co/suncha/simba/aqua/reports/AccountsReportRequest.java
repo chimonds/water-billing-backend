@@ -1,5 +1,7 @@
 package ke.co.suncha.simba.aqua.reports;
 
+import org.joda.time.DateTime;
+
 import java.io.Serializable;
 
 /**
@@ -10,6 +12,11 @@ public class AccountsReportRequest implements Serializable {
     private Boolean cutOff;
     private Long schemeId;
     private Long zoneId;
+    private Long billingMonthId;
+    private Long paymentTypeId;
+    private Long paymentSourceId;
+    private DateTime fromDate;
+    private DateTime toDate;
 
     public Integer getOnStatus() {
         return onStatus;
@@ -41,5 +48,49 @@ public class AccountsReportRequest implements Serializable {
 
     public void setZoneId(Long zoneId) {
         this.zoneId = zoneId;
+    }
+
+    public Long getBillingMonthId() {
+        return billingMonthId;
+    }
+
+    public void setBillingMonthId(Long billingMonthId) {
+        this.billingMonthId = billingMonthId;
+    }
+
+    public Boolean getCutOff() {
+        return cutOff;
+    }
+
+    public Long getPaymentTypeId() {
+        return paymentTypeId;
+    }
+
+    public void setPaymentTypeId(Long paymentTypeId) {
+        this.paymentTypeId = paymentTypeId;
+    }
+
+    public Long getPaymentSourceId() {
+        return paymentSourceId;
+    }
+
+    public void setPaymentSourceId(Long paymentSourceId) {
+        this.paymentSourceId = paymentSourceId;
+    }
+
+    public DateTime getFromDate() {
+        return fromDate;
+    }
+
+    public void setFromDate(DateTime fromDate) {
+        this.fromDate = fromDate;
+    }
+
+    public DateTime getToDate() {
+        return toDate;
+    }
+
+    public void setToDate(DateTime toDate) {
+        this.toDate = toDate;
     }
 }

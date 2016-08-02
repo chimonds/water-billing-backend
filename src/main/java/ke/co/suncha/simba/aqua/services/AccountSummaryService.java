@@ -247,36 +247,21 @@ public class AccountSummaryService {
         }
     }
 
-    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
+//    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
     public void populateOutstandingAccountBalances() {
         try {
+            log.info("Start updating balances:"+ new DateTime());
             List<BigInteger> accountList = accountRepository.findAllAccountIds();
             if (!accountList.isEmpty()) {
                 for (BigInteger accountId : accountList) {
-                    Account account = accountRepository.findOne(accountId.longValue());
-                    if (account != null) {
-                        account.setUpdateBalance(Boolean.TRUE);
-                        accountRepository.save(account);
-                    }
                     accountService.updateBalance(accountId.longValue());
                 }
             }
+            log.info("End updating balances:"+ new DateTime());
+            log.info("*****************************************************");
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
-    }
-
-    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
-    public void updateAgeing() {
-        List<BigInteger> accountIds = accountRepository.findAllAccountIds();
-        DateTime dateTime = new DateTime();
-        log.info("Start:"+dateTime);
-        if (!accountIds.isEmpty()) {
-            for (BigInteger accountId : accountIds) {
-                accountService.updateAccountAgeingCustom(accountId.longValue(), dateTime);
-            }
-        }
-        log.info("End:"+new DateTime());
     }
 
     @Scheduled(initialDelay = 1000, fixedDelay = 3000)

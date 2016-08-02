@@ -40,7 +40,7 @@ public class AuditService {
 
     public void log(AuditOperation auditOperation, AuditRecord auditRecord) {
         try {
-            if (!StringUtils.containsIgnoreCase("DASHBOARD_VIEW", auditRecord.getNotes())) {
+            if (!StringUtils.containsIgnoreCase("DASHBOARD_VIEW", auditRecord.getNotes()) && !StringUtils.containsIgnoreCase("STATS", auditRecord.getNotes())) {
                 if (auditOperation != AuditOperation.ACCESSED && auditOperation != AuditOperation.VIEWED) {
                     auditRecord.setAuthor(currentUserService.getCurrent().getEmailAddress());
                     auditRecord.setOperation(auditOperation.name());

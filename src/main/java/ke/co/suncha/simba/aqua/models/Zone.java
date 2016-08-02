@@ -56,7 +56,7 @@ public class Zone extends SimbaBaseEntity implements Serializable {
     @Column(name = "description")
     private String description;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scheme_id")
     private Scheme scheme;
 

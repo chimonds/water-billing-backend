@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -12,6 +13,7 @@ import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +84,9 @@ public class ReportService {
 
     @Autowired
     PaymentTypeRepository paymentTypeRepository;
+
+    @Autowired
+    ZoneRepository zoneRepository;
 
     @Autowired
     UserRepository userRepository;
@@ -478,64 +483,6 @@ public class ReportService {
                     report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                     report.setTitle(this.optionService.getOption("REPORT:AGEING").getValue());
                     report.setContent(records);
-                    log.info("Sending Payload send to client...");
-                    responseObject.setMessage("Fetched data successfully");
-                    responseObject.setPayload(report);
-                    response = new RestResponse(responseObject, HttpStatus.OK);
-                } else {
-                    responseObject.setMessage("Your search did not match any records");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
-                }
-            }
-        } catch (Exception ex) {
-            responseObject.setMessage(ex.getLocalizedMessage());
-            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-            log.error(ex.getLocalizedMessage());
-            ex.printStackTrace();
-        }
-        return response;
-    }
-
-    public RestResponse getAgeingWithDateReport(RestRequestObject<ReportsParam> requestObject) {
-        try {
-            log.info("Generating ageing report");
-            response = authManager.tokenValid(requestObject.getToken());
-            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "report_ageing");
-                if (response.getStatusCode() != HttpStatus.OK) {
-                    return response;
-                }
-
-                ReportsParam request = requestObject.getObject();
-                Map<String, String> params = new HashMap<>();
-
-                if (request.getFields() != null) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    String jsonString = mapper.writeValueAsString(request.getFields());
-                    params = mapper.readValue(jsonString, Map.class);
-                }
-
-                DateTime toDate = new DateTime();
-                String emailAddress = authManager.getEmailFromToken(requestObject.getToken());
-                Long userId = userRepository.findByEmailAddress(emailAddress).getUserId();
-                List<BigInteger> accountIds = accountRepository.findAllAccountIds();
-                if (!accountIds.isEmpty()) {
-                    for (BigInteger accountId : accountIds) {
-//                        accountService.updateAccountAgeingCustom(userId, accountId.longValue(), toDate);
-                        accountService.updateAccountAgeingCustom( accountId.longValue(), toDate);
-                    }
-                }
-
-                List<AgeingData> ageingRecords = ageingDataRepository.findAll();
-
-                if (!ageingRecords.isEmpty()) {
-                    log.info("Packaged report data...");
-                    ReportObject report = new ReportObject();
-                    report.setDate(Calendar.getInstance());
-                    ageingRecords = null;
-                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
-                    report.setTitle(this.optionService.getOption("REPORT:AGEING").getValue());
-                    report.setContent(ageingRecords);
                     log.info("Sending Payload send to client...");
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(report);
@@ -1070,7 +1017,7 @@ public class ReportService {
         return response;
     }
 
-    public RestResponse getPayments(RestRequestObject<ReportsParam> requestObject) {
+    public RestResponse getPayments(RestRequestObject<AccountsReportRequest> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -1079,103 +1026,131 @@ public class ReportService {
                     return response;
                 }
                 log.info("Getting payments report...");
-                ReportsParam request = requestObject.getObject();
-
-                Map<String, String> params = this.getParamsMap(request);
 
 
-                log.info("Getting payments by date");
-                List<Payment> payments;
-
-                //get payments from date
-                Calendar fromDate = Calendar.getInstance();
-
-                if (params.containsKey("fromDate")) {
-                    Object unixTime = params.get("fromDate");
-                    if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                        fromDate.setTimeInMillis(Long.valueOf(unixTime.toString()) * 1000);
-                    }
-                }
-
-                //get payments to a specific date
-                Calendar toDate = Calendar.getInstance();
-                if (params.containsKey("toDate")) {
-                    Object unixTime = params.get("toDate");
-                    if (unixTime.toString().compareToIgnoreCase("null") != 0) {
-                        Long milliSeconds = Long.valueOf(unixTime.toString()) * 1000;
-                        toDate.setTimeInMillis(milliSeconds);
-                    }
-                }
-
-                //get payments
-                payments = paymentRepository.findByTransactionDateBetweenOrderByTransactionDateDesc(fromDate, toDate);
-
-                Double totalAmount = 0.0;
-                if (!payments.isEmpty()) {
-                    log.info(payments.size() + " payments found.");
-
-                    List<PaymentRecord> records = new ArrayList<>();
-
-                    for (Payment p : payments) {
-                        Boolean include = true;
-                        //Filter based on zone
-                        if (params.containsKey("zoneId")) {
-                            Object zoneId = params.get("zoneId");
-                            if (p.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                                include = false;
-                            }
-                        }
-
-                        //Filter based on payment type
-                        if (params.containsKey("paymentTypeId")) {
-                            Object paymentTypeId = params.get("paymentTypeId");
-                            if (p.getPaymentType().getPaymentTypeId() != Long.valueOf(paymentTypeId.toString())) {
-                                include = false;
-                            }
-                        }
-
-                        //Payment source
-                        if (params.containsKey("paymentSourceId")) {
-                            Object paymentSourceId = params.get("paymentSourceId");
-                            if (p.getPaymentSource().getPaymentSourceId() != Long.valueOf(paymentSourceId.toString())) {
-                                include = false;
-                            }
-                        }
+                AccountsReportRequest reportRequest = requestObject.getObject();
 
 
-                        //check if to include in payload
-                        if (include) {
-                            PaymentRecord pr = new PaymentRecord();
-                            pr.setAccName(p.getAccount().getAccName());
-                            pr.setAccNo(p.getAccount().getAccNo());
-                            pr.setZone(p.getAccount().getZone().getName());
-                            pr.setReceiptNo(p.getReceiptNo());
-                            pr.setTransactionDate(p.getTransactionDate());
-                            pr.setAmount(p.getAmount());
-                            pr.setPaymentType(p.getPaymentType().getName());
-                            records.add(pr);
+//                BillingMonth billingMonth = billingMonthRepository.findOne(accountsReportRequest.getBillingMonthId());
+//                if (billingMonth == null) {
+//                    responseObject.setMessage("Invalid billing month");
+//                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//                    return response;
+//                }
 
-                            //add
-                            totalAmount += p.getAmount();
-                        }
-                    }
-                    log.info("Done crunching payments report data...");
+                BooleanBuilder builder = new BooleanBuilder();
 
-                    ReportObject report = new ReportObject();
-                    report.setAmount(totalAmount);
-                    report.setDate(Calendar.getInstance());
-                    payments = null;
-                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
-                    report.setTitle(this.optionService.getOption("REPORT:PAYMENTS").getValue());
-                    report.setContent(records);
-                    log.info("Sending Payload send to client...");
-                    responseObject.setMessage("Fetched data successfully");
-                    responseObject.setPayload(report);
-                    response = new RestResponse(responseObject, HttpStatus.OK);
+
+                //Zone
+                if (reportRequest.getZoneId() != null) {
+                    builder.and(QPayment.payment.account.zone.zoneId.eq(reportRequest.getZoneId()));
                 } else {
-                    responseObject.setMessage("Your search did not match any records");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    //Scheme
+                    if (reportRequest.getSchemeId() != null) {
+                        List<BigInteger> zoneIDs = zoneRepository.findAllBySchemeId(reportRequest.getSchemeId());
+                        if (!zoneIDs.isEmpty()) {
+                            BooleanBuilder zoneBuilder = new BooleanBuilder();
+                            for (BigInteger zoneID : zoneIDs) {
+                                zoneBuilder.or(QPayment.payment.account.zone.zoneId.eq(zoneID.longValue()));
+                            }
+                            builder.and(zoneBuilder);
+                        }
+                    }
                 }
+
+                //Payment type
+                Boolean isAdjustment = Boolean.FALSE;
+                if (reportRequest.getPaymentTypeId() != null) {
+                    PaymentType paymentType = paymentTypeRepository.findOne(reportRequest.getPaymentTypeId());
+                    if (paymentType != null) {
+                        if (StringUtils.equalsIgnoreCase(paymentType.getName(), "Debit") || StringUtils.equalsIgnoreCase(paymentType.getName(), "Credit")) {
+                            isAdjustment = Boolean.TRUE;
+                        }
+                    }
+                    builder.and(QPayment.payment.paymentType.paymentTypeId.eq(reportRequest.getPaymentTypeId()));
+                }
+
+                //Payment source
+                if (reportRequest.getPaymentSourceId() != null) {
+                    if (!isAdjustment) {
+                        builder.and(QPayment.payment.paymentSource.paymentSourceId.eq(reportRequest.getPaymentSourceId()));
+                    }
+                }
+
+                if (reportRequest.getFromDate() == null) {
+                    responseObject.setMessage("From date can not be empty.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+
+                if (reportRequest.getToDate() == null) {
+                    responseObject.setMessage("To date can not be empty.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                // DateTime test= reportRequest.getFromDate().withZone(DateTimeZone.forID("Africa/Nairobi"));
+
+                reportRequest.setFromDate(reportRequest.getFromDate().withZone(DateTimeZone.forID("Africa/Nairobi")));
+                reportRequest.setToDate(reportRequest.getToDate().withZone(DateTimeZone.forID("Africa/Nairobi")));
+
+                if (reportRequest.getFromDate().isAfter(reportRequest.getToDate())) {
+                    responseObject.setMessage("From date can not be after to date.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+
+                Calendar fromDate = Calendar.getInstance();
+                Calendar toDate = Calendar.getInstance();
+                BooleanBuilder dateBuilder = new BooleanBuilder();
+                if (reportRequest.getFromDate().isEqual(reportRequest.getToDate())) {
+                    fromDate.setTimeInMillis(reportRequest.getFromDate().hourOfDay().withMinimumValue().getMillis());
+                    toDate.setTimeInMillis(reportRequest.getFromDate().hourOfDay().withMaximumValue().getMillis());
+
+                    dateBuilder.and(QPayment.payment.transactionDate.between(fromDate, toDate));
+                    //dateBuilder.and(QPayment.payment.transactionDate.loe(toDate));
+                } else {
+                    fromDate.setTimeInMillis(reportRequest.getFromDate().hourOfDay().withMinimumValue().getMillis());
+                    toDate.setTimeInMillis(reportRequest.getToDate().hourOfDay().withMaximumValue().getMillis());
+
+                    dateBuilder.and(QPayment.payment.transactionDate.between(fromDate, toDate));
+                    //dateBuilder.and(QPayment.payment.transactionDate.loe(toDate));
+                }
+                builder.and(dateBuilder);
+
+
+                Iterable<Payment> payments = paymentRepository.findAll(builder, QPayment.payment.transactionDate.desc());
+                Double totalAmount = 0.0;
+                List<PaymentRecord> records = new ArrayList<>();
+                for (Payment p : payments) {
+                    PaymentRecord pr = new PaymentRecord();
+                    pr.setAccName(p.getAccount().getAccName());
+                    pr.setAccNo(p.getAccount().getAccNo());
+                    pr.setZone(p.getAccount().getZone().getName());
+                    pr.setReceiptNo(p.getReceiptNo());
+                    pr.setTransactionDate(p.getTransactionDate());
+                    pr.setAmount(p.getAmount());
+                    pr.setPaymentType(p.getPaymentType().getName());
+                    records.add(pr);
+                    //add
+                    totalAmount += p.getAmount();
+                }
+                log.info("Done crunching payments report data...");
+
+                ReportObject report = new ReportObject();
+                report.setAmount(totalAmount);
+                report.setDate(Calendar.getInstance());
+                payments = null;
+                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                report.setTitle(this.optionService.getOption("REPORT:PAYMENTS").getValue());
+                report.setContent(records);
+                log.info("Sending Payload send to client...");
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(report);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

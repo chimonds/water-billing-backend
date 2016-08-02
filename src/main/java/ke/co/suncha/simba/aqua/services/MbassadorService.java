@@ -25,12 +25,6 @@ public class MbassadorService {
 
     @Handler
     public void updateAccountAgeing(String accountNo) {
-        //log.info("Notified engine to update ageing for "+ accountNo);
-        accountService.updateAccountAgeing(accountNo);
-    }
 
-//    @Handler
-//    public void allocateMPESATransaction(MPESATransaction mpesaTransaction) {
-//        mpesaService.allocateMPESATransaction(mpesaTransaction);
-//    }
+    }
 }

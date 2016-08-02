@@ -31,7 +31,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -50,4 +52,8 @@ public interface ZoneRepository extends PagingAndSortingRepository<Zone, Long> {
 
     @Query(value = "SELECT name FROM zones WHERE zone_id = (SELECT zone_id FROM accounts WHERE account_id=:accountId)", nativeQuery = true)
     String getByAccountId(@Param("accountId") Long accountId);
+
+    @Transactional
+    @Query(value = "SELECT zone_id FROM zones WHERE scheme_id =:schemeId", nativeQuery = true)
+    List<BigInteger> findAllBySchemeId(@Param("schemeId") Long schemeId);
 }

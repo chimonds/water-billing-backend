@@ -29,7 +29,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
-import ke.co.suncha.simba.aqua.reports.ReportsParam;
+import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.services.BillService;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,32 +75,32 @@ public class BillController {
 
     @RequestMapping(value = "/negativeReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of all negative readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse negativeReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse negativeReadings(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.getNegativeReadingsReport(requestObject);
     }
 
     @RequestMapping(value = "/meterStops", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of all meter stops.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse meterStops(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse meterStops(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.getMeterStopsReport(requestObject);
     }
 
     @RequestMapping(value = "/meterReadings", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse meterReadings(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse meterReadings(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.getMeterReadingsReport(requestObject);
     }
 
 
     @RequestMapping(value = "/billedAmount", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse billedAmount(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse billedAmount(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.getBilledAmountReport(requestObject);
     }
 
     @RequestMapping(value = "/checklist", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of all meter readings.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse billingChecklist(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse billingChecklist(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.getBillingChecklistReport(requestObject);
     }
 

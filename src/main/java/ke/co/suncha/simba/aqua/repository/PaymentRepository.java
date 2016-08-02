@@ -23,15 +23,13 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.BillingMonth;
-import ke.co.suncha.simba.aqua.models.Payment;
+import ke.co.suncha.simba.aqua.models.*;
 
-import ke.co.suncha.simba.aqua.models.PaymentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
@@ -42,7 +40,7 @@ import java.util.List;
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
-public interface PaymentRepository extends PagingAndSortingRepository<Payment, Long> {
+public interface PaymentRepository extends PagingAndSortingRepository<Payment, Long>, QueryDslPredicateExecutor<Payment> {
 
     Page<Payment> findAll(Pageable pageable);
 
@@ -98,10 +96,13 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
     @Query(value = "SELECT SUM(amount) FROM payments WHERE payment_type_id=:paymentTypeId AND date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate", nativeQuery = true)
     Double getTotalByPaymentTypeByDate(@Param("paymentTypeId") Long paymentTypeId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
-    @Query(value = "SELECT SUM(amount) FROM payments WHERE  date(transaction_date) <=:endDate AND account_id=:accountId", nativeQuery = true)
-    Double getTotalByAccountByDate(@Param("accountId") Long accountId,@Param("endDate") String endDate);
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE  account_id=:accountId AND date(transaction_date) <=:endDate", nativeQuery = true)
+    Double getTotalByAccountByDate(@Param("accountId") Long accountId, @Param("endDate") String endDate);
 
     @Query(value = "SELECT SUM(amount) FROM payments WHERE  date(transaction_date) >=:startDate AND date(transaction_date) <=:endDate AND payment_type_id IN (SELECT payment_type_id FROM payment_types WHERE is_unique=TRUE)", nativeQuery = true)
-    Double getTotalReceiptsByDate(@Param("startDate") String startDate,@Param("endDate") String endDate);
+    Double getTotalReceiptsByDate(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(amount) FROM payments WHERE  account_id=:accountId", nativeQuery = true)
+    Double getTotalByAccount(@Param("accountId") Long accountId);
 
 }

@@ -25,6 +25,8 @@ package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mysema.query.BooleanBuilder;
+import com.mysema.query.Tuple;
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -39,6 +41,7 @@ import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
+import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeader;
 import ke.co.suncha.simba.aqua.repository.*;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -54,6 +57,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -120,6 +124,10 @@ public class AccountService {
     @Autowired
     SchemeRepository schemeRepository;
 
+    @Autowired
+    EntityManager entityManager;
+
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -130,33 +138,24 @@ public class AccountService {
     public Account updateBalance(Long accountId) {
         // update balances
         Account account = accountRepository.findOne(accountId);
-
         try {
-            if (account == null) {
+            if (!accountRepository.exists(accountId)) {
                 return null;
             }
 
-            Boolean updateBalance = true;
-
-            try {
-                if (account.getUpdateBalance() != null) {
-                    updateBalance = account.getUpdateBalance();
-                }
-            } catch (Exception ex) {
-
+            JPAQuery query = new JPAQuery(entityManager);
+            BooleanBuilder accountBuilder = new BooleanBuilder();
+            accountBuilder.and(QAccount.account.accountId.eq(accountId));
+            Double balanceBroughtForward = query.from(QAccount.account).where(accountBuilder).singleResult(QAccount.account.balanceBroughtForward);
+            if (balanceBroughtForward == null) {
+                balanceBroughtForward = 0d;
             }
 
-            if (!updateBalance) {
-                return null;
-            }
 
-            if (!account.isMetered()) {
-                account.setMeter(null);
-            }
             Double balance = 0d;
 
             // add balance b/f
-            balance += account.getBalanceBroughtForward();
+            balance += balanceBroughtForward;
 
             Double waterSaleTotal = 0d;
             waterSaleTotal += balance;
@@ -164,41 +163,56 @@ public class AccountService {
             Double meterRentTotal = 0d;
             Double penaltiesTotal = 0d;
 
-            List<Bill> bills = account.getBills();
-            if (bills != null) if (!bills.isEmpty()) {
-                {
-                    for (Bill bill : bills) {
-                        balance += bill.getAmount();
-                        balance += bill.getMeterRent();
+            //get total billed amount for all bills
+            //Double dbTotalWaterSaleBilled = billRepository.getTotalBilledAmountByAccount(account.getAccountId());
 
-                        //granular balances
-                        waterSaleTotal += bill.getAmount();
-                        meterRentTotal += bill.getMeterRent();
+            query = new JPAQuery(entityManager);
+            BooleanBuilder billsBuilder = new BooleanBuilder();
+            billsBuilder.and(QBill.bill.account.accountId.eq(accountId));
+            Double dbTotalWaterSaleBilled = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.totalBilled.sum());
 
-                        if (bill.getBillItems() != null) {
-                            // get bill items
-                            List<BillItem> billItems = bill.getBillItems();
-                            if (!billItems.isEmpty()) {
-                                for (BillItem billItem : billItems) {
-                                    balance += billItem.getAmount();
-                                    penaltiesTotal += billItem.getAmount();
-                                }
-                            }
-                        }
-                    }
-                }
+
+            if (dbTotalWaterSaleBilled != null) {
+                balance += dbTotalWaterSaleBilled;
+                waterSaleTotal += dbTotalWaterSaleBilled;
             }
+
+            //get total meter rent for all bills
+            //Double dbTotalMeterRentBilled = billRepository.getTotalMeterRentByAccount(account.getAccountId());
+            query = new JPAQuery(entityManager);
+            Double dbTotalMeterRentBilled = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.meterRent.sum());
+
+            if (dbTotalMeterRentBilled != null) {
+                balance += dbTotalMeterRentBilled;
+                meterRentTotal += dbTotalMeterRentBilled;
+            }
+
+            //Get total_billed-meter_rent-amount
+            query = new JPAQuery(entityManager);
+            Double dbTotalFines = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.totalBilled.sum().subtract(QBill.bill.meterRent.sum().add(QBill.bill.amount.sum())));
+
+
+            //Double dbTotalFines = billRepository.getTotalFinesByAccount(account.getAccountId());
+            if (dbTotalFines != null) {
+                balance += dbTotalFines;
+                penaltiesTotal += dbTotalFines;
+            }
+
+
             Double totalPayments = 0d;
-            // get payments
-            List<Payment> payments = account.getPayments();
-            if (payments != null) {
-                if (!payments.isEmpty()) {
-                    for (Payment p : payments) {
-                        balance = (balance - p.getAmount());
-                        totalPayments += p.getAmount();
-                    }
-                }
+            query = new JPAQuery(entityManager);
+            BooleanBuilder paymentBuilder = new BooleanBuilder();
+            paymentBuilder.and(QPayment.payment.account.accountId.eq(accountId));
+            Double dbTotalPayments = query.from(QPayment.payment).where(paymentBuilder).singleResult(QPayment.payment.amount.sum());
+
+
+            //Double dbTotalPayments = paymentRepository.getTotalByAccount(account.getAccountId());
+            if (dbTotalPayments != null) {
+                totalPayments += dbTotalPayments;
             }
+
+            balance = (balance - totalPayments);
+
 
             account.setOutstandingBalance(balance);
 
@@ -242,11 +256,7 @@ public class AccountService {
                     }
                 }
             }
-            account.setUpdateBalance(Boolean.FALSE);
             account = accountRepository.save(account);
-
-            //Publish message to update ageing report for the account
-            mbassadorService.bus.publishAsync(account.getAccNo());
         } catch (Exception ex) {
             log.error(ex.getMessage());
             ex.printStackTrace();
@@ -255,7 +265,7 @@ public class AccountService {
     }
 
     @Transactional
-    public void updateAccountAgeing(String accNo) {
+    public void updateAccountAgeingRemove(String accNo) {
 
         AgeingRecord ageingRecord = ageingRecordRepository.findByAccNo(accNo);
         if (ageingRecord == null) {
@@ -597,17 +607,44 @@ public class AccountService {
     }
 
     @Transactional
-    public void updateAccountAgeingCustom(Long accountId, DateTime toDate) {
-        Account account = accountRepository.findOne(accountId);
-        String accNo = account.getAccNo();
-        String consumerName = account.getAccName();
-        Long consumerId = account.getConsumer().getConsumerId();
+    public void updateAccountAgeingCustom(Long accountId, DateTime toDate, ReportHeader reportHeader) {
+        Double balanceBroughtForward = 0d;
+        String accNo = "";
+        String accountStatus = "Active";
+        String zone = "Not Available";
+        String consumerName = "";
 
-        // accountRepository.getAccountNo(accountId);
-        // consumerRepository.getConsumerName(consumerId).toUpperCase();
-        //accountRepository.getCustomerId(accountId);
+        JPAQuery query = new JPAQuery(entityManager);
+        BooleanBuilder accountBuilder = new BooleanBuilder();
+        accountBuilder.and(QAccount.account.accountId.eq(accountId));
+        List<Tuple> tuples = query.from(QAccount.account).where(accountBuilder).list(QAccount.account.balanceBroughtForward, QAccount.account.accNo, QAccount.account.active, QAccount.account.zone.name, QAccount.account.consumer.firstName, QAccount.account.consumer.middleName, QAccount.account.consumer.lastName);
+        if (!tuples.isEmpty()) {
+            Tuple tuple = tuples.get(0);
+            Double dbBalanceBroughtForward = tuple.get(QAccount.account.balanceBroughtForward);
+            if (dbBalanceBroughtForward != null) {
+                balanceBroughtForward += dbBalanceBroughtForward;
+            }
 
-        DateTime today = toDate.withMonthOfYear(6).dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
+            //account number
+            accNo = tuple.get(QAccount.account.accNo);
+
+            //Account status
+            Boolean active = tuple.get(QAccount.account.active);
+            if (!active) {
+                accountStatus = "Inactive";
+            }
+
+            //Zone
+            zone = tuple.get(QAccount.account.zone.name);
+
+            //consumer name
+            consumerName = tuple.get(QAccount.account.consumer.firstName) + " " + tuple.get(QAccount.account.consumer.middleName) + " " + tuple.get(QAccount.account.consumer.lastName);
+            consumerName = consumerName.replace("null", "");
+        }
+
+
+        //DateTime today = toDate.withMonthOfYear(6).dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
+        DateTime today = toDate;
         DateTime sixMonthsAgo = today.minusMonths(6);
         DateTime fourMonthsAgo = today.minusMonths(4);
         DateTime threeMonthsAgo = today.minusMonths(3);
@@ -623,11 +660,9 @@ public class AccountService {
         Double balanceOneMonthsAgo = 0d;
         Double balanceToday = 0d;
 
-        Double balanceBroughtForward = account.getBalanceBroughtForward();
-
         //Get all payments unit today (Today is supplied by the user)
         //TODO;
-        Double totalPayments = paymentService.getTotalByAccountByDate(accountId, new DateTime());
+        Double totalPayments = paymentService.getTotalByAccountByDate(accountId, today);
 
         //get bills above 180 days
         Double billsSixMonthsAgo = billService.getAccountBillsByDate(accountId, sixMonthsAgo) + balanceBroughtForward;
@@ -775,13 +810,6 @@ public class AccountService {
         }
 
 
-        Integer cutOff = accountRepository.getAccountStatus(accountId);
-        String accStatus = "Active";
-        if (cutOff == 0) {
-            accStatus = "Inactive";
-        }
-        String zone = zoneRepository.getByAccountId(accountId);
-
         Long recordId = ageingDataRepository.getRecordId(accountId);
         AgeingData ageingRecord = new AgeingData();
         if (recordId != null) {
@@ -808,8 +836,9 @@ public class AccountService {
         ageingRecord.setAccountId(accountId);
         //ageingRecord.setUserId(userId);
         ageingRecord.setAccNo(accNo);
-        ageingRecord.setCutOff(accStatus);
+        ageingRecord.setCutOff(accountStatus);
         ageingRecord.setBalance(balance);//To
+        ageingRecord.setReportHeader(reportHeader);
         ageingDataRepository.save(ageingRecord);
     }
 
@@ -1671,7 +1700,7 @@ public class AccountService {
         return response;
     }
 
-    public RestResponse getFieldCardReport(RestRequestObject<ReportsParam> requestObject) {
+    public RestResponse getFieldCardReport(RestRequestObject<AccountsReportRequest> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -1680,83 +1709,55 @@ public class AccountService {
                     return response;
                 }
 
-                ReportsParam request = requestObject.getObject();
-                Map<String, String> params = new HashMap<>();
-
-                if (request.getFields() != null) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    String jsonString = mapper.writeValueAsString(request.getFields());
-                    params = mapper.readValue(jsonString, Map.class);
+                AccountsReportRequest accountsReportRequest = requestObject.getObject();
+                BooleanBuilder builder = new BooleanBuilder();
+                if (accountsReportRequest.getOnStatus() != null) {
+                    builder.and(QAccount.account.onStatus.eq(accountsReportRequest.getOnStatus()));
                 }
 
-                List<BigInteger> accountList = accountRepository.findAllAccountIds();
-
-                if (!accountList.isEmpty()) {
-                    log.info(accountList.size() + " accounts found.");
-                    List<AccountRecord> accountRecords = new ArrayList<>();
-
-                    for (BigInteger accountId : accountList) {
-                        Account acc = accountRepository.findOne(accountId.longValue());
-                        AccountRecord ar = new AccountRecord();
-                        ar.setAccName(acc.getAccName());
-                        ar.setAccNo(acc.getAccNo());
-                        ar.setZone(acc.getZone().getName());
-                        ar.setLocation(acc.getLocation().getName());
-                        ar.setActive(acc.isActive());
-
-                        if (acc.isMetered()) {
-                            ar.setMeterNo(acc.getMeter().getMeterNo());
-                            ar.setMeterOwner(acc.getMeter().getMeterOwner().getName());
-                        }
-
-
-                        Boolean include = true;
-                        if (params != null) {
-                            if (!params.isEmpty()) {
-                                //zone id
-                                if (params.containsKey("zoneId")) {
-                                    Object zoneId = params.get("zoneId");
-                                    if (acc.getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                                        include = false;
-                                    }
-                                }
-
-                                //account status
-                                if (params.containsKey("accountStatus")) {
-                                    String status = params.get("accountStatus");
-                                    if (status.compareToIgnoreCase("inactive") == 0) {
-                                        if (acc.isActive()) {
-                                            include = false;
-                                        }
-                                    } else if (status.compareToIgnoreCase("active") == 0) {
-                                        if (!acc.isActive()) {
-                                            include = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (include) {
-                            accountRecords.add(ar);
-                        }
+                if (accountsReportRequest.getIsCutOff() != null) {
+                    Boolean isActive = Boolean.TRUE;
+                    if (accountsReportRequest.getIsCutOff()) {
+                        isActive = Boolean.FALSE;
                     }
-                    log.info("Packaged report data...");
-
-                    ReportObject report = new ReportObject();
-                    report.setDate(Calendar.getInstance());
-
-                    report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
-                    report.setTitle(this.optionService.getOption("REPORT:FIELD_CARD").getValue());
-                    report.setContent(accountRecords);
-                    log.info("Sending Payload send to client...");
-                    responseObject.setMessage("Fetched data successfully");
-                    responseObject.setPayload(report);
-                    response = new RestResponse(responseObject, HttpStatus.OK);
-                } else {
-                    responseObject.setMessage("Your search did not match any records");
-                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                    builder.and(QAccount.account.active.eq(isActive));
                 }
+
+                if (accountsReportRequest.getZoneId() != null) {
+                    builder.and(QAccount.account.zone.zoneId.eq(accountsReportRequest.getZoneId()));
+                } else if (accountsReportRequest.getSchemeId() != null) {
+                    builder.and(QAccount.account.zone.scheme.schemeId.eq(accountsReportRequest.getSchemeId()));
+                }
+
+                Iterable<Account> accountList = accountRepository.findAll(builder);
+                List<AccountRecord> accountRecords = new ArrayList<>();
+
+                for (Account acc : accountList) {
+                    AccountRecord ar = new AccountRecord();
+                    ar.setAccName(acc.getAccName());
+                    ar.setAccNo(acc.getAccNo());
+                    ar.setZone(acc.getZone().getName());
+                    ar.setLocation(acc.getLocation().getName());
+                    ar.setActive(acc.isActive());
+
+                    if (acc.isMetered()) {
+                        ar.setMeterNo(acc.getMeter().getMeterNo());
+                        ar.setMeterOwner(acc.getMeter().getMeterOwner().getName());
+                    }
+                    accountRecords.add(ar);
+                }
+                log.info("Packaged report data...");
+                ReportObject report = new ReportObject();
+                report.setDate(Calendar.getInstance());
+
+                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                report.setTitle(this.optionService.getOption("REPORT:FIELD_CARD").getValue());
+                report.setContent(accountRecords);
+                log.info("Sending Payload send to client...");
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(report);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());
@@ -1776,7 +1777,6 @@ public class AccountService {
                 }
 
                 AccountsReportRequest accountsReportRequest = requestObject.getObject();
-
                 BooleanBuilder builder = new BooleanBuilder();
                 if (accountsReportRequest.getOnStatus() != null) {
                     builder.and(QAccount.account.onStatus.eq(accountsReportRequest.getOnStatus()));
@@ -1790,12 +1790,10 @@ public class AccountService {
                     builder.and(QAccount.account.active.eq(isActive));
                 }
 
-                if (accountsReportRequest.getSchemeId() != null) {
-                    builder.and(QAccount.account.zone.scheme.schemeId.eq(accountsReportRequest.getSchemeId()));
-                }
-
                 if (accountsReportRequest.getZoneId() != null) {
                     builder.and(QAccount.account.zone.zoneId.eq(accountsReportRequest.getZoneId()));
+                } else if (accountsReportRequest.getSchemeId() != null) {
+                    builder.and(QAccount.account.zone.scheme.schemeId.eq(accountsReportRequest.getSchemeId()));
                 }
 
                 Iterable<Account> accounts = accountRepository.findAll(builder);
@@ -1846,5 +1844,4 @@ public class AccountService {
         }
         return response;
     }
-
 }

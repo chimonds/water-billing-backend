@@ -29,6 +29,7 @@ import ke.co.suncha.simba.aqua.models.BillingMonth;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +43,7 @@ import java.util.List;
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 
-public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
+public interface BillRepository extends PagingAndSortingRepository<Bill, Long>, QueryDslPredicateExecutor<Bill> {
     Page<Bill> findAll(Pageable pageable);
 
     Page<Bill> findAllByAccount(Account account, Pageable pageable);
@@ -90,6 +91,18 @@ public interface BillRepository extends PagingAndSortingRepository<Bill, Long> {
     Double getTotalAmountByZoneByBillingMonth(@Param("zoneId") Long zoneId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
     @Query(value = "SELECT SUM(total_billed) FROM bills WHERE account_id =:accountId AND billing_month_id IN (SELECT billing_month_id FROM billing_months WHERE  date(billing_month)<=:endDate )", nativeQuery = true)
-    Double getTotalBilledByDate(@Param("accountId") Long accountId,  @Param("endDate") String endDate);
+    Double getTotalBilledByDate(@Param("accountId") Long accountId, @Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(total_billed) FROM bills WHERE account_id =:accountId AND date(transaction_date)<=:endDate ", nativeQuery = true)
+    Double getTotalBilledByTransactionDate(@Param("accountId") Long accountId, @Param("endDate") String endDate);
+
+    @Query(value = "SELECT SUM(amount) FROM bills WHERE account_id =:accountId", nativeQuery = true)
+    Double getTotalBilledAmountByAccount(@Param("accountId") Long accountId);
+
+    @Query(value = "SELECT SUM(meter_rent) FROM bills WHERE account_id =:accountId", nativeQuery = true)
+    Double getTotalMeterRentByAccount(@Param("accountId") Long accountId);
+
+    @Query(value = "SELECT SUM(total_billed-meter_rent-amount) FROM bills WHERE account_id =:accountId", nativeQuery = true)
+    Double getTotalFinesByAccount(@Param("accountId") Long accountId);
 
 }

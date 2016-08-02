@@ -6,6 +6,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
 import ke.co.suncha.simba.aqua.services.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,7 @@ public class ReportController extends AbstractRestHandler {
 
     @RequestMapping(value = "/payments", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of payments.", notes = "The list is not paginated.")
-    public RestResponse getPayments(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse getPayments(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return reportService.getPayments(requestObject);
     }
 
@@ -71,12 +72,6 @@ public class ReportController extends AbstractRestHandler {
     @ApiOperation(value = "Get a list of accounts.", notes = "The list is not paginated.")
     public RestResponse getAgeing(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return reportService.getAgeingReport(requestObject);
-    }
-
-    @RequestMapping(value = "/ageingWithDate", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-    @ApiOperation(value = "Get a list of accounts.", notes = "The list is not paginated.")
-    public RestResponse getAgeingWithDate(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return reportService.getAgeingWithDateReport(requestObject);
     }
 
     @RequestMapping(value = "/monthlyBills", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
