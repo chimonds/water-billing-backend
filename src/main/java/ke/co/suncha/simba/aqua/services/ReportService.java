@@ -903,14 +903,12 @@ public class ReportService {
                     for (Bill bill : account.getBills()) {
                         //add bill record
                         Calendar billingMonth = bill.getBillingMonth().getMonth();
-
-                        //String billingYearMonth = billingMonth.get(Calendar.YEAR) + " " + billingMonth.get(Calendar.MONTH);
-
                         SimpleDateFormat format1 = new SimpleDateFormat("MMM, yyyy");
                         String formattedDate = format1.format(billingMonth.getTime());
 
                         StatementRecord billRecord = new StatementRecord();
-                        billRecord.setTransactionDate(bill.getTransactionDate());
+                        //billRecord.setTransactionDate(bill.getTransactionDate());
+                        billRecord.setTransactionDate(bill.getBillingMonth().getMonth());
                         billRecord.setItemType("Bill");
                         billRecord.setRefNo(formattedDate);
                         billRecord.setAmount(bill.getAmount());
