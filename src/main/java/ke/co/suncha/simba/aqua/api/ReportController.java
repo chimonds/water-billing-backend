@@ -45,7 +45,7 @@ public class ReportController extends AbstractRestHandler {
 
     @RequestMapping(value = "/waris", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list waris summary items.", notes = "The list is not paginated.")
-    public RestResponse getWaris(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse getWaris(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return reportService.getWaris(requestObject);
     }
 

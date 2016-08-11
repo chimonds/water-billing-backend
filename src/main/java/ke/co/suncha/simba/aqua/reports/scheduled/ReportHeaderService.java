@@ -14,12 +14,10 @@ import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
-import ke.co.suncha.simba.aqua.models.QAccount;
-import ke.co.suncha.simba.aqua.models.QBill;
-import ke.co.suncha.simba.aqua.models.QPayment;
-import ke.co.suncha.simba.aqua.models.Zone;
+import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
+import ke.co.suncha.simba.aqua.repository.AgeingDataRepository;
 import ke.co.suncha.simba.aqua.repository.ZoneRepository;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import ke.co.suncha.simba.aqua.services.BillService;
@@ -90,6 +88,9 @@ public class ReportHeaderService {
 
     @Autowired
     SimbaOptionService optionService;
+
+    @Autowired
+    AgeingDataRepository ageingDataRepository;
 
     public BlockingQueue<ReportHeader> reportHeaderBlockingQueue = new ArrayBlockingQueue<ReportHeader>(100);
 
@@ -177,7 +178,9 @@ public class ReportHeaderService {
             }
 
             Calendar createdOn = Calendar.getInstance();
-            DateTime created = reportHeader.getToDate().plusDays(1);
+            //DateTime created = reportHeader.getToDate().plusDays(1);
+            DateTime created = reportHeader.getToDate().withZone(DateTimeZone.forID("Africa/Nairobi")).hourOfDay().withMaximumValue();
+
 
             createdOn.setTimeInMillis(created.getMillis());
             builder.and(QAccount.account.createdOn.loe(createdOn));
@@ -238,7 +241,10 @@ public class ReportHeaderService {
             }
 
             Calendar createdOn = Calendar.getInstance();
-            DateTime created = reportHeader.getToDate().plusDays(1);
+            DateTime created = reportHeader.getToDate().withZone(DateTimeZone.forID("Africa/Nairobi")).hourOfDay().withMaximumValue();
+
+
+            //DateTime created = reportHeader.getToDate().plusDays(1);
 
             createdOn.setTimeInMillis(created.getMillis());
             builder.and(QAccount.account.createdOn.loe(createdOn));
@@ -264,13 +270,12 @@ public class ReportHeaderService {
                         List<Tuple> tuples = query.from(QAccount.account).where(accountBuilder).list(QAccount.account.balanceBroughtForward, QAccount.account.accNo, QAccount.account.active, QAccount.account.zone.name, QAccount.account.consumer.firstName, QAccount.account.consumer.middleName, QAccount.account.consumer.lastName);
                         if (!tuples.isEmpty()) {
                             Tuple tuple = tuples.get(0);
+                            //account number
+                            accNo = tuple.get(QAccount.account.accNo);
                             Double dbBalanceBroughtForward = tuple.get(QAccount.account.balanceBroughtForward);
                             if (dbBalanceBroughtForward != null) {
                                 balanceBroughtForward += dbBalanceBroughtForward;
                             }
-
-                            //account number
-                            accNo = tuple.get(QAccount.account.accNo);
 
                             //Account status
                             Boolean active = tuple.get(QAccount.account.active);
@@ -478,10 +483,23 @@ public class ReportHeaderService {
                     toSave.setCutOff(reportHeader.getCutOff());
                 }
 
+                if (reportHeader.getScheme() == null) {
+                    responseObject.setMessage("Scheme can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                Scheme scheme = schemeRepository.findOne(reportHeader.getScheme().getSchemeId());
+                if (scheme == null) {
+                    responseObject.setMessage("Invalid scheme resource");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
                 // create resource
                 if (reportHeader.getScheme() != null) {
                     if (reportHeader.getScheme().getSchemeId() != null) {
-                        Scheme scheme = schemeRepository.findOne(reportHeader.getScheme().getSchemeId());
+                        //Scheme scheme = schemeRepository.findOne(reportHeader.getScheme().getSchemeId());
                         if (scheme != null) {
                             reportHeader.setScheme(scheme);
                             toSave.setScheme(scheme);
@@ -647,4 +665,39 @@ public class ReportHeaderService {
         return response;
     }
 
+    public RestResponse getAgeingBalancesReport(RestRequestObject<ReportHeader> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_account_balances");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                ReportHeader reportHeader = requestObject.getObject();
+                BooleanBuilder builder = new BooleanBuilder();
+                builder.and(QAgeingData.ageingData.reportHeader.reportHeaderId.eq(reportHeader.getReportHeaderId()));
+
+                Iterable<AgeingData> records = ageingDataRepository.findAll(builder, QAgeingData.ageingData.balance.desc());
+
+                log.info("Packaged report data...");
+                ReportObject report = new ReportObject();
+                report.setDate(Calendar.getInstance());
+
+                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                report.setTitle(this.optionService.getOption("REPORT:AGEING").getValue());
+                report.setContent(records);
+
+                log.info("Sending Payload send to client...");
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(report);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

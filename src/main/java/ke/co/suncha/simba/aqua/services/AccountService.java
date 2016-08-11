@@ -151,7 +151,6 @@ public class AccountService {
                 balanceBroughtForward = 0d;
             }
 
-
             Double balance = 0d;
 
             // add balance b/f
@@ -169,7 +168,7 @@ public class AccountService {
             query = new JPAQuery(entityManager);
             BooleanBuilder billsBuilder = new BooleanBuilder();
             billsBuilder.and(QBill.bill.account.accountId.eq(accountId));
-            Double dbTotalWaterSaleBilled = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.totalBilled.sum());
+            Double dbTotalWaterSaleBilled = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.amount.sum());
 
 
             if (dbTotalWaterSaleBilled != null) {
@@ -607,6 +606,43 @@ public class AccountService {
     }
 
     @Transactional
+    private Double getReceiptsByDate(Long accountId, DateTime toDate) {
+        Calendar date = Calendar.getInstance();
+        date.setTimeInMillis(toDate.getMillis());
+
+        Double amount = 0d;
+        JPAQuery query = new JPAQuery(entityManager);
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QPayment.payment.account.accountId.eq(accountId));
+
+        //SQLExpressions.date did not match expected type
+        //builder.and(SQLExpressions.date(QPayment.payment.transactionDate).loe(date));
+        builder.and(QPayment.payment.transactionDate.loe(date));
+        Double dbAmount = query.from(QPayment.payment).where(builder).singleResult(QPayment.payment.amount.sum());
+        if (dbAmount != null) {
+            amount += dbAmount;
+        }
+        return amount;
+    }
+
+    @Transactional
+    private Double getBillsByDate(Long accountId, DateTime toDate) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(toDate.getMillis());
+        Double amount = 0d;
+        JPAQuery query = new JPAQuery(entityManager);
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QBill.bill.account.accountId.eq(accountId));
+        //sixMonthsBuilder.and(QBill.bill.transactionDate.loe(sixMonthsAgoC));
+        builder.and(QBill.bill.transactionDate.loe(calendar));
+        Double dbAmount = query.from(QBill.bill).where(builder).singleResult(QBill.bill.totalBilled.sum());
+        if (dbAmount != null) {
+            amount += dbAmount;
+        }
+        return amount;
+    }
+
+    @Transactional
     public void updateAccountAgeingCustom(Long accountId, DateTime toDate, ReportHeader reportHeader) {
         Double balanceBroughtForward = 0d;
         String accNo = "";
@@ -662,10 +698,12 @@ public class AccountService {
 
         //Get all payments unit today (Today is supplied by the user)
         //TODO;
-        Double totalPayments = paymentService.getTotalByAccountByDate(accountId, today);
+        Double totalPayments = getReceiptsByDate(accountId, today);
+
 
         //get bills above 180 days
-        Double billsSixMonthsAgo = billService.getAccountBillsByDate(accountId, sixMonthsAgo) + balanceBroughtForward;
+        //Double billsSixMonthsAgo = billService.getAccountBillsByDate(accountId, sixMonthsAgo) + balanceBroughtForward;
+        Double billsSixMonthsAgo = this.getBillsByDate(accountId, sixMonthsAgo) + balanceBroughtForward;
         Double billsSixMonthsAgoX = billsSixMonthsAgo;
 
         if (totalPayments >= billsSixMonthsAgo) {
@@ -688,7 +726,7 @@ public class AccountService {
         }
 
         //Four months ago
-        Double billsFourMonthsAgo = billService.getAccountBillsByDate(accountId, fourMonthsAgo) + balanceBroughtForward;
+        Double billsFourMonthsAgo = getBillsByDate(accountId, fourMonthsAgo) + balanceBroughtForward;
         Double billsFourMonthsAgoX = billsFourMonthsAgo;
 
         if (billsFourMonthsAgo > billsSixMonthsAgoX) {
@@ -713,7 +751,7 @@ public class AccountService {
 
 
         //Three Months
-        Double billsThreeMonthsAgo = billService.getAccountBillsByDate(accountId, threeMonthsAgo) + balanceBroughtForward;
+        Double billsThreeMonthsAgo = getBillsByDate(accountId, threeMonthsAgo) + balanceBroughtForward;
         Double billsThreeMonthsAgoX = billsThreeMonthsAgo;
 
         if (billsThreeMonthsAgo > billsFourMonthsAgoX) {
@@ -738,7 +776,7 @@ public class AccountService {
 
 
         //Two Months
-        Double billsTwoMonthsAgo = billService.getAccountBillsByDate(accountId, twoMonthsAgo) + balanceBroughtForward;
+        Double billsTwoMonthsAgo = getBillsByDate(accountId, twoMonthsAgo) + balanceBroughtForward;
         Double billsTwoMonthsAgoX = billsTwoMonthsAgo;
 
         if (billsTwoMonthsAgo > billsThreeMonthsAgoX) {
@@ -763,7 +801,7 @@ public class AccountService {
 
 
         //One Month
-        Double billsOneMonthAgo = billService.getAccountBillsByDate(accountId, oneMonthAgo) + balanceBroughtForward;
+        Double billsOneMonthAgo = getBillsByDate(accountId, oneMonthAgo) + balanceBroughtForward;
         Double billsOneMonthAgoX = billsOneMonthAgo;
 
         if (billsOneMonthAgo > billsTwoMonthsAgoX) {
@@ -788,7 +826,7 @@ public class AccountService {
 
 
         //Today
-        Double billsToday = billService.getAccountBillsByDate(accountId, today) + balanceBroughtForward;
+        Double billsToday = getBillsByDate(accountId, today) + balanceBroughtForward;
         if (billsToday > billsOneMonthAgoX) {
             billsToday = billsToday - billsOneMonthAgoX;
             balanceToday = billsNotPaid;
@@ -809,14 +847,7 @@ public class AccountService {
             }
         }
 
-
-        Long recordId = ageingDataRepository.getRecordId(accountId);
         AgeingData ageingRecord = new AgeingData();
-        if (recordId != null) {
-            ageingRecord = ageingDataRepository.findOne(recordId);
-        }
-
-
         Double balance = 0d;
         if (totalPayments > 0) {
             balance = (-1 * totalPayments);
@@ -839,6 +870,7 @@ public class AccountService {
         ageingRecord.setCutOff(accountStatus);
         ageingRecord.setBalance(balance);//To
         ageingRecord.setReportHeader(reportHeader);
+        ageingRecord.setZone(zone);
         ageingDataRepository.save(ageingRecord);
     }
 

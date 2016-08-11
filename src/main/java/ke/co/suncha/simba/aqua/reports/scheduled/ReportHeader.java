@@ -29,7 +29,7 @@ public class ReportHeader implements Serializable {
     private String requestedBy;
 
     @Column(name = "time_taken")
-    private String timeTaken="";
+    private String timeTaken = "";
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_on", nullable = false)
@@ -48,6 +48,9 @@ public class ReportHeader implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_id")
     private Zone zone;
+
+    @Transient
+    private Long billingMonthId;
 
     @Column(name = "status")
     private Integer status = ReportStatus.PENDING;
@@ -147,6 +150,14 @@ public class ReportHeader implements Serializable {
 
     public void setTimeTaken(String timeTaken) {
         this.timeTaken = timeTaken;
+    }
+
+    public Long getBillingMonthId() {
+        return billingMonthId;
+    }
+
+    public void setBillingMonthId(Long billingMonthId) {
+        this.billingMonthId = billingMonthId;
     }
 
     @Override

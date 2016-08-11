@@ -56,6 +56,7 @@ public class AgeingData implements Serializable {
     @Column(name = "acc_no")
     private String accNo;
 
+    @JsonIgnore
     @Column(name = "account_id")
     private Long accountId;
 

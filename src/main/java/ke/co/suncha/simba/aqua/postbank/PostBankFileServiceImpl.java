@@ -362,7 +362,8 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                                 postBankTransaction.setAccountValid(accValid);
                                 postBankTransaction.setReceiptValid(receiptValid);
                                 postBankTransaction.setPostBankFile(postBankFile);
-                                postBankTransactionRepository.save(postBankTransaction);
+                                postBankTransaction = postBankTransactionRepository.save(postBankTransaction);
+                                String test = "";
                             } else {
                                 fileValid = false;
                             }

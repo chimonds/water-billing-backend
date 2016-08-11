@@ -46,4 +46,9 @@ public class ReportHeaderController extends AbstractRestHandler {
     public RestResponse getAccountBalancesReport(@RequestBody RestRequestObject<ReportHeader> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return reportHeaderService.getAccountBalancesReport(requestObject);
     }
+
+    @RequestMapping(value = "ageingReport", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
+    public RestResponse ageingReport(@RequestBody RestRequestObject<ReportHeader> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportHeaderService.getAgeingBalancesReport(requestObject);
+    }
 }

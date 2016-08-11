@@ -247,7 +247,7 @@ public class AccountSummaryService {
         }
     }
 
-//    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
+    @Scheduled(initialDelay = 1000, fixedDelay = Integer.MAX_VALUE)
     public void populateOutstandingAccountBalances() {
         try {
             log.info("Start updating balances:"+ new DateTime());
