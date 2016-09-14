@@ -423,8 +423,8 @@ public class ReportHeaderService {
 
                 //Start - audit trail
                 AuditRecord auditRecord = new AuditRecord();
-                auditRecord.setParentID(String.valueOf(reportHeader.getReportHeaderId()));
-                auditRecord.setCurrentData(reportHeader.toString());
+                auditRecord.setParentID(String.valueOf(toSave.getReportHeaderId()));
+                auditRecord.setCurrentData(toSave.toString());
                 auditRecord.setParentObject("Report Header");
                 auditRecord.setNotes("CREATED REPORT HEADER - BALANCES");
                 auditService.log(AuditOperation.CREATED, auditRecord);
@@ -535,8 +535,8 @@ public class ReportHeaderService {
 
                 //Start - audit trail
                 AuditRecord auditRecord = new AuditRecord();
-                auditRecord.setParentID(String.valueOf(reportHeader.getReportHeaderId()));
-                auditRecord.setCurrentData(reportHeader.toString());
+                auditRecord.setParentID(String.valueOf(toSave.getReportHeaderId()));
+                auditRecord.setCurrentData(toSave.toString());
                 auditRecord.setParentObject("Report Header");
                 auditRecord.setNotes("CREATED REPORT HEADER - AGEING");
                 auditService.log(AuditOperation.CREATED, auditRecord);

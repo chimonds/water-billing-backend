@@ -1,5 +1,7 @@
 package ke.co.suncha.simba.aqua.services;
 
+import com.mysema.query.BooleanBuilder;
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -14,12 +16,13 @@ import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
-import org.json.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -29,10 +32,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 /**
  * Created by manyala on 5/26/15.
@@ -59,6 +65,8 @@ public class SMSService {
     @Autowired
     private BillRepository billRepository;
 
+    @Autowired
+    EntityManager entityManager;
 
     @Autowired
     private SMSInquiryRepository smsInquiryRepository;
@@ -114,7 +122,16 @@ public class SMSService {
 
             Double bal = 0d;
             bal = Double.valueOf(balance);
+
+            JPAQuery query = new JPAQuery(entityManager);
+            BooleanBuilder builder = new BooleanBuilder();
+            builder.and(QSMSBalance.sMSBalance.balanceId.eq(1L));
+            Double dbBalance = query.from(QSMSBalance.sMSBalance).where(builder).singleResult(QSMSBalance.sMSBalance.amount);
+            if (dbBalance != null) {
+                bal += dbBalance;
+            }
             balance = bal.intValue() + "";
+
         } catch (Exception e) {
             log.error(e.getMessage());
             e.printStackTrace();

@@ -1,7 +1,5 @@
 package ke.co.suncha.simba.aqua.reports;
 
-import org.joda.time.DateTime;
-
 import java.util.Calendar;
 
 /**
@@ -14,11 +12,13 @@ public class AccountRecord {
     private String location;
     private  String meterNo;
     private String meterOwner;
+    private String meterSize;
     private  Integer average;
     private  Boolean active;
     private String status;
     private String phoneNo;
     private Calendar createdOn;
+    private String category;
 
     public String getStatus() {
         if (active) {
@@ -29,6 +29,21 @@ public class AccountRecord {
         return status;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getMeterSize() {
+        return meterSize;
+    }
+
+    public void setMeterSize(String meterSize) {
+        this.meterSize = meterSize;
+    }
 
     public String getAccNo() {
         return accNo;

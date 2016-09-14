@@ -230,6 +230,9 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                                             //Payment created = paymentRepository.save(payment);
                                             log.info("Assigned Post Bank payment " + payment.getReceiptNo() + " to " + account.getAccNo());
 
+                                            accountService.setUpdateBalance(account.getAccountId());
+                                            accountService.updateBalance(account.getAccountId());
+
                                             //TODO;
                                             //send message to customer if real account found
                                             smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);

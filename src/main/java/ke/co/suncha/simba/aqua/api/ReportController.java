@@ -31,6 +31,12 @@ public class ReportController extends AbstractRestHandler {
         return reportService.getPayments(requestObject);
     }
 
+    @RequestMapping(value = "/billingCharges", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of payments.", notes = "The list is not paginated.")
+    public RestResponse getBillingChecklistCharges(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getDetailedBillingCheckList(requestObject);
+    }
+
     @RequestMapping(value = "/statement/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get an account statement.", notes = "The list is not paginated.")
     public RestResponse getAccountStatement(@ApiParam(value = "The ID of the existing account resource.", required = true) @PathVariable("id") Long accountId, @RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
@@ -66,12 +72,6 @@ public class ReportController extends AbstractRestHandler {
     @ApiOperation(value = "Get a list of accounts.", notes = "The list is not paginated.")
     public RestResponse getConsumersWithoutPhones(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return reportService.getConsumersWithoutPhoneNumbers(requestObject);
-    }
-
-    @RequestMapping(value = "/ageing", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
-    @ApiOperation(value = "Get a list of accounts.", notes = "The list is not paginated.")
-    public RestResponse getAgeing(@RequestBody RestRequestObject<ReportsParam> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return reportService.getAgeingReport(requestObject);
     }
 
     @RequestMapping(value = "/monthlyBills", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})

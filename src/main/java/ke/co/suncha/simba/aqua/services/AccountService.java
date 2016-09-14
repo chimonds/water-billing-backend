@@ -1827,36 +1827,57 @@ public class AccountService {
                 } else if (accountsReportRequest.getSchemeId() != null) {
                     builder.and(QAccount.account.zone.scheme.schemeId.eq(accountsReportRequest.getSchemeId()));
                 }
-
-                Iterable<Account> accounts = accountRepository.findAll(builder);
-
+                JPAQuery query = new JPAQuery(entityManager);
                 List<AccountRecord> accountRecords = new ArrayList<>();
-                for (Account acc : accounts) {
-                    //Account acc = accountRepository.findOne(accountId.longValue());
-                    AccountRecord ar = new AccountRecord();
-                    ar.setAccName(acc.getAccName());
-                    ar.setAccNo(acc.getAccNo());
-                    ar.setZone(acc.getZone().getName());
-                    ar.setLocation(acc.getLocation().getName());
-                    ar.setActive(acc.isActive());
-                    ar.setCreatedOn(acc.getCreatedOn());
+                List<Tuple> accountTupleList = query.from(QAccount.account).where(builder).list(QAccount.account.location.name, QAccount.account.accountId, QAccount.account.accNo, QAccount.account.consumer.phoneNumber, QAccount.account.createdOn, QAccount.account.active, QAccount.account.zone.name, QAccount.account.consumer.firstName, QAccount.account.consumer.middleName, QAccount.account.consumer.lastName);
+                if (!accountTupleList.isEmpty()) {
+                    for (Tuple accountTuple : accountTupleList) {
+                        try {
+                            Long accountId = accountTuple.get(QAccount.account.accountId);
+                            AccountRecord ar = new AccountRecord();
+                            String consumerName = accountTuple.get(QAccount.account.consumer.firstName) + " " + accountTuple.get(QAccount.account.consumer.middleName) + " " + accountTuple.get(QAccount.account.consumer.lastName);
+                            consumerName = consumerName.replace("null", "").toUpperCase();
+                            ar.setAccName(consumerName);
+                            ar.setAccNo(accountTuple.get(QAccount.account.accNo));
+                            if (accountTuple.get(QAccount.account.consumer.phoneNumber) != null) {
+                                ar.setPhoneNo(accountTuple.get(QAccount.account.consumer.phoneNumber).replace("null", ""));
+                            }
+                            ar.setZone(accountTuple.get(QAccount.account.zone.name));
+                            ar.setActive(accountTuple.get(QAccount.account.active));
+                            ar.setCreatedOn(accountTuple.get(QAccount.account.createdOn));
 
-                    if (acc.isMetered()) {
-                        ar.setMeterNo(acc.getMeter().getMeterNo());
-                        ar.setMeterOwner(acc.getMeter().getMeterOwner().getName());
-                    }
-                    if (acc.getConsumer() != null) {
-                        if (StringUtils.isNotEmpty(acc.getConsumer().getPhoneNumber())) {
-                            ar.setPhoneNo(acc.getConsumer().getPhoneNumber());
+                            query = new JPAQuery(entityManager);
+                            BooleanBuilder meterBuilder = new BooleanBuilder();
+                            meterBuilder.and(QAccount.account.accountId.eq(accountId));
+                            List<Tuple> meterTupleList = query.from(QAccount.account).where(meterBuilder).list(QAccount.account.meter.meterNo, QAccount.account.meter.meterSize.size, QAccount.account.meter.meterOwner.name);
+                            if (meterTupleList != null) {
+                                if (!meterTupleList.isEmpty()) {
+                                    Tuple meterTuple = meterTupleList.get(0);
+                                    ar.setMeterOwner(meterTuple.get(QAccount.account.meter.meterOwner.name));
+                                    ar.setMeterNo(meterTuple.get(QAccount.account.meter.meterNo));
+                                    ar.setMeterSize(meterTuple.get(QAccount.account.meter.meterSize.size));
+                                }
+                            }
+
+                            query = new JPAQuery(entityManager);
+                            BooleanBuilder categoryBuilder = new BooleanBuilder();
+                            categoryBuilder.and(QAccount.account.accountId.eq(accountId));
+                            String categoryName = query.from(QAccount.account).where(categoryBuilder).singleResult(QAccount.account.accountCategory.name);
+                            if (StringUtils.isNotEmpty(categoryName)) {
+                                ar.setCategory(categoryName);
+                            }
+                            ar.setLocation(accountTuple.get(QAccount.account.location.name));
+                            accountRecords.add(ar);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
                         }
                     }
-                    accountRecords.add(ar);
                 }
+
 
                 log.info("Packaged report data...");
                 ReportObject report = new ReportObject();
                 report.setDate(Calendar.getInstance());
-
                 report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
                 report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS").getValue());
                 report.setContent(accountRecords);
