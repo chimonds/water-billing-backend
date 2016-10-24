@@ -242,6 +242,7 @@
                     <addResources>true</addResources>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>com.mysema.maven</groupId>
                 <artifactId>apt-maven-plugin</artifactId>
@@ -258,11 +259,10 @@
                     </execution>
                 </executions>
                 <dependencies>
-                    <!-- https://mvnrepository.com/artifact/com.mysema.querydsl/querydsl-apt -->
                     <dependency>
                         <groupId>com.mysema.querydsl</groupId>
                         <artifactId>querydsl-apt</artifactId>
-                        <version>3.7.4</version>
+                        <version>3.4.3</version>
                     </dependency>
                 </dependencies>
             </plugin>
