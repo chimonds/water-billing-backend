@@ -101,6 +101,9 @@ public class PaymentService {
     @Autowired
     MbassadorService mbassadorService;
 
+    @Autowired
+    BillingMonthService billingMonthService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -167,6 +170,18 @@ public class PaymentService {
         if (payment.getBillingMonth() == null || payment.getPaymentType() == null || payment.getPaymentSource() == null || payment.getTransactionDate() == null || StringUtils.isEmpty(payment.getReceiptNo())) {
             return null;
         }
+
+        DateTime transDate = new DateTime();
+        transDate = transDate.withMillis(payment.getTransactionDate().getTimeInMillis());
+        if (!billingMonthService.canTransact(transDate)) {
+            return null;
+        }
+
+        BillingMonth billingMonth = billingMonthService.getActiveMonth();
+        if (billingMonth == null) {
+            return null;
+        }
+        payment.setBillingMonth(billingMonth);
 
         PaymentType requestPaymentType = paymentTypeRepository.findOne(payment.getPaymentType().getPaymentTypeId());
         log.info("*******Adding Receipt************");
@@ -342,6 +357,15 @@ public class PaymentService {
                     return response;
                 }
 
+                DateTime transDate = new DateTime();
+                transDate = transDate.withMillis(payment.getTransactionDate().getTimeInMillis());
+                if (!billingMonthService.canTransact(transDate)) {
+                    responseObject.setMessage("Invalid billing/transaction date");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
                 // check if all values are present
                 if (payment.getAmount() == null) {
                     responseObject.setMessage("Invalid amount");
@@ -484,26 +508,32 @@ public class PaymentService {
                     return response;
                 }
 
-                if (payment.getAmount().equals(0d)) {
-                    responseObject.setMessage("You can not void this receipt. Amount is zero.");
-                    responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                    return response;
-                }
+                responseObject.setMessage("Not implemented");
+                responseObject.setPayload("");
+                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                return response;
 
-                if (StringUtils.isEmpty(requestObject.getObject().getNotes())) {
-                    responseObject.setMessage("Notes can not be empty");
-                    responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                    return response;
-                }
+
+//                if (payment.getAmount().equals(0d)) {
+//                    responseObject.setMessage("You can not void this receipt. Amount is zero.");
+//                    responseObject.setPayload("");
+//                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//                    return response;
+//                }
+//
+//                if (StringUtils.isEmpty(requestObject.getObject().getNotes())) {
+//                    responseObject.setMessage("Notes can not be empty");
+//                    responseObject.setPayload("");
+//                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//                    return response;
+//                }
 
                 // create resource
-                payment.setAmount(0d);
-                payment.setNotes(requestObject.getObject().getNotes());
-                Payment created = paymentRepository.save(payment);
-
-                accountService.setUpdateBalance(created.getAccount().getAccountId());
+//                payment.setAmount(0d);
+//                payment.setNotes(requestObject.getObject().getNotes());
+//                Payment created = paymentRepository.save(payment);
+//
+//                accountService.setUpdateBalance(created.getAccount().getAccountId());
 
 
                 // update balances
@@ -516,22 +546,22 @@ public class PaymentService {
                 //accountRepository.save(account);
 
                 //send sms
-                if (!created.getPaymentType().hasComments()) {
-                    //smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
-                }
-
-                // package response
-                responseObject.setMessage("Receipt updated successfully");
-                responseObject.setPayload(created);
-                response = new RestResponse(responseObject, HttpStatus.CREATED);
-
-                //Start - audit trail
-                AuditRecord auditRecord = new AuditRecord();
-                auditRecord.setParentID(String.valueOf(created.getPaymentid()));
-                auditRecord.setCurrentData(created.toString());
-                auditRecord.setParentObject("Payments");
-                auditRecord.setNotes("VOIDED PAYMENT");
-                auditService.log(AuditOperation.CREATED, auditRecord);
+//                if (!created.getPaymentType().hasComments()) {
+//                    //smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
+//                }
+//
+//                // package response
+//                responseObject.setMessage("Receipt updated successfully");
+//                responseObject.setPayload(created);
+//                response = new RestResponse(responseObject, HttpStatus.CREATED);
+//
+//                //Start - audit trail
+//                AuditRecord auditRecord = new AuditRecord();
+//                auditRecord.setParentID(String.valueOf(created.getPaymentid()));
+//                auditRecord.setCurrentData(created.toString());
+//                auditRecord.setParentObject("Payments");
+//                auditRecord.setNotes("VOIDED PAYMENT");
+//                auditService.log(AuditOperation.CREATED, auditRecord);
                 //End - audit trail
 
             }
@@ -672,7 +702,25 @@ public class PaymentService {
                     return response;
                 }
 
+
                 PaymentSource paymentSource = paymentSourceRepository.findByName("CASH");
+                DateTime transDate = new DateTime();
+                transDate = transDate.withMillis(p.getTransactionDate().getTimeInMillis());
+
+                if (!billingMonthService.canTransact(transDate)) {
+                    responseObject.setMessage("Invalid billing/transaction date");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                //create new billing month object
+                BillingMonth billingMonth = billingMonthService.getActiveMonth();
+
+                //transaction date
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(transDate.getMillis());
+
 
                 //debit source
                 Payment payment1 = new Payment();
@@ -682,8 +730,8 @@ public class PaymentService {
                 payment1.setAccount(p.getAccount());
                 payment1.setNotes(p.getNotes());
                 payment1.setReceiptNo(p.getReceiptNo());
-                payment1.setBillingMonth(p.getBillingMonth());
-                payment1.setTransactionDate(p.getTransactionDate());
+                payment1.setBillingMonth(billingMonth);
+                payment1.setTransactionDate(calendar);
 
                 if (payment1.getPaymentType().isNegative()) {
                     payment1.setAmount(Math.abs(p.getAmount()));
@@ -700,8 +748,8 @@ public class PaymentService {
                 payment2.setAmount(p.getAmount());
                 payment2.setAccount(account);
                 payment2.setReceiptNo(p.getReceiptNo());
-                payment2.setBillingMonth(p.getBillingMonth());
-                payment2.setTransactionDate(p.getTransactionDate());
+                payment2.setBillingMonth(billingMonth);
+                payment2.setTransactionDate(calendar);
 
 
                 if (payment2.getPaymentType().isNegative()) {

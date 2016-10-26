@@ -124,6 +124,9 @@ public class BillService {
     @Autowired
     ZoneRepository zoneRepository;
 
+    @Autowired
+    BillingMonthService billingMonthService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -157,6 +160,12 @@ public class BillService {
                     return response;
                 }
 
+                if (!billingMonthService.canTransact(new DateTime())) {
+                    responseObject.setMessage("Sorry we can not complete your request, invalid billing month/transaction date");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
                 //accountService.setUpdateBalance(accountId);
                 //accountService.updateBalance(accountId);
 
@@ -281,6 +290,7 @@ public class BillService {
                 }
                 bill.setBillingMonth(activeBillingMonth);
                 bill.setBillCode(activeBillingMonth.getCode());
+
 
                 //set average
                 bill.setAverageConsumption(account.getAverageConsumption());
@@ -508,6 +518,16 @@ public class BillService {
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
+
+                DateTime transDate = new DateTime();
+                transDate = transDate.withMillis(lastBill.getTransactionDate().getTimeInMillis());
+                if (!billingMonthService.canTransact(transDate)) {
+                    responseObject.setMessage("Sorry we could not complete your request. Invalid bill transaction date");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
 
                 //audit trail
                 //Start - audit trail

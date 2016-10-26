@@ -14,6 +14,7 @@ import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MPESARequest;
 import ke.co.suncha.simba.aqua.utils.MPESAResponse;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,9 @@ public class MPESAService {
 
     @Autowired
     AccountStatusHistoryRepository accountStatusHistoryRepository;
+
+    @Autowired
+    private BillingMonthService billingMonthService;
 
     //@Autowired
     // MbassadorService mbassadorService;
@@ -207,6 +211,11 @@ public class MPESAService {
                     //log.error("Invalid MPESA account no for transaction:" + mpesaTransaction.getText());
                 }
 
+                DateTime transDate = new DateTime();
+                if (!billingMonthService.canTransact(transDate)) {
+                    return;
+                }
+
                 if (account != null) {
                     // update account balance
                     accountService.setUpdateBalance(account.getAccountId());
@@ -235,7 +244,7 @@ public class MPESAService {
                         paymentType = paymentTypeRepository.findByName("Water Sale");
                     }
 
-                    log.info("SMART RECEIPTING ON MPESA:"+ smartReceipting);
+                    log.info("SMART RECEIPTING ON MPESA:" + smartReceipting);
 
                     if (paymentType != null) {
                         payment.setPaymentType(paymentType);

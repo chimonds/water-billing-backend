@@ -32,8 +32,13 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
+import ke.co.suncha.simba.aqua.options.SystemOptionService;
+import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeader;
+import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeaderRepository;
+import ke.co.suncha.simba.aqua.reports.scheduled.ReportType;
 import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
-
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +48,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,11 +77,124 @@ public class BillingMonthService {
     @Autowired
     private AuditService auditService;
 
+    @Autowired
+    private SystemOptionService systemOptionService;
+
+    @Autowired
+    private ReportHeaderRepository reportHeaderRepository;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
     public BillingMonthService() {
 
+    }
+
+    @Transactional
+    public Boolean canTransact(DateTime transDate) {
+        //check if more than one billing months is open
+        if (billingMonthRepository.countWithCurrent(1) != 1) {
+            return Boolean.FALSE;
+        }
+
+        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+        if (billingMonth == null) {
+            return Boolean.FALSE;
+        }
+
+        //Check if strict transaction mode enabled
+        if (systemOptionService.isStrictModeEnabled()) {
+            DateTime today = new DateTime();
+            DateTime lastDayOfTheMonth = today.dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
+            DateTime firstDayOfTheMonth = today.dayOfMonth().withMinimumValue().hourOfDay().withMinimumValue();
+            DateTime billingDate = new DateTime();
+            billingDate = billingDate.withMillis(billingMonth.getMonth().getTimeInMillis());
+
+            //Check if billing month is between first and last day of the month
+            if (billingDate.isBefore(firstDayOfTheMonth) || billingDate.isAfter(lastDayOfTheMonth)) {
+                //set billing month active to false
+                //billingMonth.setCurrent(0);
+                //billingMonth = billingMonthRepository.save(billingMonth);
+                return Boolean.FALSE;
+            }
+
+            if (transDate.isBefore(firstDayOfTheMonth) || transDate.isAfter(lastDayOfTheMonth)) {
+                return Boolean.FALSE;
+            }
+        }
+        return Boolean.TRUE;
+    }
+
+    //second, minute, hour, day of month, month, day(s) of week
+    //	0 0 0 1/1 * ? * every day at midnight
+    //	0 0 0 1 1/1 ? * every first day of the month
+    @Scheduled(cron = "0 0 0 1 1/1 ? *")
+    public void validateBillingMonths() {
+        log.info("CRON REPORT RUN @::" + new DateTime());
+        runTasks();
+    }
+
+    @Transactional
+    public void runTasks() {
+        try {
+            //check if there is an active month and close it
+            BillingMonth billingMonth = getActiveMonth();
+            if (billingMonth != null) {
+                billingMonth.setCurrent(0);
+                billingMonth = billingMonthRepository.save(billingMonth);
+            }
+
+            DateTime today = new DateTime();
+            DateTime lastDayOfTheMonth = today.dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
+
+            //run ageing
+            ReportHeader ageingHeader = new ReportHeader();
+            ageingHeader.setSystem(Boolean.TRUE);
+            ageingHeader.setToDate(lastDayOfTheMonth.withZone(DateTimeZone.forID("Africa/Nairobi")));
+            ageingHeader.setReportType(ReportType.AGEING);
+            ageingHeader.setRequestedBy("system");
+            ageingHeader.setCreatedOn(new DateTime());
+            ageingHeader = reportHeaderRepository.save(ageingHeader);
+
+
+            //run balances
+            ReportHeader balancesHeader = new ReportHeader();
+            balancesHeader.setSystem(Boolean.TRUE);
+            balancesHeader.setToDate(lastDayOfTheMonth.withZone(DateTimeZone.forID("Africa/Nairobi")));
+            balancesHeader.setReportType(ReportType.ACCOUNT_BALANCES);
+            balancesHeader.setRequestedBy("system");
+            balancesHeader.setCreatedOn(new DateTime());
+            balancesHeader = reportHeaderRepository.save(balancesHeader);
+
+
+            //notify update of below task after 40 minutes
+            //pause for twenty minutes
+            Thread.sleep(2600000);
+
+
+            //get the next month in cycle and open it
+            Long id = billingMonth.getBillingMonthId();
+            id++;
+            BillingMonth monthToActive = getById(id);
+            if (monthToActive != null) {
+                monthToActive.setCurrent(1);
+                monthToActive = billingMonthRepository.save(monthToActive);
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
+    public BillingMonth getActiveMonth() {
+        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+        if (billingMonth != null) {
+            return billingMonth;
+        }
+        return null;
+    }
+
+    public BillingMonth getById(Long billingMonthId) {
+        return billingMonthRepository.findOne(billingMonthId);
     }
 
     @Transactional
@@ -99,7 +218,11 @@ public class BillingMonthService {
                         if (billingMonthRepository.countWithCurrent(1) > 0) {
                             responseObject.setMessage("Please close all billing dates before opening a new billing date");
                             response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        } else if (systemOptionService.isStrictModeEnabled()) {
+                            responseObject.setMessage("Sorry we can not complete your request. Strct mode is enabled.");
+                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                         } else {
+
                             // Open month
                             bm.setCurrent(billingMonth.getCurrent());
                             // save

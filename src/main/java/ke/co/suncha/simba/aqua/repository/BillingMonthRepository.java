@@ -46,6 +46,7 @@ public interface BillingMonthRepository extends PagingAndSortingRepository<Billi
 
     BillingMonth findByCurrent(Integer isCurrent);
 
+
     @Query("select count(u) from BillingMonth u where u.current = ?1")
     Long countWithCurrent(Integer current);
 

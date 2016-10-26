@@ -1,12 +1,12 @@
 spring:
-  profiles.active: nolturesh
+  profiles.active: dev
 ---
 spring:
     profiles: dev
     datasource:
-      url: jdbc:log4jdbc:mysql://localhost:3306/aqua
-      username: root
-      password: Kenya@2012
+      url: jdbc:log4jdbc:mysql://localhost:3306/aqua_billing
+      username: tembo
+      password: tembo
     jpa:
       hibernate.ddl-auto: update
       hibernate.dialect: org.hibernate.dialect.MySQL5Dialect

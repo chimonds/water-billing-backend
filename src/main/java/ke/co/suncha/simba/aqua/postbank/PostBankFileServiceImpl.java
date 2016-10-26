@@ -16,6 +16,7 @@ import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
 import ke.co.suncha.simba.aqua.repository.PaymentSourceRepository;
 import ke.co.suncha.simba.aqua.repository.PaymentTypeRepository;
 import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.BillingMonthService;
 import ke.co.suncha.simba.aqua.services.PaymentService;
 import ke.co.suncha.simba.aqua.services.SMSService;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
@@ -85,6 +86,9 @@ public class PostBankFileServiceImpl implements PostBankFileService {
 
     @Autowired
     SMSService smsService;
+
+    @Autowired
+    BillingMonthService billingMonthService;
 
     @Override
     @Transactional
@@ -175,6 +179,24 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                     //allocate transactions
                     List<PostBankTransaction> postBankTransactions = postBankTransactionRepository.findAllByPostBankFile(dbPostBankFile);
                     if (!postBankTransactions.isEmpty()) {
+
+                        //Check if file has invalid transaction dates
+                        Boolean transactionDatesValid = Boolean.TRUE;
+                        for (PostBankTransaction transaction : postBankTransactions) {
+                            DateTime transDate = new DateTime();
+                            transDate = transDate.withMillis(transaction.getTransDate().getTimeInMillis());
+                            if (!billingMonthService.canTransact(transDate)) {
+                                transactionDatesValid = Boolean.FALSE;
+                            }
+                        }
+
+                        if (!transactionDatesValid) {
+                            responseObject.setMessage("Sorry we can not complete your request, one or more of your line items has invalid transaction date");
+                            response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                            return response;
+                        }
+
+
                         for (PostBankTransaction transaction : postBankTransactions) {
                             try {
                                 //get account

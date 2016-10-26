@@ -64,6 +64,9 @@ public class ReportHeader implements Serializable {
     @Column(name = "report_type", nullable = false)
     private Integer reportType;
 
+    @Column(name = "is_system", nullable = false)
+    private Boolean isSystem = Boolean.FALSE;
+
     public Long getReportHeaderId() {
         return reportHeaderId;
     }
@@ -158,6 +161,15 @@ public class ReportHeader implements Serializable {
 
     public void setBillingMonthId(Long billingMonthId) {
         this.billingMonthId = billingMonthId;
+    }
+
+
+    public Boolean getSystem() {
+        return isSystem;
+    }
+
+    public void setSystem(Boolean system) {
+        isSystem = system;
     }
 
     @Override

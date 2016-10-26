@@ -123,6 +123,7 @@ public class PostBankService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
+
                 PostBankTransaction postBankTransaction = postBankRepository.findOne(id);
 
                 if (postBankTransaction == null) {
