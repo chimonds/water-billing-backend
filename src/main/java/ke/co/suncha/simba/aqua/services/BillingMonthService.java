@@ -35,7 +35,10 @@ import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeader;
 import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeaderRepository;
+import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeaderService;
 import ke.co.suncha.simba.aqua.reports.scheduled.ReportType;
+import ke.co.suncha.simba.aqua.reports.scheduled.monthly.SystemReport;
+import ke.co.suncha.simba.aqua.reports.scheduled.monthly.SystemReportService;
 import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -83,6 +86,13 @@ public class BillingMonthService {
     @Autowired
     private ReportHeaderRepository reportHeaderRepository;
 
+    @Autowired
+    private SystemReportService systemReportService;
+
+    @Autowired
+    private ReportHeaderService reportHeaderService;
+
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -128,7 +138,7 @@ public class BillingMonthService {
     //second, minute, hour, day of month, month, day(s) of week
     //	0 0 0 1/1 * ? * every day at midnight
     //	0 0 0 1 1/1 ? * every first day of the month
-    @Scheduled(cron = "0 0 0 1 1/1 ? *")
+    @Scheduled(cron = "0 0 0 1 * *")
     public void validateBillingMonths() {
         log.info("CRON REPORT RUN @::" + new DateTime());
         runTasks();
@@ -145,7 +155,9 @@ public class BillingMonthService {
             }
 
             DateTime today = new DateTime();
-            DateTime lastDayOfTheMonth = today.dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
+            DateTime lastDayOfTheMonth = today.withTimeAtStartOfDay();
+            lastDayOfTheMonth = lastDayOfTheMonth.minusSeconds(1);
+
 
             //run ageing
             ReportHeader ageingHeader = new ReportHeader();
@@ -154,7 +166,9 @@ public class BillingMonthService {
             ageingHeader.setReportType(ReportType.AGEING);
             ageingHeader.setRequestedBy("system");
             ageingHeader.setCreatedOn(new DateTime());
-            ageingHeader = reportHeaderRepository.save(ageingHeader);
+            ageingHeader = reportHeaderService.create(ageingHeader);
+            //add to queue
+            reportHeaderService.addToQueue(ageingHeader);
 
 
             //run balances
@@ -164,23 +178,25 @@ public class BillingMonthService {
             balancesHeader.setReportType(ReportType.ACCOUNT_BALANCES);
             balancesHeader.setRequestedBy("system");
             balancesHeader.setCreatedOn(new DateTime());
-            balancesHeader = reportHeaderRepository.save(balancesHeader);
-
-
-            //notify update of below task after 40 minutes
-            //pause for twenty minutes
-            Thread.sleep(2600000);
+            balancesHeader = reportHeaderService.create(balancesHeader);
+            reportHeaderService.addToQueue(balancesHeader);
 
 
             //get the next month in cycle and open it
-            Long id = billingMonth.getBillingMonthId();
-            id++;
-            BillingMonth monthToActive = getById(id);
-            if (monthToActive != null) {
-                monthToActive.setCurrent(1);
-                monthToActive = billingMonthRepository.save(monthToActive);
+            Long id = 0l;
+            if (billingMonth != null) {
+                id = billingMonth.getBillingMonthId();
+                id++;
             }
+
+            //save system report object
+            SystemReport systemReport = new SystemReport();
+            systemReport.setAgeingHeaderId(ageingHeader.getReportHeaderId());
+            systemReport.setBalancesHeaderId(balancesHeader.getReportHeaderId());
+            systemReport.setMonthToOpen(id);
+            systemReportService.create(systemReport);
         } catch (Exception ex) {
+            ex.printStackTrace();
             log.error(ex.getMessage());
         }
     }

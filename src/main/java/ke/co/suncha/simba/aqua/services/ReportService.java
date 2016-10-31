@@ -14,6 +14,7 @@ import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
+import ke.co.suncha.simba.aqua.reports.scheduled.QAccountBalanceRecord;
 import ke.co.suncha.simba.aqua.repository.*;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -1451,61 +1452,64 @@ public class ReportService {
 
                 //bsr.set
                 //Get active and inactive based on the last date of billing month
+                //Active connections by end of month
+                DateTime lastDayOfTheMonth = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis());
+                Integer yearMonth = Integer.parseInt(lastDayOfTheMonth.toString("yyyyMM"));
                 query = new JPAQuery(entityManager);
                 BooleanBuilder activeAccountsBuilder = new BooleanBuilder();
-                activeAccountsBuilder.and(QBill.bill.account.active.eq(Boolean.TRUE));
-                activeAccountsBuilder.and(zoneBillsBuilder);
-                activeAccountsBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                Long activeAccounts = query.from(QBill.bill).where(activeAccountsBuilder).singleResult(QBill.bill.count());
+                activeAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+                activeAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Active"));
+                activeAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+                Long activeAccounts = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeAccountsBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
                 bsr.setActiveAccounts(activeAccounts.intValue());
 
                 //Inactive connections
                 query = new JPAQuery(entityManager);
                 BooleanBuilder inActiveAccountsBuilder = new BooleanBuilder();
-                inActiveAccountsBuilder.and(QBill.bill.account.active.eq(Boolean.FALSE));
-                inActiveAccountsBuilder.and(zoneBillsBuilder);
-                inActiveAccountsBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                Long inActiveAccounts = query.from(QBill.bill).where(inActiveAccountsBuilder).singleResult(QBill.bill.count());
+                inActiveAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+                inActiveAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Inactive"));
+                inActiveAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+                Long inActiveAccounts = query.from(QAccountBalanceRecord.accountBalanceRecord).where(inActiveAccountsBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
                 bsr.setInactiveAccounts(inActiveAccounts.intValue());
 
                 //Active account balances
                 query = new JPAQuery(entityManager);
                 BooleanBuilder activeAccountBalancesBuilder = new BooleanBuilder();
-                activeAccountBalancesBuilder.and(QBill.bill.account.active.eq(Boolean.TRUE));
-                activeAccountBalancesBuilder.and(zoneBillsBuilder);
-                activeAccountBalancesBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                activeAccountBalancesBuilder.and(QBill.bill.account.outstandingBalance.gt(0));
-                Double activeAccountBalances = query.from(QBill.bill).where(activeAccountBalancesBuilder).singleResult(QBill.bill.account.outstandingBalance.sum());
+                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Active"));
+                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.balance.gt(0));
+                Double activeAccountBalances = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeAccountBalancesBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.balance.sum());
                 bsr.setBalancesActiveAccounts(activeAccountBalances);
 
                 //Inactive account balances for the month
                 query = new JPAQuery(entityManager);
                 BooleanBuilder inactiveAccountBalancesBuilder = new BooleanBuilder();
-                inactiveAccountBalancesBuilder.and(QBill.bill.account.active.eq(Boolean.FALSE));
-                inactiveAccountBalancesBuilder.and(zoneBillsBuilder);
-                inactiveAccountBalancesBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                inactiveAccountBalancesBuilder.and(QBill.bill.account.outstandingBalance.gt(0));
-                Double inactiveAccountBalances = query.from(QBill.bill).where(inactiveAccountBalancesBuilder).singleResult(QBill.bill.account.outstandingBalance.sum());
+                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Inactive"));
+                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.balance.gt(0));
+                Double inactiveAccountBalances = query.from(QAccountBalanceRecord.accountBalanceRecord).where(inactiveAccountBalancesBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.balance.sum());
                 bsr.setBalancesInactiveAccounts(inactiveAccountBalances);
 
                 //Active metered accounts
                 query = new JPAQuery(entityManager);
                 BooleanBuilder activeMeteredBuilder = new BooleanBuilder();
-                activeMeteredBuilder.and(QBill.bill.account.active.eq(Boolean.TRUE));
-                activeMeteredBuilder.and(zoneBillsBuilder);
-                activeMeteredBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                activeMeteredBuilder.and(QBill.bill.account.meter.isNotNull());
-                Long activeMetered = query.from(QBill.bill).where(activeMeteredBuilder).singleResult(QBill.bill.count());
+                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Active"));
+                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.metered.eq(Boolean.TRUE));
+                Long activeMetered = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeMeteredBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
                 bsr.setActiveMeteredAccounts(activeMetered.intValue());
 
                 //Active not metered accounts
                 query = new JPAQuery(entityManager);
                 BooleanBuilder activeUnMeteredBuilder = new BooleanBuilder();
-                activeUnMeteredBuilder.and(QBill.bill.account.active.eq(Boolean.TRUE));
-                activeUnMeteredBuilder.and(zoneBillsBuilder);
-                activeUnMeteredBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                activeUnMeteredBuilder.and(QBill.bill.account.meter.isNull());
-                Long activeUnMetered = query.from(QBill.bill).where(activeUnMeteredBuilder).singleResult(QBill.bill.count());
+                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Inactive"));
+                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.metered.eq(Boolean.FALSE));
+                Long activeUnMetered = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeUnMeteredBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
                 bsr.setActiveUnMeteredAccounts(activeUnMetered.intValue());
 
 
@@ -1772,7 +1776,6 @@ public class ReportService {
                                 chargesRecord.setMeterServicingFee(billItem.getAmount());
                             }
                         }
-
 
 
                         //Balance brought forward

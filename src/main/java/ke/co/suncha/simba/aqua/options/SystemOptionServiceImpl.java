@@ -30,6 +30,7 @@ public class SystemOptionServiceImpl implements SystemOptionService {
         return option.getValue();
     }
 
+
     @Override
     public Boolean isStrictModeEnabled() {
         Boolean enabled = Boolean.FALSE;

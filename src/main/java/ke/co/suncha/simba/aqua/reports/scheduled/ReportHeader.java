@@ -31,6 +31,9 @@ public class ReportHeader implements Serializable {
     @Column(name = "time_taken")
     private String timeTaken = "";
 
+    @Column(name = "ymcode")
+    private Integer code = 0;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_on", nullable = false)
     @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
@@ -170,6 +173,14 @@ public class ReportHeader implements Serializable {
 
     public void setSystem(Boolean system) {
         isSystem = system;
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
     }
 
     @Override

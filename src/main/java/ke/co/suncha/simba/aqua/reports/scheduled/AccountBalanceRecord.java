@@ -39,6 +39,21 @@ public class AccountBalanceRecord implements Serializable {
     private Long accountId;
 
     @JsonIgnore
+    @Column(name = "scheme_id")
+    private Long schemeId;
+
+    @JsonIgnore
+    @Column(name = "zone_id")
+    private Long zoneId;
+
+    @JsonIgnore
+    @Column(name = "is_metered")
+    private Boolean metered=Boolean.FALSE;
+
+    @Column(name = "meter_no")
+    private String meterNo;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "report_header_id")
     private ReportHeader reportHeader;
@@ -105,5 +120,37 @@ public class AccountBalanceRecord implements Serializable {
 
     public void setReportHeader(ReportHeader reportHeader) {
         this.reportHeader = reportHeader;
+    }
+
+    public Long getSchemeId() {
+        return schemeId;
+    }
+
+    public void setSchemeId(Long schemeId) {
+        this.schemeId = schemeId;
+    }
+
+    public Long getZoneId() {
+        return zoneId;
+    }
+
+    public void setZoneId(Long zoneId) {
+        this.zoneId = zoneId;
+    }
+
+    public Boolean getMetered() {
+        return metered;
+    }
+
+    public void setMetered(Boolean metered) {
+        this.metered = metered;
+    }
+
+    public String getMeterNo() {
+        return meterNo;
+    }
+
+    public void setMeterNo(String meterNo) {
+        this.meterNo = meterNo;
     }
 }

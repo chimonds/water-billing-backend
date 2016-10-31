@@ -15,6 +15,7 @@ import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.AgeingDataRepository;
@@ -25,6 +26,8 @@ import ke.co.suncha.simba.aqua.services.PaymentService;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 import org.slf4j.Logger;
@@ -92,6 +95,9 @@ public class ReportHeaderService {
     @Autowired
     AgeingDataRepository ageingDataRepository;
 
+    @Autowired
+    SystemOptionService systemOptionService;
+
     public BlockingQueue<ReportHeader> reportHeaderBlockingQueue = new ArrayBlockingQueue<ReportHeader>(100);
 
     private RestResponse response;
@@ -126,6 +132,20 @@ public class ReportHeaderService {
             log.error(ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    public void addToQueue(ReportHeader toSave) {
+        try {
+            if (!reportHeaderBlockingQueue.contains(toSave)) {
+                reportHeaderBlockingQueue.put(toSave);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public ReportHeader getOne(Long reportHeaderId) {
+        return reportHeaderRepository.findOne(reportHeaderId);
     }
 
     @Transactional
@@ -263,11 +283,15 @@ public class ReportHeaderService {
                         String accountStatus = "Active";
                         String zone = "Not Available";
                         String consumerName = "";
+                        Long zoneId = 0l;
+                        Long schemeId = 0l;
+                        Boolean metered = Boolean.FALSE;
+                        String meterNo = "";
 
                         query = new JPAQuery(entityManager);
                         BooleanBuilder accountBuilder = new BooleanBuilder();
                         accountBuilder.and(QAccount.account.accountId.eq(accountId));
-                        List<Tuple> tuples = query.from(QAccount.account).where(accountBuilder).list(QAccount.account.balanceBroughtForward, QAccount.account.accNo, QAccount.account.active, QAccount.account.zone.name, QAccount.account.consumer.firstName, QAccount.account.consumer.middleName, QAccount.account.consumer.lastName);
+                        List<Tuple> tuples = query.from(QAccount.account).where(accountBuilder).list(QAccount.account.balanceBroughtForward, QAccount.account.accNo, QAccount.account.active, QAccount.account.zone.name, QAccount.account.consumer.firstName, QAccount.account.consumer.middleName, QAccount.account.consumer.lastName, QAccount.account.zone.zoneId, QAccount.account.zone.scheme.schemeId);
                         if (!tuples.isEmpty()) {
                             Tuple tuple = tuples.get(0);
                             //account number
@@ -286,6 +310,27 @@ public class ReportHeaderService {
                             //Zone
                             zone = tuple.get(QAccount.account.zone.name);
 
+                            //zone id
+                            zoneId = tuple.get(QAccount.account.zone.zoneId);
+
+                            //Metered
+                            try {
+                                query = new JPAQuery(entityManager);
+                                BooleanBuilder meterBuilder = new BooleanBuilder();
+                                meterBuilder.and(QAccount.account.accountId.eq(accountId));
+                                String m = query.from(QAccount.account).where(meterBuilder).singleResult(QAccount.account.meter.meterNo);
+                                if (m != null) {
+                                    meterNo = m;
+                                    metered = Boolean.TRUE;
+                                }
+
+                            } catch (Exception ex) {
+
+                            }
+
+                            // scheme id
+                            schemeId = tuple.get(QAccount.account.zone.scheme.schemeId);
+
                             //consumer name
                             consumerName = tuple.get(QAccount.account.consumer.firstName) + " " + tuple.get(QAccount.account.consumer.middleName) + " " + tuple.get(QAccount.account.consumer.lastName);
                         }
@@ -296,6 +341,10 @@ public class ReportHeaderService {
                         accountBalanceRecord.setAccNo(accNo);
                         accountBalanceRecord.setZone(zone);
                         accountBalanceRecord.setCutOff(accountStatus);
+                        accountBalanceRecord.setZoneId(zoneId);
+                        accountBalanceRecord.setSchemeId(schemeId);
+                        accountBalanceRecord.setMetered(metered);
+                        accountBalanceRecord.setMeterNo(meterNo);
                         accountBalanceRecord.setReportHeader(reportHeader);
 
                         query = new JPAQuery(entityManager);
@@ -348,7 +397,11 @@ public class ReportHeaderService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
-
+                if (systemOptionService.isStrictModeEnabled()) {
+                    responseObject.setMessage("Strict mode enabled. Sorry we can not complete your request");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
                 String emailAddress = authManager.getEmailFromToken(requestObject.getToken());
                 String[] emailData = emailAddress.split("@");
                 if (emailData.length > 0) {
@@ -445,6 +498,12 @@ public class ReportHeaderService {
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "report_ageing");
                 if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                if (systemOptionService.isStrictModeEnabled()) {
+                    responseObject.setMessage("Strict mode enabled. Sorry we can not complete your request");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 
@@ -699,5 +758,13 @@ public class ReportHeaderService {
             log.error(ex.getLocalizedMessage());
         }
         return response;
+    }
+
+    public ReportHeader create(ReportHeader reportHeader) {
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyyMM");
+        String dtStr = fmt.print(reportHeader.getToDate());
+        Integer yearMonth = Integer.parseInt(dtStr);
+        reportHeader.setCode(yearMonth);
+        return reportHeaderRepository.save(reportHeader);
     }
 }
