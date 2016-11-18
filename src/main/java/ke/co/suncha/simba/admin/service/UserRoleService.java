@@ -109,6 +109,10 @@ public class UserRoleService {
         return response;
     }
 
+    public UserRole getOne(Long userRoleId) {
+        return userRoleRepository.findOne(userRoleId);
+    }
+
     public RestResponse getUserRole(long id) {
         try {
             UserRole ur = userRoleRepository.findOne(id);

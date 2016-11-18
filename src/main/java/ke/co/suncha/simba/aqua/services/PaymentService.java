@@ -189,10 +189,8 @@ public class PaymentService {
         log.info("Payment Source:" + payment.getPaymentSource().getName());
 
         if (StringUtils.equalsIgnoreCase(requestPaymentType.getName(), "Smart Receipt")) {
-
             UUID uuid = UUID.randomUUID();
             String randomUUIDString = uuid.toString();
-
             Double amountToAllocate = payment.getAmount();
 
             if (account.getPenaltiesBalance() > 0) {
@@ -248,7 +246,6 @@ public class PaymentService {
             //Water sale
             if (account.getWaterSaleBalance() > 0) {
                 PaymentType pt = paymentTypeRepository.findByName("Water Sale");
-
                 if (amountToAllocate >= account.getWaterSaleBalance()) {
                     amountToAllocate = amountToAllocate - account.getWaterSaleBalance();
                     Payment p = getClone(payment);

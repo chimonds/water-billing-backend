@@ -70,6 +70,15 @@ public class SystemActionService {
 
 	}
 
+	public void create(String action){
+		if(systemActionRepository.findByName(action)==null){
+			SystemAction systemAction= new SystemAction();
+			systemAction.setName(action);
+			systemAction.setDescription("Auto generated");
+			systemActionRepository.save(systemAction);
+		}
+	}
+
 	public RestResponse create(SystemAction systemAction) {
 		SystemAction sa = systemActionRepository.findByName(systemAction.getName());
 

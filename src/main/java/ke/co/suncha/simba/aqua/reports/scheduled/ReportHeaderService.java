@@ -397,11 +397,6 @@ public class ReportHeaderService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
-                if (systemOptionService.isStrictModeEnabled()) {
-                    responseObject.setMessage("Strict mode enabled. Sorry we can not complete your request");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                    return response;
-                }
                 String emailAddress = authManager.getEmailFromToken(requestObject.getToken());
                 String[] emailData = emailAddress.split("@");
                 if (emailData.length > 0) {
@@ -498,12 +493,6 @@ public class ReportHeaderService {
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "report_ageing");
                 if (response.getStatusCode() != HttpStatus.OK) {
-                    return response;
-                }
-
-                if (systemOptionService.isStrictModeEnabled()) {
-                    responseObject.setMessage("Strict mode enabled. Sorry we can not complete your request");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
                 }
 

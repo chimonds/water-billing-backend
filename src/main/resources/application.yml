@@ -1,5 +1,5 @@
 spring:
-  profiles.active: kimawasco
+  profiles.active: dev
 ---
 spring:
     profiles: dev

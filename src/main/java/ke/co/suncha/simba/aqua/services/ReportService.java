@@ -1437,6 +1437,9 @@ public class ReportService {
                 debitAdjustmentBuilder.and(QPayment.payment.paymentType.paymentTypeId.eq(debit.getPaymentTypeId()));
                 debitAdjustmentTotal = query.from(QPayment.payment).where(debitAdjustmentBuilder).singleResult(QPayment.payment.amount.sum());
 
+                debitAdjustmentTotal = Math.abs(debitAdjustmentTotal);
+                creditAdjustmentTotal = Math.abs(creditAdjustmentTotal) * -1;
+
                 bsr.setCreditAdjustments(creditAdjustmentTotal);
                 bsr.setDebitAdjustments(debitAdjustmentTotal);
 
