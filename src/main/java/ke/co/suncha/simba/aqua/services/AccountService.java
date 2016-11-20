@@ -134,6 +134,10 @@ public class AccountService {
     public AccountService() {
     }
 
+    public Account getByAccountId(Long accountId){
+        return accountRepository.findOne(accountId);
+    }
+
     @Transactional
     public Account updateBalance(Long accountId) {
         // update balances

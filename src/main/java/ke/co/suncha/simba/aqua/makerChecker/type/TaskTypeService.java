@@ -48,7 +48,7 @@ public class TaskTypeService {
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
-    TaskType getByName(String name) {
+    public TaskType getByName(String name) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QTaskType.taskType.name.eq(name));
         return taskTypeRepository.findOne(builder);

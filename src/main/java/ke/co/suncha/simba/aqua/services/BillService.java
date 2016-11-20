@@ -34,6 +34,7 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
+import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.reports.BillRecord;
@@ -126,6 +127,9 @@ public class BillService {
 
     @Autowired
     BillingMonthService billingMonthService;
+
+    @Autowired
+    private TaskService taskService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -495,6 +499,7 @@ public class BillService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
+                String emailAddress = authManager.getEmailFromToken(requestObject.getToken());
                 Bill bill = billRepository.findOne(billId);
                 Long accountId = bill.getAccount().getAccountId();
                 if (bill == null) {
@@ -535,19 +540,29 @@ public class BillService {
                 auditRecord.setParentID(String.valueOf(billId));
                 auditRecord.setParentObject("BILLS");
                 auditRecord.setCurrentData(bill.toString());
-                auditRecord.setNotes("DELETED BILL FOR:" + bill.getAccount().getAccNo());
-                auditService.log(AuditOperation.DELETED, auditRecord);
+                auditRecord.setNotes("SUBMITED DELETE REQUEST FOR BILL:" + bill.getAccount().getAccNo());
+                auditService.log(AuditOperation.ACCESSED, auditRecord);
                 //End - audit trail
 
+                //Submit request
+                if (!taskService.canAdd(accountId, "DELETE_BILL")) {
+                    responseObject.setMessage("Sorry we could not complete your request. You already have a pending request for this account");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                taskService.create(accountId, "", "DELETE_BILL", emailAddress, bill.getAmount(), billId);
+
                 //delete bill
-                billRepository.delete(bill.getBillId());
+                //billRepository.delete(bill.getBillId());
 
                 //save outstanding balance
-                Account account = accountRepository.findOne(accountId);
-                account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
-                accountRepository.save(account);
+                //Account account = accountRepository.findOne(accountId);
+                //account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
+                //accountRepository.save(account);
 
-                responseObject.setMessage("Bill deleted successfully.");
+                responseObject.setMessage("Bill delete request submited successfully.");
                 responseObject.setPayload("");
                 response = new RestResponse(responseObject, HttpStatus.OK);
             }
@@ -1170,4 +1185,9 @@ public class BillService {
         }
         return response;
     }
+
+    public Bill getById(Long billId) {
+        return billRepository.findOne(billId);
+    }
+
 }

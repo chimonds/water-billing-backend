@@ -84,6 +84,10 @@ public class UserService {
 
     }
 
+    public User getByEmailAddress(String emailAddress) {
+        return userRepository.findByEmailAddress(emailAddress);
+    }
+
     public RestResponse create(RestRequestObject<User> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -180,7 +184,6 @@ public class UserService {
         }
         return response;
     }
-
 
     public RestResponse updatePassword(RestRequestObject<PasswordReset> requestObject) {
         try {
@@ -375,7 +378,7 @@ public class UserService {
                 if (p.getFilter().isEmpty()) {
                     log.info("Getting user list..");
                     pageOfUsers = userRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-                    log.info("users found:"+ pageOfUsers.getTotalElements());
+                    log.info("users found:" + pageOfUsers.getTotalElements());
                 } else {
                     pageOfUsers = userRepository.findByEmailAddressContaining(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 }
