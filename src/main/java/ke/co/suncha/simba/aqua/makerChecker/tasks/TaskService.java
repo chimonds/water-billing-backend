@@ -3,6 +3,7 @@ package ke.co.suncha.simba.aqua.makerChecker.tasks;
 import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
+import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -11,6 +12,7 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SystemActionService;
 import ke.co.suncha.simba.admin.service.UserService;
+import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalService;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
@@ -35,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by maitha on 11/20/16.
@@ -83,7 +87,7 @@ public class TaskService {
         builder.and(QTask.task.taskType.name.eq(taskTypeName));
         Task task = taskRepository.findOne(builder);
         if (task != null) {
-            if (task.getApprovalStep() == ApprovalStep.CANCEL || task.getApprovalStep() == ApprovalStep.DECLINE) {
+            if (task.getApprovalStep() == ApprovalStep.REJECTED) {
                 add = Boolean.TRUE;
             }
         } else {
@@ -126,6 +130,8 @@ public class TaskService {
                 }
                 Task task = taskRepository.findOne(requestObject.getObject().getTaskId());
                 if (task != null) {
+                    User user = userService.getByEmailAddress(authManager.getEmailFromToken(requestObject.getToken()));
+                    task.setEdit(canEdit(user, task.getTaskId()));
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(task);
                     response = new RestResponse(responseObject, HttpStatus.OK);
@@ -152,6 +158,21 @@ public class TaskService {
         return response;
     }
 
+    private Boolean canEdit(User user, Long taskId) {
+        Task dbTask = taskRepository.findOne(taskId);
+        Boolean canEdit = Boolean.FALSE;
+        if (user.getUserRole() == dbTask.getApproval().getUserRole()) {
+            canEdit = Boolean.TRUE;
+            if (user == dbTask.getUser()) {
+                canEdit = Boolean.FALSE;
+            }
+            if (dbTask.getApprovalStep() == ApprovalStep.COMPLETED || dbTask.getApprovalStep() == ApprovalStep.REJECTED) {
+                canEdit = Boolean.FALSE;
+            }
+        }
+        return canEdit;
+    }
+
     public RestResponse getAllByFilter(RestRequestObject<RestPageRequest> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -160,6 +181,7 @@ public class TaskService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
+                User user = userService.getByEmailAddress(authManager.getEmailFromToken(requestObject.getToken()));
 
                 RestPageRequest p = requestObject.getObject();
                 BooleanBuilder builder = new BooleanBuilder();
@@ -169,8 +191,20 @@ public class TaskService {
                 }
 
                 Page<Task> page = taskRepository.findAll(builder, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                CustomPage customPage = new CustomPage();
+                if (page.hasContent()) {
+                    List<Task> tasks = new ArrayList<>();
+                    for (Task task : page.getContent()) {
+                        Task dbTask = taskRepository.findOne(task.getTaskId());
+                        dbTask.setEdit(canEdit(user, dbTask.getTaskId()));
+                        tasks.add(dbTask);
+                    }
+                    customPage.setContent(tasks);
+                    customPage.setTotalElements(page.getTotalElements());
+                    customPage.setTotalPages(page.getTotalPages());
+                }
                 responseObject.setMessage("Fetched data successfully");
-                responseObject.setPayload(page);
+                responseObject.setPayload(customPage);
                 response = new RestResponse(responseObject, HttpStatus.OK);
             }
         } catch (Exception ex) {
@@ -179,6 +213,14 @@ public class TaskService {
             log.error(ex.getLocalizedMessage());
         }
         return response;
+    }
+
+    public Task getById(Long taskId) {
+        return taskRepository.findOne(taskId);
+    }
+
+    public Task save(Task task) {
+        return taskRepository.save(task);
     }
 
     @PostConstruct

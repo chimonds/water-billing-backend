@@ -8,6 +8,6 @@ public class ApprovalStep {
     public final static Integer START = 1;
     public final static Integer ON_PROGRESS = 2;
     public final static Integer END = 3;
-    public final static Integer CANCEL = 4;
-    public final static Integer DECLINE = 5;
+    public final static Integer REJECTED = 4;
+    public final static Integer COMPLETED = 5;
 }

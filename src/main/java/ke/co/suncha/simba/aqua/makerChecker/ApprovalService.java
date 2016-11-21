@@ -271,6 +271,13 @@ public class ApprovalService {
         return approvalRepository.findOne(builder);
     }
 
+    public Approval getByStep(Long taskTypeId, Integer stepNo) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QApproval.approval.taskType.taskTypeId.eq(taskTypeId));
+        builder.and(QApproval.approval.stepNo.eq(stepNo));
+        return approvalRepository.findOne(builder);
+    }
+
     //list by task type
     private List<Approval> getByTaskType(Long taskTypeId) {
         List<Approval> approvals = new ArrayList<>();

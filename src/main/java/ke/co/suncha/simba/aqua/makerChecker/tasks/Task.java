@@ -54,11 +54,22 @@ public class Task implements Serializable {
     @Column(name = "record_id")
     private Long recordId;
 
-    @Column(name = "notes",length = 1000)
+    @Column(name = "notes", length = 1000)
     private String notes;
 
     @Column(name = "sno")
     private String sno;
+
+    @Column(name = "posted")
+    private Boolean posted = Boolean.FALSE;
+
+    @Transient
+    private Boolean edit = Boolean.FALSE;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "posted_on")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime posteOn = new DateTime();
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_on")
@@ -142,6 +153,38 @@ public class Task implements Serializable {
         this.notes = notes;
     }
 
+    public String getSno() {
+        return sno;
+    }
+
+    public void setSno(String sno) {
+        this.sno = sno;
+    }
+
+    public Boolean getPosted() {
+        return posted;
+    }
+
+    public void setPosted(Boolean posted) {
+        this.posted = posted;
+    }
+
+    public Boolean getEdit() {
+        return edit;
+    }
+
+    public void setEdit(Boolean edit) {
+        this.edit = edit;
+    }
+
+    public DateTime getPosteOn() {
+        return posteOn;
+    }
+
+    public void setPosteOn(DateTime posteOn) {
+        this.posteOn = posteOn;
+    }
+
     public DateTime getCreatedOn() {
         return createdOn;
     }
@@ -156,13 +199,5 @@ public class Task implements Serializable {
 
     public void setLastOn(DateTime lastOn) {
         this.lastOn = lastOn;
-    }
-
-    public String getSno() {
-        return sno;
-    }
-
-    public void setSno(String sno) {
-        this.sno = sno;
     }
 }
