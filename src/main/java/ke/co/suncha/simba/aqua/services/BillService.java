@@ -34,6 +34,7 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
+import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
@@ -491,7 +492,7 @@ public class BillService {
         return lastBill;
     }
 
-    public RestResponse deleteBill(RestRequestObject<RestPageRequest> requestObject, Long billId) {
+    public RestResponse deleteBill(RestRequestObject<Task> requestObject, Long billId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
@@ -533,6 +534,12 @@ public class BillService {
                     return response;
                 }
 
+                if (StringUtils.isEmpty(requestObject.getObject().getNotes())) {
+                    responseObject.setMessage("Sorry we could not complete you request. Notes can not be empty");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
 
                 //audit trail
                 //Start - audit trail
@@ -552,7 +559,7 @@ public class BillService {
                     return response;
                 }
 
-                taskService.create(accountId, "", "DELETE_BILL", emailAddress, bill.getAmount(), billId);
+                taskService.create(accountId, requestObject.getObject().getNotes(), "DELETE_BILL", emailAddress, bill.getAmount(), billId);
 
                 //delete bill
                 //billRepository.delete(bill.getBillId());
@@ -562,7 +569,7 @@ public class BillService {
                 //account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
                 //accountRepository.save(account);
 
-                responseObject.setMessage("Bill delete request submited successfully.");
+                responseObject.setMessage("Bill delete request submitted successfully.");
                 responseObject.setPayload("");
                 response = new RestResponse(responseObject, HttpStatus.OK);
             }

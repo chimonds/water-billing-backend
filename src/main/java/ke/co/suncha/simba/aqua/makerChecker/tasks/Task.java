@@ -29,10 +29,6 @@ public class Task implements Serializable {
     private Long taskId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "approval_id")
-    private Approval approval;
-
-    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id")
     private Account account;
 
@@ -44,6 +40,11 @@ public class Task implements Serializable {
     @JoinColumn(name = "task_type_id")
     private TaskType taskType;
 
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "approval_id")
+    private Approval approval;
+
     @Column(name = "approval_step_id")
     private Integer approvalStep = ApprovalStep.START;
 
@@ -53,8 +54,11 @@ public class Task implements Serializable {
     @Column(name = "record_id")
     private Long recordId;
 
-    @Column(name = "notes")
+    @Column(name = "notes",length = 1000)
     private String notes;
+
+    @Column(name = "sno")
+    private String sno;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_on")
@@ -72,14 +76,6 @@ public class Task implements Serializable {
 
     public void setTaskId(Long taskId) {
         this.taskId = taskId;
-    }
-
-    public Approval getApproval() {
-        return approval;
-    }
-
-    public void setApproval(Approval approval) {
-        this.approval = approval;
     }
 
     public Account getAccount() {
@@ -104,6 +100,14 @@ public class Task implements Serializable {
 
     public void setTaskType(TaskType taskType) {
         this.taskType = taskType;
+    }
+
+    public Approval getApproval() {
+        return approval;
+    }
+
+    public void setApproval(Approval approval) {
+        this.approval = approval;
     }
 
     public Integer getApprovalStep() {
@@ -152,5 +156,13 @@ public class Task implements Serializable {
 
     public void setLastOn(DateTime lastOn) {
         this.lastOn = lastOn;
+    }
+
+    public String getSno() {
+        return sno;
+    }
+
+    public void setSno(String sno) {
+        this.sno = sno;
     }
 }

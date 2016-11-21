@@ -29,6 +29,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.services.BillService;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
@@ -62,7 +63,7 @@ public class BillController {
 
     @RequestMapping(value = "delete/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-    public RestResponse deleteBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long billId, @RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+    public RestResponse deleteBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long billId, @RequestBody RestRequestObject<Task> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.deleteBill(requestObject, billId);
     }
 

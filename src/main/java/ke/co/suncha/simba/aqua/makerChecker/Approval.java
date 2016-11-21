@@ -14,7 +14,7 @@ import java.io.Serializable;
  * Created by maitha on 11/16/16.
  */
 @Entity
-@Table(name = "task_approvals")
+@Table(name = "task_type_approvals")
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Approval implements Serializable {

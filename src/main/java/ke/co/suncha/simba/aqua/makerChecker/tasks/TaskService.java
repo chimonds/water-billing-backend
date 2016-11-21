@@ -11,6 +11,8 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SystemActionService;
 import ke.co.suncha.simba.admin.service.UserService;
+import ke.co.suncha.simba.aqua.makerChecker.Approval;
+import ke.co.suncha.simba.aqua.makerChecker.ApprovalService;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskType;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeRepository;
@@ -68,6 +70,9 @@ public class TaskService {
     @Autowired
     BillService billService;
 
+    @Autowired
+    ApprovalService approvalService;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -97,11 +102,13 @@ public class TaskService {
         task.setRecordId(recordId);
         task.setUser(userService.getByEmailAddress(emailAddress));
         task.setNotes(notes);
-        //Get billing info
-        if (StringUtils.endsWithIgnoreCase(task.getTaskType().getName(), "DELETE_BILL")) {
-            Bill bill = billService.getById(recordId);
-
+        Approval approval = approvalService.getStart(task.getTaskType().getTaskTypeId());
+        if (approval != null) {
+            task.setApproval(approval);
         }
+        task = taskRepository.save(task);
+        String sno = StringUtils.leftPad(task.getTaskId().toString(), 3, "0");
+        task.setSno(sno);
         return taskRepository.save(task);
     }
 
