@@ -17,13 +17,16 @@ import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalService;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskType;
+import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeConst;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeRepository;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeService;
 import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Bill;
 import ke.co.suncha.simba.aqua.models.Consumer;
+import ke.co.suncha.simba.aqua.models.Payment;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import ke.co.suncha.simba.aqua.services.BillService;
+import ke.co.suncha.simba.aqua.services.PaymentService;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +80,9 @@ public class TaskService {
 
     @Autowired
     ApprovalService approvalService;
+
+    @Autowired
+    PaymentService paymentService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -226,5 +233,33 @@ public class TaskService {
     @PostConstruct
     public void init() {
         systemActionService.create("approval_tasks_view");
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    public void process() {
+        try {
+            BooleanBuilder builder = new BooleanBuilder();
+            builder.and(QTask.task.processed.eq(Boolean.FALSE));
+            builder.and(QTask.task.approvalStep.eq(ApprovalStep.COMPLETED));
+            Iterable<Task> tasks = taskRepository.findAll(builder);
+            for (Task task : tasks) {
+                postTransaction(task.getTaskId());
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Transactional
+    public void postTransaction(Long taskId) {
+        Task task = taskRepository.findOne(taskId);
+        if (task == null) {
+            return;
+        }
+        if (StringUtils.equals(task.getTaskType().getName(), TaskTypeConst.DELETE_BILL)) {
+            billService.delete(taskId);
+        } else {
+            paymentService.createFromTask(taskId);
+        }
     }
 }

@@ -31,6 +31,9 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
+import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
+import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
+import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeConst;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
@@ -103,6 +106,9 @@ public class PaymentService {
 
     @Autowired
     BillingMonthService billingMonthService;
+
+    @Autowired
+    TaskService taskService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -327,6 +333,115 @@ public class PaymentService {
     }
 
     @Transactional
+    public void createFromTask(Long taskId) {
+        Task task = taskService.getById(taskId);
+        if (task == null) {
+            return;
+        }
+
+        Long accountId = task.getAccount().getAccountId();
+        accountService.updateBalance(accountId);
+        Account account = accountRepository.findOne(accountId);
+
+        if (account == null) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid account resource");
+            task = taskService.save(task);
+            return;
+        }
+
+        BillingMonth billingMonth = billingMonthService.getActiveMonth();
+        if (billingMonth == null) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid billing month resource. Request failed to post.");
+            task = taskService.save(task);
+            return;
+        }
+        //Payment object
+        Payment payment = new Payment();
+        payment.setBillingMonth(billingMonth);
+        payment.setAmount(task.getAmount());
+        payment.setAccount(task.getAccount());
+        payment.setNotes(task.getNotes());
+
+        DateTime transDate = new DateTime();
+        transDate = transDate.withMillis(payment.getTransactionDate().getTimeInMillis());
+        if (!billingMonthService.canTransact(transDate)) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid billing/transaction date");
+            task = taskService.save(task);
+            return;
+        }
+
+        // check if all values are present
+        if (payment.getAmount() == null) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid amount");
+            task = taskService.save(task);
+            return;
+        }
+
+        if (payment.getAmount() == 0) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Payment amount can not be zero");
+            task = taskService.save(task);
+            return;
+        }
+
+        if (payment.getTransactionDate() == null) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid transaction date");
+            task = taskService.save(task);
+            return;
+        }
+
+        Calendar calendar = Calendar.getInstance();
+        if (payment.getTransactionDate().after(calendar)) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Transaction date can not be greater than now");
+            task = taskService.save(task);
+            return;
+        }
+
+        if (StringUtils.equalsIgnoreCase(task.getTaskType().getName(), TaskTypeConst.CREDIT_ADJUSTMENT)) {
+            PaymentType paymentType = paymentTypeRepository.findByName("Credit");
+            if (paymentType != null) {
+                payment.setPaymentType(paymentType);
+            }
+        } else if (StringUtils.equalsIgnoreCase(task.getTaskType().getName(), TaskTypeConst.DEBIT_ADJUSTMENT)) {
+            PaymentType paymentType = paymentTypeRepository.findByName("Debit");
+            if (paymentType != null) {
+                payment.setPaymentType(paymentType);
+            }
+        }
+
+        if (payment.getPaymentType() == null) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid payment type");
+            task = taskService.save(task);
+            return;
+        }
+
+        // TODO;
+        PaymentSource paymentSource = paymentSourceRepository.findByName("CASH");
+        if (paymentSource != null) {
+            payment.setPaymentSource(paymentSource);
+        }
+
+        if (payment.getPaymentType().isNegative()) {
+            payment.setAmount(Math.abs(payment.getAmount()));
+            payment.setAmount(payment.getAmount() * -1);
+        }
+        // create resource
+        payment.setAccount(account);
+        Payment created = this.create(payment, accountId);
+
+        accountService.setUpdateBalance(account.getAccountId());
+        accountService.updateBalance(accountId);
+
+    }
+
+    @Transactional
     public RestResponse createByAccount(RestRequestObject<Payment> requestObject, Long accountId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -447,37 +562,42 @@ public class PaymentService {
                     payment.setAmount(Math.abs(payment.getAmount()));
                     payment.setAmount(payment.getAmount() * -1);
                 }
-                // create resource
-                payment.setAccount(account);
-                payment.setPaymentType(paymentType);
-                payment.setPaymentSource(paymentSource);
-                Payment created = this.create(payment, accountId);
 
-                accountService.setUpdateBalance(account.getAccountId());
-                accountService.updateBalance(accountId);
+                if (StringUtils.equalsIgnoreCase(payment.getPaymentType().getName(), "Credit")) {
+                    taskService.create(accountId, payment.getNotes(), TaskTypeConst.CREDIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l);
+                } else if (StringUtils.equalsIgnoreCase(payment.getPaymentType().getName(), "Debit")) {
+                    taskService.create(accountId, payment.getNotes(), TaskTypeConst.DEBIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l);
+                } else {
+                    // create resource
+                    payment.setAccount(account);
+                    payment.setPaymentType(paymentType);
+                    payment.setPaymentSource(paymentSource);
+                    Payment created = this.create(payment, accountId);
 
-                //
+                    accountService.setUpdateBalance(account.getAccountId());
+                    accountService.updateBalance(accountId);
 
-                //send sms
-                if (!created.getPaymentType().hasComments()) {
-                    smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
+                    //
+
+                    //send sms
+                    if (!created.getPaymentType().hasComments()) {
+                        smsService.saveNotification(account.getAccountId(), created.getPaymentid(), 0L, SMSNotificationType.PAYMENT);
+                    }
+
+                    // package response
+                    responseObject.setMessage("Payment created successfully. ");
+                    responseObject.setPayload(created);
+                    response = new RestResponse(responseObject, HttpStatus.CREATED);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(created.getPaymentid()));
+                    auditRecord.setCurrentData(created.toString());
+                    auditRecord.setParentObject("Payments");
+                    auditRecord.setNotes("CREATED PAYMENT");
+                    auditService.log(AuditOperation.CREATED, auditRecord);
+                    //End - audit trail
                 }
-
-                // package response
-                responseObject.setMessage("Payment created successfully. ");
-                responseObject.setPayload(created);
-                response = new RestResponse(responseObject, HttpStatus.CREATED);
-
-                //Start - audit trail
-                AuditRecord auditRecord = new AuditRecord();
-                auditRecord.setParentID(String.valueOf(created.getPaymentid()));
-                auditRecord.setCurrentData(created.toString());
-                auditRecord.setParentObject("Payments");
-                auditRecord.setNotes("CREATED PAYMENT");
-                auditService.log(AuditOperation.CREATED, auditRecord);
-
-
-                //End - audit trail
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

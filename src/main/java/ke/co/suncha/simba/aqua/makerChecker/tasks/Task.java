@@ -40,7 +40,6 @@ public class Task implements Serializable {
     @JoinColumn(name = "task_type_id")
     private TaskType taskType;
 
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approval_id")
     private Approval approval;
@@ -63,13 +62,20 @@ public class Task implements Serializable {
     @Column(name = "posted")
     private Boolean posted = Boolean.FALSE;
 
+    @Column(name = "processed")
+    private Boolean processed = Boolean.FALSE;
+
+    @Column(name = "notes_processed")
+    private String notesProcessed;
+
     @Transient
     private Boolean edit = Boolean.FALSE;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "posted_on")
     @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
-    private DateTime posteOn = new DateTime();
+    private DateTime postedOn = new DateTime();
+
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_on")
@@ -169,6 +175,22 @@ public class Task implements Serializable {
         this.posted = posted;
     }
 
+    public Boolean getProcessed() {
+        return processed;
+    }
+
+    public void setProcessed(Boolean processed) {
+        this.processed = processed;
+    }
+
+    public String getNotesProcessed() {
+        return notesProcessed;
+    }
+
+    public void setNotesProcessed(String notesProcessed) {
+        this.notesProcessed = notesProcessed;
+    }
+
     public Boolean getEdit() {
         return edit;
     }
@@ -177,12 +199,12 @@ public class Task implements Serializable {
         this.edit = edit;
     }
 
-    public DateTime getPosteOn() {
-        return posteOn;
+    public DateTime getPostedOn() {
+        return postedOn;
     }
 
-    public void setPosteOn(DateTime posteOn) {
-        this.posteOn = posteOn;
+    public void setPostedOn(DateTime postedOn) {
+        this.postedOn = postedOn;
     }
 
     public DateTime getCreatedOn() {

@@ -492,6 +492,60 @@ public class BillService {
         return lastBill;
     }
 
+    @Transactional
+    public void delete(Long taskId) {
+        Task task = taskService.getById(taskId);
+        if (task == null) {
+            return;
+        }
+        Bill bill = billRepository.findOne(task.getRecordId());
+        Bill lastBill = this.getAccountLastBill(bill.getAccount().getAccountId());
+        if (lastBill == null) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Invalid bill resource");
+            task = taskService.save(task);
+            return;
+        }
+
+        if (bill.getBillId() != lastBill.getBillId()) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Sorry we could not complete your request. You can only delete the most current bill.");
+            task = taskService.save(task);
+            return;
+        }
+
+        DateTime transDate = new DateTime();
+        transDate = transDate.withMillis(lastBill.getTransactionDate().getTimeInMillis());
+        if (!billingMonthService.canTransact(transDate)) {
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Sorry we could not complete your request. Invalid bill transaction date");
+            task = taskService.save(task);
+            return;
+        }
+
+        //region audit trail
+        AuditRecord auditRecord = new AuditRecord();
+        auditRecord.setParentID(String.valueOf(bill.getBillId()));
+        auditRecord.setParentObject("BILLS");
+        auditRecord.setCurrentData(bill.toString());
+        auditRecord.setNotes("DELETE BILL FOR BILL:" + bill.getAccount().getAccNo());
+        auditService.log(AuditOperation.ACCESSED, auditRecord);
+        //endregion
+
+        //delete bill
+        billRepository.delete(bill.getBillId());
+
+        //save outstanding balance
+        Account account = accountRepository.findOne(task.getAccount().getAccountId());
+        account.setOutstandingBalance(accountService.getAccountBalance(account.getAccountId()));
+        accountRepository.save(account);
+
+        task.setPosted(Boolean.TRUE);
+        task.setProcessed(Boolean.TRUE);
+        task.setNotesProcessed("Request posted successfully");
+        taskService.save(task);
+    }
+
     public RestResponse deleteBill(RestRequestObject<Task> requestObject, Long billId) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
