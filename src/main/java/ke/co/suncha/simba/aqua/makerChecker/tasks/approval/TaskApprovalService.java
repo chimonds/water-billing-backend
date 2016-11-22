@@ -209,7 +209,12 @@ public class TaskApprovalService {
                 }
             }
         }
+
         task = taskService.save(task);
+
+        //add notification
+        taskService.addNotification(task.getTaskId());
+
         return taskApproval;
     }
 }

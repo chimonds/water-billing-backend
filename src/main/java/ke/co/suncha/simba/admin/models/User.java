@@ -40,6 +40,7 @@ import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
@@ -62,7 +63,7 @@ public class User extends SimbaBaseEntity implements Serializable {
     @Id
     @Column(name = "user_id", nullable = false)
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long userId;
+    private Long userId;
 
     // The user email
     @NotNull
@@ -78,6 +79,9 @@ public class User extends SimbaBaseEntity implements Serializable {
     @NotNull
     @Column(name = "user_lastname")
     private String lastName;
+
+    @Column(name = "mobile_no")
+    private String mobileNo;
 
     // The user account status
     @NotNull
@@ -188,11 +192,24 @@ public class User extends SimbaBaseEntity implements Serializable {
         this.lastName = lastName;
     }
 
+
+    public String getMobileNo() {
+        return mobileNo;
+    }
+
+    public void setMobileNo(String mobileNo) {
+        this.mobileNo = mobileNo;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
     /*
-     * (non-Javadoc)
-     *
-     * @see java.lang.Object#toString()
-     */
+             * (non-Javadoc)
+             *
+             * @see java.lang.Object#toString()
+             */
     @Override
     public String toString() {
         return "User [userId=" + userId + ", emailAddress=" + emailAddress + ", firstName=" + firstName + ", lastName=" + lastName + "dateAdded=" + this.getCreatedOn() + ", status=" + active + "]";

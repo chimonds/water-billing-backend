@@ -4,6 +4,7 @@ import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.models.User;
+import ke.co.suncha.simba.admin.models.UserRole;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -11,7 +12,9 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SystemActionService;
+import ke.co.suncha.simba.admin.service.UserRoleService;
 import ke.co.suncha.simba.admin.service.UserService;
+import ke.co.suncha.simba.admin.utils.Config;
 import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalService;
@@ -20,13 +23,14 @@ import ke.co.suncha.simba.aqua.makerChecker.type.TaskType;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeConst;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeRepository;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeService;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.Bill;
-import ke.co.suncha.simba.aqua.models.Consumer;
-import ke.co.suncha.simba.aqua.models.Payment;
+import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.repository.SMSGroupRepository;
+import ke.co.suncha.simba.aqua.repository.SMSTemplateRepository;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import ke.co.suncha.simba.aqua.services.BillService;
 import ke.co.suncha.simba.aqua.services.PaymentService;
+import ke.co.suncha.simba.aqua.services.SMSService;
+import org.apache.catalina.Role;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +88,18 @@ public class TaskService {
     @Autowired
     PaymentService paymentService;
 
+    @Autowired
+    UserRoleService userRoleService;
+
+    @Autowired
+    SMSService smsService;
+
+    @Autowired
+    SMSGroupRepository smsGroupRepository;
+
+    @Autowired
+    SMSTemplateRepository smsTemplateRepository;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -120,7 +136,41 @@ public class TaskService {
         task = taskRepository.save(task);
         String sno = StringUtils.leftPad(task.getTaskId().toString(), 3, "0");
         task.setSno(sno);
-        return taskRepository.save(task);
+        task = taskRepository.save(task);
+        //add notification
+        addNotification(task.getTaskId());
+        return task;
+    }
+
+    @Transactional
+    public void addNotification(Long taskId) {
+        Task task = taskRepository.findOne(taskId);
+        if (task == null) {
+            return;
+        }
+        if (task.getApprovalStep() != ApprovalStep.REJECTED && task.getApprovalStep() != ApprovalStep.COMPLETED) {
+            Iterable<User> users = userService.getByUserRole(task.getApproval().getUserRole().getUserRoleId());
+            for (User user : users) {
+                if (StringUtils.isNotEmpty(user.getMobileNo())) {
+                    //$firstname
+                    //$task_name
+                    //$sno
+                    SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_APPROVAL_TASK);
+                    String msg = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_APPROVAL_TASK).getMessage();
+                    msg = StringUtils.replace(msg, "$firstname", user.getFirstName());
+                    msg = StringUtils.replace(msg, "$task_name", task.getTaskType().getName());
+                    msg = StringUtils.replace(msg, "$sno", task.getSno());
+                    msg = StringUtils.replace(msg, "$acc_no", task.getAccount().getAccNo());
+
+                    //save sms
+                    SMS sms = new SMS();
+                    sms.setSmsGroup(smsGroup);
+                    sms.setMobileNumber(user.getMobileNo());
+                    sms.setMessage(msg);
+                    smsService.save(sms);
+                }
+            }
+        }
     }
 
     private Sort sortByDateAddedDesc() {

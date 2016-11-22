@@ -25,8 +25,10 @@ package ke.co.suncha.simba.admin.repositories;
 
 import ke.co.suncha.simba.admin.models.User;
 
+import ke.co.suncha.simba.aqua.makerChecker.tasks.approval.TaskApproval;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.List;
@@ -34,7 +36,7 @@ import java.util.List;
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
-public interface UserRepository extends PagingAndSortingRepository<User, Long> {
+public interface UserRepository extends PagingAndSortingRepository<User, Long>, QueryDslPredicateExecutor<User> {
     User findByEmailAddress(String name);
 
     List<User> findAll();

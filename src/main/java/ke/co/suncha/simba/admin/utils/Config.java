@@ -37,4 +37,7 @@ public class Config {
     public static final String SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID = "SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID";
     public static final String SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID = "SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID";
 
+    public static final String SMS_NOTIFICATION_APPROVAL_TASK = "SMS_NOTIFICATION_APPROVAL_TASK";
+    public static final String SMS_TEMPLATE_APPROVAL_TASK = "SMS_TEMPLATE_APPROVAL_TASK";
+    public static final String SMS_TEMPLATE_APPROVAL_TASK_DEFAULT = "Dear $firstname, a $task_name approval task #$sno for account $acc_no has been assigned to you. Kindly visit https://nolturesh.opentembo.io to approve/reject the request.";
 }

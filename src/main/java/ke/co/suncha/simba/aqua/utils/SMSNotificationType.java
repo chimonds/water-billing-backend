@@ -5,5 +5,6 @@ package ke.co.suncha.simba.aqua.utils;
  */
 public enum SMSNotificationType {
     PAYMENT,
-    BILL
+    BILL,
+    OTHER
 }

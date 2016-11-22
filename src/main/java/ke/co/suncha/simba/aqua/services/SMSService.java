@@ -248,9 +248,36 @@ public class SMSService {
                 smsGroup = smsGroupRepository.save(smsGroup);
             }
         } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        try {
+            SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_APPROVAL_TASK);
+            if (smsGroup == null) {
+                smsGroup = new SMSGroup();
+                smsGroup.setName(Config.SMS_NOTIFICATION_APPROVAL_TASK);
+                smsGroup.setApproved(true);
+                smsGroup.setStatus("Approved");
+                smsGroup.setFromSystem(true);
+                smsGroup.setExploded(true);
+                smsGroup = smsGroupRepository.save(smsGroup);
 
+
+                //create template
+                SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_APPROVAL_TASK);
+                if (smsTemplate == null) {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName(Config.SMS_TEMPLATE_APPROVAL_TASK);
+                    smsTemplate.setMessage(Config.SMS_TEMPLATE_APPROVAL_TASK_DEFAULT);
+                    smsTemplate = smsTemplateRepository.save(smsTemplate);
+                }
+                smsGroup.setSmsTemplate(smsTemplate);
+                smsGroup = smsGroupRepository.save(smsGroup);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
+
 
     //    @Scheduled(fixedDelay = 2000)
     @Transactional
@@ -619,6 +646,10 @@ public class SMSService {
             sms.setSmsGroup(smsGroup);
             sms = smsRepository.save(sms);
         }
+    }
+
+    public void save(SMS sms) {
+        smsRepository.save(sms);
     }
 
     /**

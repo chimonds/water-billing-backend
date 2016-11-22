@@ -24,8 +24,10 @@
 package ke.co.suncha.simba.admin.service;
 
 import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
+import com.mysema.query.BooleanBuilder;
 import edu.vt.middleware.password.*;
 import javassist.tools.framedump;
+import ke.co.suncha.simba.admin.models.QUser;
 import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserAuth;
@@ -51,6 +53,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,13 +78,23 @@ public class UserService {
     GaugeService gaugeService;
 
     @Autowired
-    private SystemActionRepository systemActionRepository;
+    SystemActionRepository systemActionRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
     public UserService() {
 
+    }
+
+    public Iterable<User> getByUserRole(Long userRoleId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QUser.user.userRole.userRoleId.eq(userRoleId));
+        return userRepository.findAll(builder);
     }
 
     public User getByEmailAddress(String emailAddress) {
