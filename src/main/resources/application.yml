@@ -26,9 +26,9 @@ spring:
 spring:
     profiles: nolturesh
     datasource:
-      url: jdbc:log4jdbc:mysql://192.168.0.101:3306/aqua_billing
-      username: billing
-      password: MbeleYetu2015
+      url: jdbc:log4jdbc:mysql://10.131.73.144:3306/nolturesh
+      username: temboservice
+      password: JzkRH4UJU64VBHmM
     jpa:
       hibernate.ddl-auto: update
       hibernate.dialect: org.hibernate.dialect.MySQL5Dialect

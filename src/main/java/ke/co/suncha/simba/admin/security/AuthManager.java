@@ -41,6 +41,8 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.CurrentUserService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.admin.service.UserRoleService;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +76,9 @@ public class AuthManager {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private UserRoleService userRoleService;
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     private RestResponse response;
@@ -119,9 +124,10 @@ public class AuthManager {
                             systemAction = new SystemAction();
                             systemAction.setName(action);
                             systemAction.setDescription("Auto generated");
-                            systemAction.setIsActive(true);
+                            systemAction.setActive(true);
                             systemAction = systemActionRepository.save(systemAction);
                         }
+
                         if (!user.getUserRole().getSystemActions().contains(systemAction)) {
                             log.error(user.getEmailAddress() + " denied to perform:" + action.toUpperCase());
 
@@ -137,7 +143,6 @@ public class AuthManager {
 
                         //check if user needs to change password
                         if (action.compareToIgnoreCase("users_change_own_password") != 0) {
-//                            log.info(user.getEmailAddress() + " change password status:" + user.getUserAuth().getResetAuth());
                             if (user.getUserAuth().getResetAuth() == true) {
                                 log.error(user.getEmailAddress() + " denied to perform:" + action + ". User needs to change password.");
 
@@ -150,6 +155,25 @@ public class AuthManager {
                                 response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
                                 return response;
                             }
+
+                            if (systemAction.getAdmin() != null) {
+                                if (userRoleService.hasAdminPermission(user.getUserRole().getUserRoleId())) {
+                                    if (!systemAction.getAdmin()) {
+                                        if (!StringUtils.containsIgnoreCase(systemAction.getName(), "view")) {
+                                            obj.setMessage("Sorry this is not admin function");
+                                            response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
+                                            return response;
+                                        }
+                                    }
+                                } else {
+                                    if (systemAction.getAdmin()) {
+                                        obj.setMessage("Your are not allowed to perform this action");
+                                        response = new RestResponse(obj, HttpStatus.EXPECTATION_FAILED);
+                                        return response;
+                                    }
+                                }
+                            }
+
                         }
 
                         //audit trail

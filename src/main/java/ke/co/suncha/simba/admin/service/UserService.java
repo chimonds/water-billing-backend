@@ -27,10 +27,7 @@ import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
 import com.mysema.query.BooleanBuilder;
 import edu.vt.middleware.password.*;
 import javassist.tools.framedump;
-import ke.co.suncha.simba.admin.models.QUser;
-import ke.co.suncha.simba.admin.models.SystemAction;
-import ke.co.suncha.simba.admin.models.User;
-import ke.co.suncha.simba.admin.models.UserAuth;
+import ke.co.suncha.simba.admin.models.*;
 import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -41,6 +38,7 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 
 import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.security.PasswordReset;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +81,8 @@ public class UserService {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    UserRoleService userRoleService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -110,10 +110,49 @@ public class UserService {
                     return response;
                 }
                 User user = requestObject.getObject();
+
+                if (StringUtils.isEmpty(user.getEmailAddress())) {
+                    responseObject.setMessage("User email address can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                if (StringUtils.isEmpty(user.getFirstName()) || StringUtils.isEmpty(user.getLastName())) {
+                    responseObject.setMessage("User first name or last name can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+                if (StringUtils.isEmpty(user.getMobileNo())) {
+                    responseObject.setMessage("User mobile number can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                if (user.getMobileNo().length() != 10) {
+                    responseObject.setMessage("Invalid user mobile number");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                if (user.getUserRole() == null) {
+                    responseObject.setMessage("Invalid user role resource");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                UserRole userRole = userRoleService.getOne(user.getUserRole().getUserRoleId());
+                if (userRole == null) {
+                    responseObject.setMessage("Invalid user role resource");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+                user.setUserRole(userRole);
+
                 User u = userRepository.findByEmailAddress(user.getEmailAddress());
                 if (u != null) {
                     responseObject.setMessage("User already exists");
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
 
                 } else {
 
@@ -343,6 +382,38 @@ public class UserService {
                     return response;
                 }
                 User user = requestObject.getObject();
+
+                if (StringUtils.isEmpty(user.getFirstName()) || StringUtils.isEmpty(user.getLastName())) {
+                    responseObject.setMessage("User first name or last name can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+                if (StringUtils.isEmpty(user.getMobileNo())) {
+                    responseObject.setMessage("User mobile number can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                if (user.getMobileNo().length() != 10) {
+                    responseObject.setMessage("Invalid user mobile number");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                if (user.getUserRole() == null) {
+                    responseObject.setMessage("Invalid user role resource");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                UserRole userRole = userRoleService.getOne(user.getUserRole().getUserRoleId());
+                if (userRole == null) {
+                    responseObject.setMessage("Invalid user role resource");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+
                 User u = userRepository.findOne(user.getUserId());
                 if (u == null) {
                     responseObject.setMessage("User not found");
@@ -352,10 +423,9 @@ public class UserService {
                     u.setFirstName(user.getFirstName());
                     u.setLastName(user.getLastName());
                     u.setActive(user.isActive());
-
+                    u.setMobileNo(user.getMobileNo());
                     //
-                    u.setUserRole(user.getUserRole());
-
+                    u.setUserRole(userRole);
                     // save
                     userRepository.save(u);
                     responseObject.setMessage("User  updated successfully");

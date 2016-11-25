@@ -26,6 +26,7 @@ package ke.co.suncha.simba.admin.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.models.SystemAction;
 import ke.co.suncha.simba.admin.models.UserRole;
 import ke.co.suncha.simba.admin.repositories.UserRoleRepository;
@@ -70,6 +71,24 @@ public class UserRoleService {
     private RestResponseObject responseObject = new RestResponseObject();
 
     public UserRoleService() {
+    }
+
+    public Boolean hasAdminPermission(Long userRoleId) {
+        Boolean hasPermission = Boolean.FALSE;
+        BooleanBuilder builder = new BooleanBuilder();
+        UserRole userRole = userRoleRepository.findOne(userRoleId);
+        if (userRole != null) {
+            if (!userRole.getSystemActions().isEmpty()) {
+                for (SystemAction action : userRole.getSystemActions()) {
+                    if (action.getAdmin() != null) {
+                        if (action.getAdmin()) {
+                            hasPermission = Boolean.TRUE;
+                        }
+                    }
+                }
+            }
+        }
+        return hasPermission;
     }
 
     public RestResponse create(RestRequestObject<UserRole> requestObject) {

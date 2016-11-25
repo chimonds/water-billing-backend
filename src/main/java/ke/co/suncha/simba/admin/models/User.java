@@ -143,55 +143,37 @@ public class User extends SimbaBaseEntity implements Serializable {
         this.userRole = userRole;
     }
 
-    /**
-     * @return the userId
-     */
-    public long getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    /**
-     * @return the emailAddress
-     */
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
     public String getEmailAddress() {
         return emailAddress;
     }
 
-    /**
-     * @param emailAddress the emailAddress to set
-     */
     public void setEmailAddress(String emailAddress) {
         this.emailAddress = emailAddress;
     }
 
-    /**
-     * @return the firstName
-     */
     public String getFirstName() {
         return firstName;
     }
 
-    /**
-     * @param firstName the firstName to set
-     */
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
 
-    /**
-     * @return the lastName
-     */
     public String getLastName() {
         return lastName;
     }
 
-    /**
-     * @param lastName the lastName to set
-     */
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-
 
     public String getMobileNo() {
         return mobileNo;
@@ -201,15 +183,15 @@ public class User extends SimbaBaseEntity implements Serializable {
         this.mobileNo = mobileNo;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public Boolean getActive() {
+        return active;
     }
 
     /*
-             * (non-Javadoc)
-             *
-             * @see java.lang.Object#toString()
-             */
+                 * (non-Javadoc)
+                 *
+                 * @see java.lang.Object#toString()
+                 */
     @Override
     public String toString() {
         return "User [userId=" + userId + ", emailAddress=" + emailAddress + ", firstName=" + firstName + ", lastName=" + lastName + "dateAdded=" + this.getCreatedOn() + ", status=" + active + "]";

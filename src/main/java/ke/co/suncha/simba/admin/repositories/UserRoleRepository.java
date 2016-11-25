@@ -23,21 +23,22 @@
  */
 package ke.co.suncha.simba.admin.repositories;
 
+import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.models.UserRole;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 
-public interface UserRoleRepository extends PagingAndSortingRepository<UserRole, Long> {
-	UserRole findByName(String name);
+public interface UserRoleRepository extends PagingAndSortingRepository<UserRole, Long>, QueryDslPredicateExecutor<UserRole> {
+    UserRole findByName(String name);
 
-	Page<UserRole> findAll(Pageable pageable);
+    Page<UserRole> findAll(Pageable pageable);
 
-	Page<UserRole> findByNameContaining(String name, Pageable pageable);
+    Page<UserRole> findByNameContaining(String name, Pageable pageable);
 }
