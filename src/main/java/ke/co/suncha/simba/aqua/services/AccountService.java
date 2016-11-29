@@ -134,7 +134,7 @@ public class AccountService {
     public AccountService() {
     }
 
-    public Account getByAccountId(Long accountId){
+    public Account getByAccountId(Long accountId) {
         return accountRepository.findOne(accountId);
     }
 
@@ -1299,12 +1299,21 @@ public class AccountService {
                 }
                 RestPageRequest p = requestObject.getObject();
 
-                Page<Account> page;
-                if (p.getFilter().isEmpty()) {
-                    page = accountRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-                } else {
-                    page = accountRepository.findByAccNoLike(p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                BooleanBuilder builder = new BooleanBuilder();
+                if (StringUtils.isNotEmpty(p.getFilter())) {
+                    builder.or(QAccount.account.accNo.containsIgnoreCase(p.getFilter()));
                 }
+
+                BooleanBuilder nameBuilder = new BooleanBuilder();
+                nameBuilder.or(QAccount.account.consumer.firstName.containsIgnoreCase(p.getFilter()));
+                nameBuilder.or(QAccount.account.consumer.lastName.containsIgnoreCase(p.getFilter()));
+                nameBuilder.or(QAccount.account.consumer.middleName.containsIgnoreCase(p.getFilter()));
+                nameBuilder.or(QAccount.account.consumer.phoneNumber.containsIgnoreCase(p.getFilter()));
+                nameBuilder.or(QAccount.account.consumer.identityNo.containsIgnoreCase(p.getFilter()));
+                builder.or(nameBuilder);
+
+                Page<Account> page = accountRepository.findAll(builder, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
                 if (page.hasContent()) {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(page);
