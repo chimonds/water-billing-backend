@@ -966,6 +966,12 @@ public class AccountService {
                     acc.setOnStatus(OnStatus.PENDING);
                     acc.setAverageConsumption(account.getAverageConsumption());
                     acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
+                    if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+                        acc.setPhoneNumber(account.getPhoneNumber());
+                    }
+                    if(StringUtils.isNotEmpty(account.getNotes())){
+                        acc.setNotes(account.getNotes());
+                    }
                     Account created = accountRepository.save(acc);
 
                     created.setLocation(account.getLocation());
@@ -1027,6 +1033,13 @@ public class AccountService {
                     acc.setAverageConsumption(account.getAverageConsumption());
                     //acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
                     acc.setAccountCategory(account.getAccountCategory());
+
+                    if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+                        acc.setPhoneNumber(account.getPhoneNumber());
+                    }
+                    if(StringUtils.isNotEmpty(account.getNotes())){
+                        acc.setNotes(account.getNotes());
+                    }
 
                     // save
                     acc = accountRepository.save(acc);

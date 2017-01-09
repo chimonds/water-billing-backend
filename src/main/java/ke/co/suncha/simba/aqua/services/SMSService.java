@@ -364,7 +364,11 @@ public class SMSService {
                                             //set message
                                             String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), account.getAccountId(), 0L, 0L);
                                             sms.setMessage(message);
-                                            sms.setMobileNumber(account.getConsumer().getPhoneNumber());
+                                            if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+                                                sms.setMobileNumber(account.getPhoneNumber());
+                                            }else if(StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())){
+                                                sms.setMobileNumber(account.getConsumer().getPhoneNumber());
+                                            }
                                             sms.setSmsGroup(smsGroup);
                                             smsList.add(sms);
                                         }
@@ -583,16 +587,21 @@ public class SMSService {
             return;
         }
 
-        if (consumer.getPhoneNumber() == null) {
-            return;
-        }
-
         if (consumer.getPhoneNumber().length() != 10) {
             log.error("Invalid account notification number:" + consumer.getPhoneNumber());
         }
 
+        if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+            sms.setMobileNumber(account.getPhoneNumber());
+        }else if(StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())){
+            sms.setMobileNumber(account.getConsumer().getPhoneNumber());
+        }else{
+            log.error("Invalid account notification number:" + consumer.getPhoneNumber());
+            return;
+        }
+
         //set mobile number
-        sms.setMobileNumber(consumer.getPhoneNumber());
+        //sms.setMobileNumber(consumer.getPhoneNumber());
 
 
         String notification = "";

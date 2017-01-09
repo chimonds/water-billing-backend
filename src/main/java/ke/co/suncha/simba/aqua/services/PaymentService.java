@@ -287,7 +287,7 @@ public class PaymentService {
                                         amountToAllocate = amountToAllocate - meterRent;
                                         Payment p = getClone(payment);
                                         p.setPaymentType(pt);
-                                        p.setAmount(account.getMeterRentBalance());
+                                        p.setAmount(meterRent);
                                         p.setRefNo(randomUUIDString);
                                         p.setIsMultiPart(true);
                                         pResult = paymentRepository.save(p);
@@ -315,6 +315,8 @@ public class PaymentService {
                 PaymentType pt = paymentTypeRepository.findByName("Water Sale");
                 p.setPaymentType(pt);
                 p.setAmount(amountToAllocate);
+                p.setRefNo(randomUUIDString);
+                p.setIsMultiPart(true);
                 pResult = paymentRepository.save(p);
             }
         } else {

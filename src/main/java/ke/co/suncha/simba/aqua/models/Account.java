@@ -53,23 +53,24 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long accountId;
 
-    @NotNull
-    @Column(name = "balance_bf")
+    @Column(name = "balance_bf", nullable = false)
     private Double balanceBroughtForward = (double) 0;
 
     @Column(name = "update_balance")
     private Boolean updateBalance = true;
 
-    @NotNull
-    @Column(name = "outstandingBalance")
+
+    @Column(name = "outstandingBalance", nullable = false)
     private Double outstandingBalance = (double) 0;
 
     @Column(name = "on_status")
     private Integer onStatus = OnStatus.PENDING;
 
-    @NotNull
-    @Column(name = "acc_no", unique = true, length = 20)
+    @Column(name = "acc_no", unique = true, length = 20, nullable = false)
     private String accNo;
+
+    @Column(name = "phone_no", length = 20)
+    private String phoneNumber = "";
 
     @Transient
     private String accName;
@@ -498,6 +499,14 @@ public class Account extends SimbaBaseEntity implements Serializable {
 
     public void setTurnedOffBy(String turnedOffBy) {
         this.turnedOffBy = turnedOffBy;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     @Override
