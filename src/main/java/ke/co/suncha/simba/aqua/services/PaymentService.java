@@ -409,11 +409,14 @@ public class PaymentService {
             PaymentType paymentType = paymentTypeRepository.findByName("Credit");
             if (paymentType != null) {
                 payment.setPaymentType(paymentType);
+                payment.setReceiptNo("Credit Adj");
+
             }
         } else if (StringUtils.equalsIgnoreCase(task.getTaskType().getName(), TaskTypeConst.DEBIT_ADJUSTMENT)) {
             PaymentType paymentType = paymentTypeRepository.findByName("Debit");
             if (paymentType != null) {
                 payment.setPaymentType(paymentType);
+                payment.setReceiptNo("Debit Adj");
             }
         }
 
@@ -432,14 +435,21 @@ public class PaymentService {
 
         if (payment.getPaymentType().isNegative()) {
             payment.setAmount(Math.abs(payment.getAmount()));
-            payment.setAmount(payment.getAmount() * -1);
+            payment.setAmount(Math.abs(payment.getAmount()) * -1);
         }
         // create resource
         payment.setAccount(account);
         Payment created = this.create(payment, accountId);
+        if (created != null) {
+            accountService.setUpdateBalance(account.getAccountId());
+            accountService.updateBalance(accountId);
 
-        accountService.setUpdateBalance(account.getAccountId());
-        accountService.updateBalance(accountId);
+            task.setProcessed(Boolean.TRUE);
+            task.setNotesProcessed("Adjustment posted");
+            task = taskService.save(task);
+        }
+
+        return;
 
     }
 
@@ -570,6 +580,13 @@ public class PaymentService {
                 } else if (StringUtils.equalsIgnoreCase(payment.getPaymentType().getName(), "Debit")) {
                     taskService.create(accountId, payment.getNotes(), TaskTypeConst.DEBIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l);
                 } else {
+                    response = authManager.grant(requestObject.getToken(), "payments_debit_credit");
+                    if (response.getStatusCode() == HttpStatus.OK) {
+                        responseObject.setMessage("Sorry you can not perform this action.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
                     // create resource
                     payment.setAccount(account);
                     payment.setPaymentType(paymentType);

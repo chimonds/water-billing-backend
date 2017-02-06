@@ -587,10 +587,6 @@ public class SMSService {
             return;
         }
 
-        if (consumer.getPhoneNumber().length() != 10) {
-            log.error("Invalid account notification number:" + consumer.getPhoneNumber());
-        }
-
         if(StringUtils.isNotEmpty(account.getPhoneNumber())){
             sms.setMobileNumber(account.getPhoneNumber());
         }else if(StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())){

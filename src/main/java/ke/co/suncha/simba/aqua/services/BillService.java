@@ -33,6 +33,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.aqua.account.OnStatus;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
@@ -176,6 +177,13 @@ public class BillService {
 
                 if (!account.isActive()) {
                     responseObject.setMessage("Sorry we can not complete your request, the account is inactive.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                    return response;
+                }
+
+                if (account.getOnStatus() != OnStatus.TURNED_ON) {
+                    responseObject.setMessage("Sorry we can not complete your request, you can only bill account which has been turned on.");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                     return response;

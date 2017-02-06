@@ -4,7 +4,6 @@ import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.models.User;
-import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
@@ -16,7 +15,6 @@ import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalService;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
-import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskRepository;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeService;
 import ke.co.suncha.simba.aqua.services.AccountService;
@@ -26,9 +24,6 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -191,6 +186,7 @@ public class TaskApprovalService {
         taskApproval.setAction(action);
         taskApproval.setCreatedOn(new DateTime());
         taskApproval = taskApprovalRepository.save(taskApproval);
+
         if (action == TaskAction.REJECT) {
             task.setApprovalStep(ApprovalStep.REJECTED);
             task.setLastOn(new DateTime());
@@ -198,8 +194,8 @@ public class TaskApprovalService {
             if (task.getApproval().getApprovalStep() == ApprovalStep.END) {
                 task.setApprovalStep(ApprovalStep.COMPLETED);
             } else {
-                Integer step = task.getApprovalStep();
-                step++;
+                Integer step = task.getApproval().getStepNo();
+                step = step + 1;
                 Approval approval = approvalService.getByStep(task.getTaskType().getTaskTypeId(), step);
                 if (approval == null) {
                     task.setApprovalStep(ApprovalStep.COMPLETED);
@@ -214,7 +210,6 @@ public class TaskApprovalService {
 
         //add notification
         taskService.addNotification(task.getTaskId());
-
         return taskApproval;
     }
 }
