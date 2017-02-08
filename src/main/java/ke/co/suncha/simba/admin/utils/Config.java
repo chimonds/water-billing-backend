@@ -45,4 +45,7 @@ public class Config {
     public static final String SMS_TEMPLATE_APPROVAL_TASK_REMINDER = "SMS_TEMPLATE_APPROVAL_TASK_REMINDER";
     public static final String SMS_TEMPLATE_APPROVAL_TASK_DEFAULT_REMINDER = "Dear $firstname, you have $count pending task(s) assigned to you. Kindly visit https://nolturesh.opentembo.io to approve/reject the request(s).";
 
+    public static final String SMS_NOTIFICATION_STATS_ALERT = "SMS_NOTIFICATION_STATS_ALERT";
+    public static final String SMS_TEMPLATE_STATS_ALERT = "SMS_TEMPLATE_APPROVAL_STATS_ALERT";
+    public static final String SMS_TEMPLATE_STATS_ALERT_DEFAULT = "Paid Yesterday: KES $paidYesterday, Paid this Month: KES $paidThisMonth, Billed last Month: KES $billedLastMonth, Collection Efficiency: $collectionEfficiency%";
 }

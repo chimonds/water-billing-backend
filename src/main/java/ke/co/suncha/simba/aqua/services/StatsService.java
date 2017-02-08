@@ -1,5 +1,6 @@
 package ke.co.suncha.simba.aqua.services;
 
+import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
@@ -8,13 +9,12 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.aqua.models.BillItemType;
-import ke.co.suncha.simba.aqua.models.BillingMonth;
-import ke.co.suncha.simba.aqua.models.PaymentType;
-import ke.co.suncha.simba.aqua.models.Zone;
+import ke.co.suncha.simba.admin.utils.Config;
+import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.stats.*;
 import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -96,6 +95,12 @@ public class StatsService {
 
     @Autowired
     private ExecutiveContactRepository executiveContactRepository;
+
+    @Autowired
+    SMSGroupRepository smsGroupRepository;
+
+    @Autowired
+    SMSTemplateRepository smsTemplateRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -647,10 +652,9 @@ public class StatsService {
 
     }
 
-    //@Scheduled(cron = "0 30 7 * * *")
-    @PostConstruct
+    @Scheduled(cron = "0 30 7 * * *")
     public void morningAlerts() {
-        log.info("Morning alert Pending Tasks Alerts @::" + new DateTime());
+        log.info("Morning stats alerts @::" + new DateTime());
 
         //Get y yesterday
         DateTime todayStartOfDay = new DateTime().withTimeAtStartOfDay();
@@ -680,30 +684,36 @@ public class StatsService {
 
         collectionEfficiency = paidThisMonth / billedLastMonth * 100;
 
-        JPAQuery query= new JPAQuery(entityManager);
-        
-        //$firstname
-        //$task_name
-        //$sno
-//        SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_APPROVAL_TASK_REMINDER);
-//        String msg = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_APPROVAL_TASK_REMINDER).getMessage();
-//        msg = StringUtils.replace(msg, "$firstname", user.getFirstName());
-//        msg = StringUtils.replace(msg, "$count", count.intValue() + "");
-//
-//
-//        //save sms
-//        SMS sms = new SMS();
-//        sms.setSmsGroup(smsGroup);
-//        sms.setMobileNumber(user.getMobileNo());
-//        sms.setMessage(msg);
-//        smsService.save(sms);
+        JPAQuery query = new JPAQuery(entityManager);
+        BooleanBuilder builder= new BooleanBuilder();
+        builder.and(QExecutiveContact.executiveContact.phoneNo.isNotEmpty());
 
+        List<String> executiveContacts = query.from(QExecutiveContact.executiveContact).where(builder).list(QExecutiveContact.executiveContact.phoneNo);
+        if (executiveContacts != null) {
+            for (String phoneNo : executiveContacts) {
+                //$paidYesterday
+                //$paidThisMonth
+                //$billedLastMonth
+                //$collectionEfficiency
+                SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_STATS_ALERT);
+                String msg = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_STATS_ALERT).getMessage();
+                msg = StringUtils.replace(msg, "$paidYesterday", this.getStringValue(paidYesterday));
+                msg = StringUtils.replace(msg, "$paidThisMonth", this.getStringValue(paidThisMonth));
+                msg = StringUtils.replace(msg, "$billedLastMonth", this.getStringValue(billedLastMonth));
+                msg = StringUtils.replace(msg, "$collectionEfficiency", this.getStringValue(collectionEfficiency));
 
-
+                //save sms
+                SMS sms = new SMS();
+                sms.setSmsGroup(smsGroup);
+                sms.setMobileNumber(phoneNo);
+                sms.setMessage(msg);
+                smsService.save(sms);
+            }
+        }
     }
 
-    private String getStringValue(Double val){
-        if(val.compareTo(0d)==0){
+    private String getStringValue(Double val) {
+        if (val.compareTo(0d) == 0) {
             return "0.00";
         }
         NumberFormat formatter = new DecimalFormat("#,###.00");

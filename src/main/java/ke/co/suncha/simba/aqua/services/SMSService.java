@@ -272,9 +272,6 @@ public class SMSService {
                 }
                 smsGroup.setSmsTemplate(smsTemplate);
                 smsGroup = smsGroupRepository.save(smsGroup);
-
-
-
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -302,13 +299,37 @@ public class SMSService {
                 }
                 smsGroup.setSmsTemplate(smsTemplate);
                 smsGroup = smsGroupRepository.save(smsGroup);
-
-
-
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+
+        try {
+            SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_STATS_ALERT);
+            if (smsGroup == null) {
+                smsGroup = new SMSGroup();
+                smsGroup.setName(Config.SMS_NOTIFICATION_STATS_ALERT);
+                smsGroup.setApproved(true);
+                smsGroup.setStatus("Approved");
+                smsGroup.setFromSystem(true);
+                smsGroup.setExploded(true);
+                smsGroup = smsGroupRepository.save(smsGroup);
+
+                //create template
+                SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_STATS_ALERT);
+                if (smsTemplate == null) {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName(Config.SMS_TEMPLATE_STATS_ALERT);
+                    smsTemplate.setMessage(Config.SMS_TEMPLATE_STATS_ALERT_DEFAULT);
+                    smsTemplate = smsTemplateRepository.save(smsTemplate);
+                }
+                smsGroup.setSmsTemplate(smsTemplate);
+                smsGroup = smsGroupRepository.save(smsGroup);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
     }
 
 
@@ -397,9 +418,9 @@ public class SMSService {
                                             //set message
                                             String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), account.getAccountId(), 0L, 0L);
                                             sms.setMessage(message);
-                                            if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+                                            if (StringUtils.isNotEmpty(account.getPhoneNumber())) {
                                                 sms.setMobileNumber(account.getPhoneNumber());
-                                            }else if(StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())){
+                                            } else if (StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())) {
                                                 sms.setMobileNumber(account.getConsumer().getPhoneNumber());
                                             }
                                             sms.setSmsGroup(smsGroup);
@@ -620,11 +641,11 @@ public class SMSService {
             return;
         }
 
-        if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+        if (StringUtils.isNotEmpty(account.getPhoneNumber())) {
             sms.setMobileNumber(account.getPhoneNumber());
-        }else if(StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())){
+        } else if (StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())) {
             sms.setMobileNumber(account.getConsumer().getPhoneNumber());
-        }else{
+        } else {
             log.error("Invalid account notification number:" + consumer.getPhoneNumber());
             return;
         }
