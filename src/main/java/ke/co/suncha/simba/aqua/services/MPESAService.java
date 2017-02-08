@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.repositories.SimbaOptionRepository;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
@@ -312,12 +313,17 @@ public class MPESAService {
                 }
 
                 RestPageRequest p = requestObject.getObject();
-                Page<MPESATransaction> page;
-                if (p.getFilter().isEmpty()) {
-                    page = mpesaRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-                } else {
-                    page = mpesaRepository.findByMpesaaccContainsOrAccount_AccNoContainsOrMpesacodeContains(p.getFilter(), p.getFilter(), p.getFilter(), new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+                BooleanBuilder builder = new BooleanBuilder();
+                if (!p.getFilter().isEmpty()) {
+                    builder.or(QMPESATransaction.mPESATransaction.account.accNo.containsIgnoreCase(p.getFilter()));
+                    builder.or(QMPESATransaction.mPESATransaction.mpesa_msisdn.containsIgnoreCase(p.getFilter()));
+                    builder.or(QMPESATransaction.mPESATransaction.mpesa_sender.containsIgnoreCase(p.getFilter()));
                 }
+
+                Page<MPESATransaction> page;
+                page = mpesaRepository.findAll(builder, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+
+
                 if (page.hasContent()) {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(page);

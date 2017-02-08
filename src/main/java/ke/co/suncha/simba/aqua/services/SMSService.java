@@ -272,6 +272,39 @@ public class SMSService {
                 }
                 smsGroup.setSmsTemplate(smsTemplate);
                 smsGroup = smsGroupRepository.save(smsGroup);
+
+
+
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        try {
+            SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_APPROVAL_TASK_REMINDER);
+            if (smsGroup == null) {
+                smsGroup = new SMSGroup();
+                smsGroup.setName(Config.SMS_NOTIFICATION_APPROVAL_TASK_REMINDER);
+                smsGroup.setApproved(true);
+                smsGroup.setStatus("Approved");
+                smsGroup.setFromSystem(true);
+                smsGroup.setExploded(true);
+                smsGroup = smsGroupRepository.save(smsGroup);
+
+
+                //create template
+                SMSTemplate smsTemplate = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_APPROVAL_TASK_REMINDER);
+                if (smsTemplate == null) {
+                    smsTemplate = new SMSTemplate();
+                    smsTemplate.setName(Config.SMS_TEMPLATE_APPROVAL_TASK_REMINDER);
+                    smsTemplate.setMessage(Config.SMS_TEMPLATE_APPROVAL_TASK_DEFAULT_REMINDER);
+                    smsTemplate = smsTemplateRepository.save(smsTemplate);
+                }
+                smsGroup.setSmsTemplate(smsTemplate);
+                smsGroup = smsGroupRepository.save(smsGroup);
+
+
+
             }
         } catch (Exception ex) {
             ex.printStackTrace();

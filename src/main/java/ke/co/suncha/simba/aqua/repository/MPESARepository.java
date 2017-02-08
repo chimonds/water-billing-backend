@@ -5,6 +5,7 @@ import ke.co.suncha.simba.aqua.models.Payment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
 /**
  * Created by manyala on 6/6/15.
  */
-public interface MPESARepository extends PagingAndSortingRepository<MPESATransaction, Long> {
+public interface MPESARepository extends PagingAndSortingRepository<MPESATransaction, Long>, QueryDslPredicateExecutor<MPESATransaction> {
     MPESATransaction findByMpesacode(String mpesaCode);
 
     List<MPESATransaction> findAllByAssigned(Boolean assigned);

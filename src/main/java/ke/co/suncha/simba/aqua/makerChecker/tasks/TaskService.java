@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.makerChecker.tasks;
 
 import com.mysema.query.BooleanBuilder;
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.models.User;
@@ -19,19 +20,18 @@ import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalService;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
-import ke.co.suncha.simba.aqua.makerChecker.type.TaskType;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeConst;
-import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeRepository;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeService;
-import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.models.SMS;
+import ke.co.suncha.simba.aqua.models.SMSGroup;
 import ke.co.suncha.simba.aqua.repository.SMSGroupRepository;
 import ke.co.suncha.simba.aqua.repository.SMSTemplateRepository;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import ke.co.suncha.simba.aqua.services.BillService;
 import ke.co.suncha.simba.aqua.services.PaymentService;
 import ke.co.suncha.simba.aqua.services.SMSService;
-import org.apache.catalina.Role;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -244,7 +244,8 @@ public class TaskService {
                 BooleanBuilder builder = new BooleanBuilder();
 
                 if (!p.getFilter().isEmpty()) {
-
+                    builder.or(QTask.task.account.accNo.containsIgnoreCase(p.getFilter()));
+                    builder.or(QTask.task.sno.containsIgnoreCase(p.getFilter()));
                 }
 
                 Page<Task> page = taskRepository.findAll(builder, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
@@ -311,5 +312,100 @@ public class TaskService {
         } else {
             paymentService.createFromTask(taskId);
         }
+    }
+
+    //second, minute, hour, day of month, month, day(s) of week
+    //	0 0 0 1/1 * ? * every day at midnight
+    //	0 0 0 1 1/1 ? * every first day of the month
+
+    @Scheduled(cron = "0 30 8 * * MON-FRI")
+    public void morningAlerts() {
+        log.info("Morning alert Pending Tasks Alerts @::" + new DateTime());
+        sendNotifications();
+    }
+
+
+    @Scheduled(cron = "0 30 14 * * MON-FRI")
+    public void afterNoonAlerts() {
+        log.info("After noon alert Pending Tasks Alerts @::" + new DateTime());
+        sendNotifications();
+    }
+
+    private void sendNotifications() {
+        List<Integer> pendingTasks = new ArrayList<>();
+        pendingTasks.add(ApprovalStep.START);
+        pendingTasks.add(ApprovalStep.ON_PROGRESS);
+        pendingTasks.add(ApprovalStep.END);
+
+        List<Long> roleIds = this.getPendingTasksRolesIds();
+        if (!roleIds.isEmpty()) {
+            for (Long roleId : roleIds) {
+                BooleanBuilder builder = new BooleanBuilder();
+                builder.and(QTask.task.processed.eq(Boolean.FALSE));
+                builder.and(QTask.task.approval.userRole.userRoleId.eq(roleId));
+                builder.and(QTask.task.approvalStep.in(pendingTasks));
+
+                JPAQuery query = new JPAQuery(entityManager);
+                Long count = query.from(QTask.task).where(builder).singleResult(QTask.task.count());
+                log.info(count + " Tasks pending ");
+                addPendingReminderNotification(roleId, count.intValue());
+            }
+        }
+
+    }
+
+    @Transactional
+    public void addPendingReminderNotification(Long roleId, Integer count) {
+        UserRole userRole = userRoleService.getOne(roleId);
+
+        if (userRole == null) {
+            return;
+        }
+
+        Iterable<User> users = userService.getByUserRole(userRole.getUserRoleId());
+        for (User user : users) {
+            if (StringUtils.isNotEmpty(user.getMobileNo())) {
+                //$firstname
+                //$task_name
+                //$sno
+                SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_APPROVAL_TASK_REMINDER);
+                String msg = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_APPROVAL_TASK_REMINDER).getMessage();
+                msg = StringUtils.replace(msg, "$firstname", user.getFirstName());
+                msg = StringUtils.replace(msg, "$count", count.intValue() + "");
+
+
+                //save sms
+                SMS sms = new SMS();
+                sms.setSmsGroup(smsGroup);
+                sms.setMobileNumber(user.getMobileNo());
+                sms.setMessage(msg);
+                smsService.save(sms);
+
+            }
+        }
+    }
+
+
+    private List<Long> getPendingTasksRolesIds() {
+        List<Long> roles = new ArrayList<>();
+        List<Integer> pendingTasks = new ArrayList<>();
+        pendingTasks.add(ApprovalStep.START);
+        pendingTasks.add(ApprovalStep.ON_PROGRESS);
+        pendingTasks.add(ApprovalStep.END);
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QTask.task.processed.eq(Boolean.FALSE));
+        builder.and(QTask.task.approvalStep.in(pendingTasks));
+
+        JPAQuery query = new JPAQuery(entityManager);
+        List<Long> roleIds = query.from(QTask.task).where(builder).list(QTask.task.approval.userRole.userRoleId);
+        if (roleIds != null) {
+            for (Long roleId : roleIds) {
+                if (!roles.contains(roleId)) {
+                    roles.add(roleId);
+                }
+            }
+        }
+        return roles;
     }
 }

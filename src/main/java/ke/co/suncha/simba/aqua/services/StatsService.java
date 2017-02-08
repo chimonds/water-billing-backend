@@ -1,5 +1,6 @@
 package ke.co.suncha.simba.aqua.services;
 
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -26,6 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -72,6 +77,9 @@ public class StatsService {
     private AuthManager authManager;
 
     @Autowired
+    EntityManager entityManager;
+
+    @Autowired
     CounterService counterService;
 
     @Autowired
@@ -85,6 +93,9 @@ public class StatsService {
 
     @Autowired
     private SMSService smsService;
+
+    @Autowired
+    private ExecutiveContactRepository executiveContactRepository;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -634,5 +645,68 @@ public class StatsService {
         }
         return response;
 
+    }
+
+    //@Scheduled(cron = "0 30 7 * * *")
+    @PostConstruct
+    public void morningAlerts() {
+        log.info("Morning alert Pending Tasks Alerts @::" + new DateTime());
+
+        //Get y yesterday
+        DateTime todayStartOfDay = new DateTime().withTimeAtStartOfDay();
+        DateTime endOfDayToday = todayStartOfDay.hourOfDay().withMinimumValue();
+        DateTime yesterday = todayStartOfDay.minusMillis(1).withTimeAtStartOfDay();
+        DateTime startOfMonth = todayStartOfDay.dayOfMonth().withMinimumValue();
+        Double billedLastMonth = 0d;
+        Double collectionEfficiency = 0d;
+        Double paidYesterday = paymentRepository.getTotalAmountPaidByDate(yesterday.toString("yyyy-MM-dd"));
+        if (paidYesterday == null) paidYesterday = 0d;
+
+        Double paidThisMonth = paymentRepository.getTotalAmountPaidByDate(startOfMonth.toString("yyyy-MM-dd"), endOfDayToday.toString("yyyy-MM-dd"));
+        if (paidThisMonth == null) paidThisMonth = 0d;
+
+        BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
+        if (billingMonth != null) {
+            Long billingMonthId = billingMonth.getBillingMonthId();
+            billingMonthId = billingMonthId - 1;
+            BillingMonth lastMonth = billingMonthRepository.findOne(billingMonthId);
+            if (lastMonth != null) {
+                Double dbBilled = billRepository.getTotalAmountByBillingMonth(lastMonth.getBillingMonthId());
+                if (dbBilled != null) {
+                    billedLastMonth = dbBilled;
+                }
+            }
+        }
+
+        collectionEfficiency = paidThisMonth / billedLastMonth * 100;
+
+        JPAQuery query= new JPAQuery(entityManager);
+        
+        //$firstname
+        //$task_name
+        //$sno
+//        SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_APPROVAL_TASK_REMINDER);
+//        String msg = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_APPROVAL_TASK_REMINDER).getMessage();
+//        msg = StringUtils.replace(msg, "$firstname", user.getFirstName());
+//        msg = StringUtils.replace(msg, "$count", count.intValue() + "");
+//
+//
+//        //save sms
+//        SMS sms = new SMS();
+//        sms.setSmsGroup(smsGroup);
+//        sms.setMobileNumber(user.getMobileNo());
+//        sms.setMessage(msg);
+//        smsService.save(sms);
+
+
+
+    }
+
+    private String getStringValue(Double val){
+        if(val.compareTo(0d)==0){
+            return "0.00";
+        }
+        NumberFormat formatter = new DecimalFormat("#,###.00");
+        return formatter.format(val);
     }
 }

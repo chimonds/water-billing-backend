@@ -550,7 +550,7 @@ public class BillService {
 
         task.setPosted(Boolean.TRUE);
         task.setProcessed(Boolean.TRUE);
-        task.setNotesProcessed("Request posted successfully");
+        task.setNotesProcessed("Bill deleted successfully");
         taskService.save(task);
     }
 
