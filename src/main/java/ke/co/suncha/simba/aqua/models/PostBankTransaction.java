@@ -3,6 +3,8 @@ package ke.co.suncha.simba.aqua.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 import ke.co.suncha.simba.aqua.postbank.PostBankFile;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -78,9 +80,10 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar dateAssigned = Calendar.getInstance();
 
-    @Column(name = "trans_date")
     @Temporal(TemporalType.TIMESTAMP)
-    private Calendar transDate = Calendar.getInstance();
+    @Column(name = "trans_date")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime transDate = new DateTime();
 
 
     // a payment has a payment type
@@ -255,11 +258,11 @@ public class PostBankTransaction extends SimbaBaseEntity implements Serializable
         this.postBankFile = postBankFile;
     }
 
-    public Calendar getTransDate() {
+    public DateTime getTransDate() {
         return transDate;
     }
 
-    public void setTransDate(Calendar transDate) {
+    public void setTransDate(DateTime transDate) {
         this.transDate = transDate;
     }
 }

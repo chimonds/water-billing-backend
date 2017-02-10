@@ -1,15 +1,14 @@
 package ke.co.suncha.simba.aqua.reports;
 
-import java.util.Calendar;
+import org.joda.time.DateTime;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com> on 5/6/15.
  */
 public class PaymentRecord extends BaseRecord {
-    private Calendar transactionDate;
+    private DateTime transactionDate;
     private String receiptNo;
     private String paymentType;
-
 
 
     public String getReceiptNo() {
@@ -20,14 +19,13 @@ public class PaymentRecord extends BaseRecord {
         this.receiptNo = receiptNo;
     }
 
-    public Calendar getTransactionDate() {
+    public DateTime getTransactionDate() {
         return transactionDate;
     }
 
-    public void setTransactionDate(Calendar transactionDate) {
+    public void setTransactionDate(DateTime transactionDate) {
         this.transactionDate = transactionDate;
     }
-
 
     public String getPaymentType() {
         return paymentType;

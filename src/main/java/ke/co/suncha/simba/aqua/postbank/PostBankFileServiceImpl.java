@@ -184,7 +184,7 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                         Boolean transactionDatesValid = Boolean.TRUE;
                         for (PostBankTransaction transaction : postBankTransactions) {
                             DateTime transDate = new DateTime();
-                            transDate = transDate.withMillis(transaction.getTransDate().getTimeInMillis());
+                            transDate = transDate.withMillis(transaction.getTransDate().getMillis());
                             if (!billingMonthService.canTransact(transDate)) {
                                 transactionDatesValid = Boolean.FALSE;
                             }
@@ -354,9 +354,8 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                                 DateTime dateTime = new DateTime().withYear(Integer.valueOf(year)).withMonthOfYear(Integer.valueOf(month)).withDayOfMonth(Integer.valueOf(day)).withTimeAtStartOfDay();
 
 
-                                Calendar calendar = Calendar.getInstance();
-                                calendar.setTimeInMillis(dateTime.getMillis());
-
+                                DateTime calendar = new DateTime();
+                                calendar = calendar.withMillis(dateTime.getMillis());
 
                                 postBankTransaction.setTransDate(calendar);
 

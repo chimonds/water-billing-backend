@@ -23,24 +23,16 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
-import java.util.Calendar;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import java.io.Serializable;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -58,10 +50,10 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long billingMonthId;
 
-    @NotNull
-    @Column(name = "billing_month", unique = true)
     @Temporal(TemporalType.DATE)
-    private Calendar month;
+    @Column(name = "billing_month", unique = true)
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime month;
 
     @NotNull
     @Column(name = "code", unique = true)
@@ -90,7 +82,7 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
 
 
     /**
-     * @param isActive the isActive to set
+     * @param active the isActive to set
      */
     public void setActive(Boolean active) {
         this.active = active;
@@ -111,17 +103,11 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
     }
 
 
-    /**
-     * @return the month
-     */
-    public Calendar getMonth() {
+    public DateTime getMonth() {
         return month;
     }
 
-    /**
-     * @param month the month to set
-     */
-    public void setMonth(Calendar month) {
+    public void setMonth(DateTime month) {
         this.month = month;
     }
 
@@ -147,7 +133,7 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
     }
 
     /**
-     * @param isCurrent the isCurrent to set
+     * @param current the isCurrent to set
      */
     public void setCurrent(Integer current) {
         this.current = current;

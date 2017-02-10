@@ -299,35 +299,33 @@ public class AccountService {
         ageingRecord.setAccNo(acc.getAccNo());
 
         //set
-        Calendar today = Calendar.getInstance();
-        today.set(Calendar.DAY_OF_MONTH, 24);
+        DateTime today = new DateTime();
+        today = today.withDayOfMonth(24);
 
+        DateTime above180 = new DateTime();
+        above180 = above180.withDayOfMonth(24);
+        above180 = above180.minusMonths(6);
+        above180 = above180.withDayOfMonth(23);
 
-        Calendar above180 = Calendar.getInstance();
-        above180.set(Calendar.DAY_OF_MONTH, 24);
-        above180.add(Calendar.MONTH, -6);
-        above180.set(Calendar.DAY_OF_MONTH, 23);
+        DateTime above120 = new DateTime();
+        above120 = above120.withDayOfMonth(24);
+        above120 = above120.minusMonths(4);
+        above120 = above120.withDayOfMonth(23);
 
+        DateTime above90 = new DateTime();
+        above90 = above90.withDayOfMonth(24);
+        above90 = above90.minusMonths(3);
+        above90 = above90.withDayOfMonth(23);
 
-        Calendar above120 = Calendar.getInstance();
-        above120.set(Calendar.DAY_OF_MONTH, 24);
-        above120.add(Calendar.MONTH, -4);
-        above120.set(Calendar.DAY_OF_MONTH, 23);
+        DateTime above60 = new DateTime();
+        above60 = above60.withDayOfMonth(24);
+        above60 = above60.minusMonths(2);
+        above60 = above60.withDayOfMonth(23);
 
-        Calendar above90 = Calendar.getInstance();
-        above90.set(Calendar.DAY_OF_MONTH, 24);
-        above90.add(Calendar.MONTH, -3);
-        above90.set(Calendar.DAY_OF_MONTH, 23);
-
-        Calendar above60 = Calendar.getInstance();
-        above60.set(Calendar.DAY_OF_MONTH, 24);
-        above60.add(Calendar.MONTH, -2);
-        above60.set(Calendar.DAY_OF_MONTH, 23);
-
-        Calendar above30 = Calendar.getInstance();
-        above30.set(Calendar.DAY_OF_MONTH, 24);
-        above30.add(Calendar.MONTH, -1);
-        above30.set(Calendar.DAY_OF_MONTH, 23);
+        DateTime above30 = new DateTime();
+        above30 = above30.withDayOfMonth(24);
+        above30 = above30.minusMonths(1);
+        above30 = above30.withDayOfMonth(23);
 
         //get all payments to date
         Double allocationBalance = 0d;
@@ -336,7 +334,7 @@ public class AccountService {
 
         //Start Bills above 180 days
         //Double billsAbove180Days = billService.getAccountBillsByDate(acc.getAccountId(), above180);
-        Double billAbove180Days = billService.getAccountBillsByDate(acc.getAccountId(), above180);
+        Double billAbove180Days = billService.getAccountBillsByDateWithBalanceBF(acc.getAccountId(), above180);
         Double balance180days = 0d;
         BILLS_NOT_PAID = billAbove180Days;
 
@@ -369,7 +367,7 @@ public class AccountService {
         //Start Bills above 180 days
 
         //Start Bills above 120-180 days
-        Double billAbove120Days = billService.getAccountBillsByDate(acc.getAccountId(), above120);
+        Double billAbove120Days = billService.getAccountBillsByDateWithBalanceBF(acc.getAccountId(), above120);
         Double balance120days = 0d;
         Double BILL_ABOVE_120_DAYS = BILLS_NOT_PAID;
         Double bills_not_paid_above_180_days = BILLS_NOT_PAID;
@@ -410,7 +408,7 @@ public class AccountService {
         //End Bills above 120-180 days
 
         //Start Bills above 90-120 days
-        Double billAbove90Days = billService.getAccountBillsByDate(acc.getAccountId(), above90);
+        Double billAbove90Days = billService.getAccountBillsByDateWithBalanceBF(acc.getAccountId(), above90);
         Double balance90days = 0d;
 
         Double BILL_ABOVE_90_DAYS = BILLS_NOT_PAID;
@@ -447,7 +445,7 @@ public class AccountService {
         //End Bills above 90-120 days
 
         //Start Bills above 60 days
-        Double billAbove60Days = billService.getAccountBillsByDate(acc.getAccountId(), above60);
+        Double billAbove60Days = billService.getAccountBillsByDateWithBalanceBF(acc.getAccountId(), above60);
         Double balance60days = 0d;
 
         Double BILL_ABOVE_60_DAYS = BILLS_NOT_PAID;
@@ -484,7 +482,7 @@ public class AccountService {
         //End Bills above 60 days
 
         //Start Bills above 30 days
-        Double billAbove30Days = billService.getAccountBillsByDate(acc.getAccountId(), above30);
+        Double billAbove30Days = billService.getAccountBillsByDateWithBalanceBF(acc.getAccountId(), above30);
         Double balance30days = 0d;
 
         Double BILL_ABOVE_30_DAYS = BILLS_NOT_PAID;
@@ -521,7 +519,7 @@ public class AccountService {
         //End Bills above 30 days
 
         //Start Bills above 0 days
-        Double billAbove0Days = billService.getAccountBillsByDate(acc.getAccountId(), today);
+        Double billAbove0Days = billService.getAccountBillsByDateWithBalanceBF(acc.getAccountId(), today);
         Double balance0days = 0d;
 
         Double BILL_ABOVE_0_DAYS = BILLS_NOT_PAID;
@@ -611,9 +609,6 @@ public class AccountService {
 
     @Transactional
     private Double getReceiptsByDate(Long accountId, DateTime toDate) {
-        Calendar date = Calendar.getInstance();
-        date.setTimeInMillis(toDate.getMillis());
-
         Double amount = 0d;
         JPAQuery query = new JPAQuery(entityManager);
         BooleanBuilder builder = new BooleanBuilder();
@@ -621,7 +616,7 @@ public class AccountService {
 
         //SQLExpressions.date did not match expected type
         //builder.and(SQLExpressions.date(QPayment.payment.transactionDate).loe(date));
-        builder.and(QPayment.payment.transactionDate.loe(date));
+        builder.and(QPayment.payment.transactionDate.loe(toDate));
         Double dbAmount = query.from(QPayment.payment).where(builder).singleResult(QPayment.payment.amount.sum());
         if (dbAmount != null) {
             amount += dbAmount;
@@ -631,14 +626,12 @@ public class AccountService {
 
     @Transactional
     private Double getBillsByDate(Long accountId, DateTime toDate) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(toDate.getMillis());
         Double amount = 0d;
         JPAQuery query = new JPAQuery(entityManager);
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QBill.bill.account.accountId.eq(accountId));
         //sixMonthsBuilder.and(QBill.bill.transactionDate.loe(sixMonthsAgoC));
-        builder.and(QBill.bill.transactionDate.loe(calendar));
+        builder.and(QBill.bill.transactionDate.loe(toDate));
         Double dbAmount = query.from(QBill.bill).where(builder).singleResult(QBill.bill.totalBilled.sum());
         if (dbAmount != null) {
             amount += dbAmount;
@@ -966,10 +959,10 @@ public class AccountService {
                     acc.setOnStatus(OnStatus.PENDING);
                     acc.setAverageConsumption(account.getAverageConsumption());
                     acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
-                    if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+                    if (StringUtils.isNotEmpty(account.getPhoneNumber())) {
                         acc.setPhoneNumber(account.getPhoneNumber());
                     }
-                    if(StringUtils.isNotEmpty(account.getNotes())){
+                    if (StringUtils.isNotEmpty(account.getNotes())) {
                         acc.setNotes(account.getNotes());
                     }
                     Account created = accountRepository.save(acc);
@@ -1034,10 +1027,10 @@ public class AccountService {
                     //acc.setBalanceBroughtForward(account.getBalanceBroughtForward());
                     acc.setAccountCategory(account.getAccountCategory());
 
-                    if(StringUtils.isNotEmpty(account.getPhoneNumber())){
+                    if (StringUtils.isNotEmpty(account.getPhoneNumber())) {
                         acc.setPhoneNumber(account.getPhoneNumber());
                     }
-                    if(StringUtils.isNotEmpty(account.getNotes())){
+                    if (StringUtils.isNotEmpty(account.getNotes())) {
                         acc.setNotes(account.getNotes());
                     }
 
@@ -1488,43 +1481,11 @@ public class AccountService {
         return response;
     }
 
-    public Double getAccountBalanceByDate(Account account, Calendar calendar) {
-        // update balances
+    public Double getAccountBalanceByDate(Long accountId, DateTime toDate) {
         Double balance = 0d;
-
-        // add balance b/f
-        balance += account.getBalanceBroughtForward();
-
-
-        //List<BigInteger> billIds = billRepository.findAllByAccount(accountId);
-        if (account.getBills() != null) {
-            for (Bill bill : account.getBills()) {
-                if (bill.getTransactionDate().before(calendar)) {
-                    balance += bill.getAmount();
-                    balance += bill.getMeterRent();
-
-                    // get bill items
-                    List<BillItem> billItems = bill.getBillItems();
-                    if (billItems != null) {
-                        for (BillItem billItem : billItems) {
-                            balance += billItem.getAmount();
-                        }
-                    }
-                }
-            }
-        }
-
-        // get payments
-        //List<BigInteger> paymentIds = paymentRepository.findAllByAccount(accountId);
-
-        if (account.getPayments() != null) {
-            for (Payment p : account.getPayments()) {
-                //Payment p = paymentRepository.findOne(paymentId.longValue());
-                if (p.getTransactionDate().before(calendar)) {
-                    balance -= p.getAmount();
-                }
-            }
-        }
+        // update balances
+        balance += billService.getAccountBillsByDateWithBalanceBF(accountId, toDate);
+        balance -= paymentService.getTotalByAccountByDate(accountId, toDate.hourOfDay().withMaximumValue());
         return balance;
     }
 

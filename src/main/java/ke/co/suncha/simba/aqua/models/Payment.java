@@ -25,6 +25,8 @@ package ke.co.suncha.simba.aqua.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -32,13 +34,12 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.Calendar;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
  */
 @Entity
-@Table(name = "payments", indexes = {@Index(name = "i_payments_trans_date", columnList = "transaction_date", unique = false),@Index(name = "i_payments_receipt_no", columnList = "receipt_no", unique = false)})
+@Table(name = "payments", indexes = {@Index(name = "i_payments_trans_date", columnList = "transaction_date", unique = false), @Index(name = "i_payments_receipt_no", columnList = "receipt_no", unique = false)})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Payment extends SimbaBaseEntity implements Serializable {
@@ -49,13 +50,13 @@ public class Payment extends SimbaBaseEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long paymentid;
 
-    @NotNull
-    @Column(name = "amount")
+    @Column(name = "amount", nullable = false)
     private Double amount = (double) 0;
 
-    @NotNull
     @Column(name = "transaction_date")
-    private Calendar transactionDate = Calendar.getInstance();
+    @Temporal(TemporalType.TIMESTAMP)
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime transactionDate = new DateTime();
 
     @NotNull
     @Column(name = "receipt_no", length = 15)
@@ -149,17 +150,11 @@ public class Payment extends SimbaBaseEntity implements Serializable {
     }
 
 
-    /**
-     * @return the transactionDate
-     */
-    public Calendar getTransactionDate() {
+    public DateTime getTransactionDate() {
         return transactionDate;
     }
 
-    /**
-     * @param transactionDate the transactionDate to set
-     */
-    public void setTransactionDate(Calendar transactionDate) {
+    public void setTransactionDate(DateTime transactionDate) {
         this.transactionDate = transactionDate;
     }
 

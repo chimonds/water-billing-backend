@@ -24,6 +24,8 @@
 package ke.co.suncha.simba.aqua.services;
 
 import com.mysema.query.BooleanBuilder;
+import com.mysema.query.Tuple;
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -60,8 +62,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.math.BigInteger;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -132,6 +134,9 @@ public class BillService {
 
     @Autowired
     private TaskService taskService;
+
+    @Autowired
+    EntityManager entityManager;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -482,18 +487,18 @@ public class BillService {
             lastBill.setBilled(true);
 
             //log.info("Most current bill:" + lastBill.getBillingMonth().getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
-            log.info("Billing month:" + billingMonth.getMonth().get(Calendar.YEAR) + "-" + billingMonth.getMonth().get(Calendar.MONTH));
+            log.info("Billing month:" + billingMonth.getMonth().toString("MMM, yyyy"));
 
-            if (lastBill.getBillingMonth().getMonth().before(billingMonth.getMonth())) {
+            if (lastBill.getBillingMonth().getMonth().isBefore(billingMonth.getMonth())) {
                 log.info("Billed:false");
-                lastBill.setBilled(false);
+                lastBill.setBilled(Boolean.FALSE);
             } else {
                 log.info("Billed:true");
-                lastBill.setBilled(true);
+                lastBill.setBilled(Boolean.TRUE);
             }
 
             if (lastBill.getBillingMonth().getMonth().equals(billingMonth.getMonth())) {
-                lastBill.setBilled(true);
+                lastBill.setBilled(Boolean.TRUE);
                 log.info("Billed:true");
             }
         }
@@ -523,7 +528,7 @@ public class BillService {
         }
 
         DateTime transDate = new DateTime();
-        transDate = transDate.withMillis(lastBill.getTransactionDate().getTimeInMillis());
+        transDate = transDate.withMillis(lastBill.getTransactionDate().getMillis());
         if (!billingMonthService.canTransact(transDate)) {
             task.setProcessed(Boolean.TRUE);
             task.setNotesProcessed("Sorry we could not complete your request. Invalid bill transaction date");
@@ -588,7 +593,7 @@ public class BillService {
                 }
 
                 DateTime transDate = new DateTime();
-                transDate = transDate.withMillis(lastBill.getTransactionDate().getTimeInMillis());
+                transDate = transDate.withMillis(lastBill.getTransactionDate().getMillis());
                 if (!billingMonthService.canTransact(transDate)) {
                     responseObject.setMessage("Sorry we could not complete your request. Invalid bill transaction date");
                     responseObject.setPayload("");
@@ -685,38 +690,72 @@ public class BillService {
         return amount;
     }
 
+    //TODO; refactor
     @Transactional
-    public Double getAccountBillsByDate(Long accountId, Calendar calendar) {
-
-        SimpleDateFormat format1 = new SimpleDateFormat("dd MMM, yyyy");
-        String formatted = format1.format(calendar.getTime());
-        //log.info("Get bills by:"+formatted);
-
-
-        Account account = accountRepository.findOne(accountId);
-        // update balances
+    public Double getAccountBillsByDateWithBalanceBF(Long accountId, DateTime toDate) {
         Double amount = 0d;
+        //Get balance brought forward
+        BooleanBuilder whereAccount = new BooleanBuilder();
+        whereAccount.and(QAccount.account.accountId.eq(accountId));
+        JPAQuery query = new JPAQuery(entityManager);
+        Double balanceBf = query.from(QAccount.account).where(whereAccount).singleResult(QAccount.account.balanceBroughtForward);
+        if (balanceBf != null) {
+            amount += balanceBf;
+        }
 
-        // add balance b/f
-        amount += account.getBalanceBroughtForward();
+        BooleanBuilder whereBills = new BooleanBuilder();
+        whereBills.and(QBill.bill.account.accountId.eq(accountId));
+        whereBills.and(QBill.bill.billingMonth.month.loe(toDate));
+        query = new JPAQuery(entityManager);
+        List<Tuple> tuples = query.from(QBill.bill).where(whereBills).list(QBill.bill.billId, QBill.bill.amount, QBill.bill.meterRent);
+        if (tuples != null) {
+            for (Tuple tuple : tuples) {
+                Long billId = tuple.get(QBill.bill.billId);
+                Double billAmount = tuple.get(QBill.bill.amount);
+                Double meterRent = tuple.get(QBill.bill.meterRent);
+                amount += billAmount;
+                amount += meterRent;
 
-        List<Bill> bills = account.getBills();
-        if (bills != null) {
-            for (Bill bill : bills) {
-//                if (bill.getTransactionDate().before(calendar)) {
-                if (bill.getBillingMonth().getMonth().before(calendar)) {
-                    amount += bill.getAmount();
-                    amount += bill.getMeterRent();
-
-                    // get bill items
-                    List<BillItem> billItems = bill.getBillItems();
-                    if (billItems != null) {
-                        for (BillItem billItem : billItems) {
-                            amount += billItem.getAmount();
-                        }
+                //get bill items
+                BooleanBuilder whereBillItems = new BooleanBuilder();
+                whereBillItems.and(QBillItem.billItem.bill.billId.eq(billId));
+                JPAQuery queryBillItems = new JPAQuery(entityManager);
+                List<Double> billItems = queryBillItems.from(QBillItem.billItem).where(whereBillItems).list(QBillItem.billItem.amount);
+                if (billItems != null) {
+                    for (Double a : billItems) {
+                        amount += a;
                     }
                 }
             }
+
+            //SimpleDateFormat format1 = new SimpleDateFormat("dd MMM, yyyy");
+            //String formatted = format1.format(calendar.getTime());
+            //log.info("Get bills by:"+formatted);
+
+
+            //Account account = accountRepository.findOne(accountId);
+            // update balances
+
+            // add balance b/f
+            //amount += account.getBalanceBroughtForward();
+
+//            List<Bill> bills = account.getBills();
+//            if (bills != null) {
+//                for (Bill bill : bills)
+////                if (bill.getTransactionDate().before(calendar)) {
+//                    if (bill.getBillingMonth().getMonth().before(calendar)) {
+//                        amount += bill.getAmount();
+//                        amount += bill.getMeterRent();
+//
+//                        // get bill items
+//                        List<BillItem> billItems = bill.getBillItems();
+//                        if (billItems != null) {
+//                            for (BillItem billItem : billItems) {
+//                                amount += billItem.getAmount();
+//                            }
+//                        }
+//                    }
+//            }
         }
         return amount;
     }

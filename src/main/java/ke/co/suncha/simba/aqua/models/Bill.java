@@ -23,19 +23,18 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
-import java.util.Calendar;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -89,10 +88,10 @@ public class Bill extends SimbaBaseEntity implements Serializable {
     private Boolean billed = true;
 
 
-    @NotNull
-    @Column(name = "transaction_date")
     @Temporal(TemporalType.TIMESTAMP)
-    private Calendar transactionDate = Calendar.getInstance();
+    @Column(name = "transaction_date")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime transactionDate = new DateTime();
 
     @NotNull
     @Column(name = "consumption_type", length = 7)
@@ -318,17 +317,11 @@ public class Bill extends SimbaBaseEntity implements Serializable {
     }
 
 
-    /**
-     * @return the transactionDate
-     */
-    public Calendar getTransactionDate() {
+    public DateTime getTransactionDate() {
         return transactionDate;
     }
 
-    /**
-     * @param transactionDate the transactionDate to set
-     */
-    public void setTransactionDate(Calendar transactionDate) {
+    public void setTransactionDate(DateTime transactionDate) {
         this.transactionDate = transactionDate;
     }
 

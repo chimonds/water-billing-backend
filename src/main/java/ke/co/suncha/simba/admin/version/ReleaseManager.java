@@ -34,6 +34,7 @@ import ke.co.suncha.simba.admin.repositories.UserRoleRepository;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -289,7 +290,7 @@ public class ReleaseManager {
                                 //bm.setCode(Integer.valueOf(billingCode));
                                 Calendar c = Calendar.getInstance();
                                 c.set(current, y, 24);
-                                bm.setMonth(c);
+                                bm.setMonth(new DateTime().withMillis(c.getTimeInMillis()));
 
 
                                 SimpleDateFormat format1 = new SimpleDateFormat("yyyyMM");

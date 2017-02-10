@@ -587,9 +587,7 @@ public class SMSService {
         //$billing_month
         BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
         if (billingMonth != null) {
-            SimpleDateFormat format1 = new SimpleDateFormat("MMM, yyyy");
-            String bmonth = format1.format(billingMonth.getMonth().getTime());
-            message = message.replace("$billing_month", bmonth);
+            message = message.replace("$billing_month", billingMonth.getMonth().toString("MMM, yyyy"));
         }
 
         //$bill_amount

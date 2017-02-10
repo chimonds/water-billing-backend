@@ -1,23 +1,22 @@
 package ke.co.suncha.simba.aqua.reports;
 
-import java.util.Calendar;
+import org.joda.time.DateTime;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com> on 5/6/15.
  */
 public class StatementRecord implements Comparable {
-    private Calendar transactionDate;
+    private DateTime transactionDate;
     private String itemType;
     private String refNo;
     private Double amount;
     private Double runningAmount;
 
-
-    public Calendar getTransactionDate() {
+    public DateTime getTransactionDate() {
         return transactionDate;
     }
 
-    public void setTransactionDate(Calendar transactionDate) {
+    public void setTransactionDate(DateTime transactionDate) {
         this.transactionDate = transactionDate;
     }
 
@@ -55,10 +54,10 @@ public class StatementRecord implements Comparable {
 
     @Override
     public int compareTo(Object object) {
-        Calendar transactionDate = ((StatementRecord) object).getTransactionDate();
+        DateTime transactionDate = ((StatementRecord) object).getTransactionDate();
         /* For descending order*/
-        if (transactionDate.before(this.transactionDate)) return 1;
-        if (transactionDate.after(this.transactionDate)) return -1;
+        if (transactionDate.isBefore(this.transactionDate)) return 1;
+        if (transactionDate.isAfter(this.transactionDate)) return -1;
         return 0;
     }
 }

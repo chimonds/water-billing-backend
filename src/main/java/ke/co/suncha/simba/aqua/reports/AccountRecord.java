@@ -1,6 +1,6 @@
 package ke.co.suncha.simba.aqua.reports;
 
-import java.util.Calendar;
+import org.joda.time.DateTime;
 
 /**
  * Created by manyala on 5/1/15.
@@ -17,7 +17,7 @@ public class AccountRecord {
     private  Boolean active;
     private String status;
     private String phoneNo;
-    private Calendar createdOn;
+    private DateTime createdOn;
     private String category;
 
     public String getStatus() {
@@ -117,11 +117,11 @@ public class AccountRecord {
         this.phoneNo = phoneNo;
     }
 
-    public Calendar getCreatedOn() {
+    public DateTime getCreatedOn() {
         return createdOn;
     }
 
-    public void setCreatedOn(Calendar createdOn) {
+    public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
     }
 }

@@ -228,7 +228,7 @@ public class MPESAService {
                     payment.setAmount(mpesaTransaction.getMpesaamt());
 
                     //transaction date
-                    payment.setTransactionDate(Calendar.getInstance());
+                    payment.setTransactionDate(new DateTime());
 
                     BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);
                     if (billingMonth != null) {

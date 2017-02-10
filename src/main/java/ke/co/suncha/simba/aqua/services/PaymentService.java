@@ -23,6 +23,8 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import com.mysema.query.BooleanBuilder;
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -51,7 +53,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Calendar;
+import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.UUID;
 
@@ -110,6 +112,9 @@ public class PaymentService {
     @Autowired
     TaskService taskService;
 
+    @Autowired
+    EntityManager entityManager;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -119,12 +124,16 @@ public class PaymentService {
 
     @Transactional
     public Double getTotalByAccountByDate(Long accountId, DateTime toDate) {
-        Double total = 0d;
-        Double dbTotal = paymentRepository.getTotalByAccountByDate(accountId, toDate.toString("yyyy-MM-dd"));
-        if (dbTotal != null) {
-            total = dbTotal;
+        //toDate = toDate.hourOfDay().withMaximumValue();
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(QPayment.payment.account.accountId.eq(accountId));
+        where.and(QPayment.payment.transactionDate.loe(toDate));
+        JPAQuery query = new JPAQuery(entityManager);
+        Double dbAmount = query.from(QPayment.payment).where(where).singleResult(QPayment.payment.amount.sum());
+        if (dbAmount != null) {
+            return dbAmount;
         }
-        return total;
+        return 0d;
     }
 
     @Transactional
@@ -177,8 +186,7 @@ public class PaymentService {
             return null;
         }
 
-        DateTime transDate = new DateTime();
-        transDate = transDate.withMillis(payment.getTransactionDate().getTimeInMillis());
+        DateTime transDate = payment.getTransactionDate();
         if (!billingMonthService.canTransact(transDate)) {
             return null;
         }
@@ -366,8 +374,7 @@ public class PaymentService {
         payment.setAccount(task.getAccount());
         payment.setNotes(task.getNotes());
 
-        DateTime transDate = new DateTime();
-        transDate = transDate.withMillis(payment.getTransactionDate().getTimeInMillis());
+        DateTime transDate = payment.getTransactionDate();
         if (!billingMonthService.canTransact(transDate)) {
             task.setProcessed(Boolean.TRUE);
             task.setNotesProcessed("Invalid billing/transaction date");
@@ -397,8 +404,8 @@ public class PaymentService {
             return;
         }
 
-        Calendar calendar = Calendar.getInstance();
-        if (payment.getTransactionDate().after(calendar)) {
+        DateTime today = new DateTime();
+        if (payment.getTransactionDate().isAfter(today)) {
             task.setProcessed(Boolean.TRUE);
             task.setNotesProcessed("Transaction date can not be greater than now");
             task = taskService.save(task);
@@ -481,8 +488,7 @@ public class PaymentService {
                     return response;
                 }
 
-                DateTime transDate = new DateTime();
-                transDate = transDate.withMillis(payment.getTransactionDate().getTimeInMillis());
+                DateTime transDate = payment.getTransactionDate();
                 if (!billingMonthService.canTransact(transDate)) {
                     responseObject.setMessage("Invalid billing/transaction date");
                     responseObject.setPayload("");
@@ -512,8 +518,7 @@ public class PaymentService {
                     return response;
                 }
 
-                Calendar calendar = Calendar.getInstance();
-                if (payment.getTransactionDate().after(calendar)) {
+                if (payment.getTransactionDate().isAfter(new DateTime())) {
                     responseObject.setMessage("Transaction date can not be greater than now");
                     responseObject.setPayload("");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
@@ -840,9 +845,7 @@ public class PaymentService {
 
 
                 PaymentSource paymentSource = paymentSourceRepository.findByName("CASH");
-                DateTime transDate = new DateTime();
-                transDate = transDate.withMillis(p.getTransactionDate().getTimeInMillis());
-
+                DateTime transDate = p.getTransactionDate();
                 if (!billingMonthService.canTransact(transDate)) {
                     responseObject.setMessage("Invalid billing/transaction date");
                     responseObject.setPayload("");
@@ -854,8 +857,6 @@ public class PaymentService {
                 BillingMonth billingMonth = billingMonthService.getActiveMonth();
 
                 //transaction date
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis(transDate.getMillis());
 
 
                 //debit source
@@ -867,7 +868,7 @@ public class PaymentService {
                 payment1.setNotes(p.getNotes());
                 payment1.setReceiptNo(p.getReceiptNo());
                 payment1.setBillingMonth(billingMonth);
-                payment1.setTransactionDate(calendar);
+                payment1.setTransactionDate(transDate);
 
                 if (payment1.getPaymentType().isNegative()) {
                     payment1.setAmount(Math.abs(p.getAmount()));
@@ -885,7 +886,7 @@ public class PaymentService {
                 payment2.setAccount(account);
                 payment2.setReceiptNo(p.getReceiptNo());
                 payment2.setBillingMonth(billingMonth);
-                payment2.setTransactionDate(calendar);
+                payment2.setTransactionDate(transDate);
 
 
                 if (payment2.getPaymentType().isNegative()) {

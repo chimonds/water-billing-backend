@@ -25,6 +25,7 @@ package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.BillingMonth;
 
+import org.joda.time.DateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -50,7 +51,7 @@ public interface BillingMonthRepository extends PagingAndSortingRepository<Billi
     @Query("select count(u) from BillingMonth u where u.current = ?1")
     Long countWithCurrent(Integer current);
 
-    BillingMonth findByMonth(Calendar calendar);
+    BillingMonth findByMonth(DateTime dateTime);
 
 
     @Query(value = "SELECT * FROM billing_months WHERE date(billing_month)=:billingMonth", nativeQuery = true)

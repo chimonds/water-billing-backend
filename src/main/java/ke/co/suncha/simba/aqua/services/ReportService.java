@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
 import javax.persistence.EntityManager;
 import java.math.BigInteger;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -113,10 +112,10 @@ public class ReportService {
     public ReportService() {
     }
 
-    private Integer getYearMonthDayFromCalendar(Calendar calendar) {
-        Integer year = calendar.get(Calendar.YEAR);
-        Integer month = calendar.get(Calendar.MONTH) + 1;
-        Integer day = calendar.get(Calendar.DAY_OF_MONTH);
+    private Integer getYearMonthDayFromCalendar(DateTime dateTime) {
+        Integer year = dateTime.getYear();
+        Integer month = dateTime.getMonthOfYear() + 1;
+        Integer day = dateTime.getDayOfMonth();
 
         String content = year.toString();
 
@@ -126,19 +125,15 @@ public class ReportService {
             content = content + month.toString();
         }
 
-
         if (day.toString().length() == 1) {
             content = content + "0" + day.toString();
         } else {
             content = content + day.toString();
         }
 
-        //log.info("Year Month Day:" + content);
-
         Integer val = Integer.valueOf(content);
 
         return val;
-
     }
 
     public RestResponse getMonthlyBills(RestRequestObject<ReportsParam> requestObject) {
@@ -172,22 +167,24 @@ public class ReportService {
                     return response;
                 }
 
-                SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
-                String formatted = format1.format(billingMonth.getMonth().getTime());
-                log.info("Getting bills for billing month:" + formatted);
+                //SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
+                //String formatted = format1.format(billingMonth.getMonth().getTime());
+                log.info("Getting bills for billing month:" + billingMonth.getMonth().toString("yyyy-MM-dd"));
 
-                Calendar bMonth = Calendar.getInstance();
-                bMonth.setTime(billingMonth.getMonth().getTime());
+                DateTime bMonth = billingMonth.getMonth();
+                //bMonth.setTime(billingMonth.getMonth().getTime());
                 //billingMonth.getMonth();
 
-                Calendar paymentBillingDate = bMonth;
-                paymentBillingDate.add(Calendar.MONTH, -1);
-                paymentBillingDate.set(Calendar.DATE, 24);
+                DateTime paymentBillingDate = bMonth;
+                paymentBillingDate.minusMonths(1);
+                paymentBillingDate.withDayOfMonth(24);
+                //paymentBillingDate.add(Calendar.MONTH, -1);
+                //paymentBillingDate.set(Calendar.DATE, 24);
                 ///log.info("Payment billing date:" + paymentBillingDate.getTime());
 
                 //log.info("Billing Month:" + billingMonth.getMonth().getTime());
 
-                DateTime startDate = new DateTime(billingMonth.getMonth().getTimeInMillis()).withDayOfMonth(1);
+                DateTime startDate = new DateTime(billingMonth.getMonth()).withDayOfMonth(1);
                 //log.info("Start date:" + startDate);
 
                 DateTime endDate = startDate.plusMonths(1).minusMinutes(1);
@@ -254,7 +251,7 @@ public class ReportService {
                         monthlyBillRecord.setPreviousReading(b.getPreviousReading());
                         monthlyBillRecord.setCurrentReading(b.getCurrentReading());
                         monthlyBillRecord.setUnitsBilled(b.getUnitsBilled());
-                        monthlyBillRecord.setBillingMonth(billingMonth.getMonth().getTime());
+                        monthlyBillRecord.setBillingMonth(billingMonth.getMonth());
                         monthlyBillRecord.setTotalBilledAmount(b.getTotalBilled());
 
                         String[] billContent = b.getContent().split("#");
@@ -283,13 +280,16 @@ public class ReportService {
 
 
                         //balance from last bill
-                        Calendar lastDateBeforeBillingCycle = Calendar.getInstance();
-                        lastDateBeforeBillingCycle.setTime(billingMonth.getMonth().getTime());
-                        lastDateBeforeBillingCycle.set(Calendar.DAY_OF_MONTH, 1);
+                        DateTime lastDateBeforeBillingCycle = new DateTime();
+                        lastDateBeforeBillingCycle = billingMonth.getMonth();
+                        lastDateBeforeBillingCycle = lastDateBeforeBillingCycle.withDayOfMonth(1);
+
+                        //lastDateBeforeBillingCycle.setTime(billingMonth.getMonth().getTime());
+                        //lastDateBeforeBillingCycle.set(Calendar.DAY_OF_MONTH, 1);
                         //log.info("Bill Code:" + billCode);
 
 
-                        Calendar lastBillingDate = Calendar.getInstance();
+                        DateTime lastBillingDate = new DateTime();
 
                         if (billCode != null) {
                             //get the actual previous bill
@@ -299,17 +299,20 @@ public class ReportService {
                             Timestamp timestamp = billRepository.findPreviousBillDate(accountId, billCode);
                             if (timestamp != null) {
                                 //log.info("Last bill:" + timestamp.getTime());
-                                lastDateBeforeBillingCycle = Calendar.getInstance();
-                                lastDateBeforeBillingCycle.setTimeInMillis(timestamp.getTime());
-                                lastDateBeforeBillingCycle.add(Calendar.DAY_OF_MONTH, 1);
+                                lastDateBeforeBillingCycle = new DateTime();
+                                lastDateBeforeBillingCycle.withMillis(timestamp.getTime());
+                                lastDateBeforeBillingCycle = lastDateBeforeBillingCycle.withDayOfMonth(1);
+
+                                //lastDateBeforeBillingCycle.setTimeInMillis(timestamp.getTime());
+                                //lastDateBeforeBillingCycle.add(Calendar.DAY_OF_MONTH, 1);
                                 //log.info("lastDateBeforeBillingCycle:" + lastDateBeforeBillingCycle.getTime());
 
-                                lastBillingDate.setTimeInMillis(timestamp.getTime());
+                                lastBillingDate.withMillis(timestamp.getTime());
                             }
                         }
 
 
-                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount(), lastDateBeforeBillingCycle);
+                        Double balanceBeforeBill = accountService.getAccountBalanceByDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
 
 
                         //Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
@@ -506,7 +509,6 @@ public class ReportService {
                             bills = billRepository.findByAccountOrderByBillCodeDesc(acc, new PageRequest(0, 1));
                             if (bills.hasContent()) {
                                 Bill lastBill = bills.getContent().get(0);
-
                                 pcr.setLastBillingMonth(lastBill.getBillingMonth().getMonth());
                                 pcr.setBeforeBilling(acc.getOutstandingBalance() - lastBill.getTotalBilled());
 
@@ -747,7 +749,7 @@ public class ReportService {
                     PaymentType debit = paymentTypeRepository.findByName("DEBIT");
                     Double creditAdjustmentTotal = 0d;
                     Double debitAdjustmentTotal = 0d;
-                    DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis()).withTimeAtStartOfDay().withDayOfMonth(1);
+                    DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getMillis()).withTimeAtStartOfDay().withDayOfMonth(1);
                     DateTime toDate = fromDate.plusMonths(1).minusMillis(1);
 
                     if (zoneId > 0) {
@@ -821,9 +823,9 @@ public class ReportService {
                 if (!account.getBills().isEmpty()) {
                     for (Bill bill : account.getBills()) {
                         //add bill record
-                        Calendar billingMonth = bill.getBillingMonth().getMonth();
-                        SimpleDateFormat format1 = new SimpleDateFormat("MMM, yyyy");
-                        String formattedDate = format1.format(billingMonth.getTime());
+                        DateTime billingMonth = bill.getBillingMonth().getMonth();
+                        String formattedDate = billingMonth.toString("MMM, yyyy");
+                        //format1.format(billingMonth.getTime());
 
                         StatementRecord billRecord = new StatementRecord();
                         //billRecord.setTransactionDate(bill.getTransactionDate());
@@ -1029,18 +1031,18 @@ public class ReportService {
                 }
 
 
-                Calendar fromDate = Calendar.getInstance();
-                Calendar toDate = Calendar.getInstance();
+                DateTime fromDate = new DateTime();
+                DateTime toDate = new DateTime();
                 BooleanBuilder dateBuilder = new BooleanBuilder();
                 if (reportRequest.getFromDate().isEqual(reportRequest.getToDate())) {
-                    fromDate.setTimeInMillis(reportRequest.getFromDate().hourOfDay().withMinimumValue().getMillis());
-                    toDate.setTimeInMillis(reportRequest.getFromDate().hourOfDay().withMaximumValue().getMillis());
+                    fromDate.withMillis(reportRequest.getFromDate().hourOfDay().withMinimumValue().getMillis());
+                    toDate.withMillis(reportRequest.getFromDate().hourOfDay().withMaximumValue().getMillis());
 
                     dateBuilder.and(QPayment.payment.transactionDate.between(fromDate, toDate));
                     //dateBuilder.and(QPayment.payment.transactionDate.loe(toDate));
                 } else {
-                    fromDate.setTimeInMillis(reportRequest.getFromDate().hourOfDay().withMinimumValue().getMillis());
-                    toDate.setTimeInMillis(reportRequest.getToDate().hourOfDay().withMaximumValue().getMillis());
+                    fromDate.withMillis(reportRequest.getFromDate().hourOfDay().withMinimumValue().getMillis());
+                    toDate.withMillis(reportRequest.getToDate().hourOfDay().withMaximumValue().getMillis());
 
                     dateBuilder.and(QPayment.payment.transactionDate.between(fromDate, toDate));
                     //dateBuilder.and(QPayment.payment.transactionDate.loe(toDate));
@@ -1392,14 +1394,11 @@ public class ReportService {
                 PaymentType debit = paymentTypeRepository.findByName("DEBIT");
                 Double creditAdjustmentTotal = 0d;
                 Double debitAdjustmentTotal = 0d;
-                DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis()).withTimeAtStartOfDay().dayOfMonth().withMinimumValue();
+                DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getMillis()).withTimeAtStartOfDay().dayOfMonth().withMinimumValue();
                 DateTime toDate = fromDate.dayOfMonth().withMaximumValue();
 
-                Calendar from = Calendar.getInstance();
-                from.setTimeInMillis(fromDate.getMillis());
-
-                Calendar to = Calendar.getInstance();
-                to.setTimeInMillis(toDate.getMillis());
+                DateTime from = fromDate;
+                DateTime to = toDate;
 
                 BooleanBuilder zonePaymentsBuilder = new BooleanBuilder();
                 if (accountsReportRequest.getZoneId() != null) {
@@ -1456,7 +1455,7 @@ public class ReportService {
                 //bsr.set
                 //Get active and inactive based on the last date of billing month
                 //Active connections by end of month
-                DateTime lastDayOfTheMonth = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis());
+                DateTime lastDayOfTheMonth = billingMonth.getMonth();
                 Integer yearMonth = Integer.parseInt(lastDayOfTheMonth.toString("yyyyMM"));
                 query = new JPAQuery(entityManager);
                 BooleanBuilder activeAccountsBuilder = new BooleanBuilder();
@@ -1640,9 +1639,9 @@ public class ReportService {
                     return response;
                 }
 
-                DateTime lastDayOfTheMonth = new DateTime().withMillis(billingMonth.getMonth().getTimeInMillis()).dayOfMonth().withMaximumValue();
-                Calendar endMonthDate = Calendar.getInstance();
-                endMonthDate.setTimeInMillis(lastDayOfTheMonth.getMillis());
+                DateTime lastDayOfTheMonth = new DateTime().withMillis(billingMonth.getMonth().getMillis()).dayOfMonth().withMaximumValue();
+                DateTime endMonthDate =lastDayOfTheMonth;
+                //endMonthDate.setTimeInMillis(lastDayOfTheMonth.getMillis());
 
                 builder.and(QBill.bill.billingMonth.billingMonthId.eq(accountsReportRequest.getBillingMonthId()));
 

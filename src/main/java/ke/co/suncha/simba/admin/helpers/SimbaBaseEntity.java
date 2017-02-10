@@ -23,20 +23,19 @@
  */
 package ke.co.suncha.simba.admin.helpers;
 
-import java.util.Calendar;
-import java.util.UUID;
-
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ke.co.suncha.simba.admin.models.User;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -52,12 +51,14 @@ public abstract class SimbaBaseEntity {
     @CreatedDate
     @NotNull
     @Temporal(TemporalType.TIMESTAMP)
-    private Calendar createdOn = Calendar.getInstance();
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime createdOn = new DateTime();
 
     @LastModifiedDate
     @Temporal(TemporalType.TIMESTAMP)
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
     @JsonIgnore
-    private Calendar lastModifiedDate = Calendar.getInstance();
+    private DateTime lastModifiedDate = new DateTime();
 
     @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
@@ -80,19 +81,19 @@ public abstract class SimbaBaseEntity {
         this.approvalLevel = approvalLevel;
     }
 
-    public Calendar getCreatedOn() {
+    public DateTime getCreatedOn() {
         return createdOn;
     }
 
-    public void setCreatedOn(Calendar createdOn) {
+    public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
     }
 
-    public Calendar getLastModifiedDate() {
+    public DateTime getLastModifiedDate() {
         return lastModifiedDate;
     }
 
-    public void setLastModifiedDate(Calendar lastModifiedDate) {
+    public void setLastModifiedDate(DateTime lastModifiedDate) {
         this.lastModifiedDate = lastModifiedDate;
     }
 

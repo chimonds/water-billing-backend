@@ -197,12 +197,12 @@ public class ReportHeaderService {
                 builder.and(QAccount.account.zone.scheme.schemeId.eq(reportHeader.getScheme().getSchemeId()));
             }
 
-            Calendar createdOn = Calendar.getInstance();
+            DateTime createdOn = new DateTime();
             //DateTime created = reportHeader.getToDate().plusDays(1);
             DateTime created = reportHeader.getToDate().withZone(DateTimeZone.forID("Africa/Nairobi")).hourOfDay().withMaximumValue();
 
 
-            createdOn.setTimeInMillis(created.getMillis());
+            createdOn = created;
             builder.and(QAccount.account.createdOn.loe(createdOn));
 
             JPAQuery query = new JPAQuery(entityManager);
@@ -260,14 +260,9 @@ public class ReportHeaderService {
                 builder.and(QAccount.account.zone.scheme.schemeId.eq(reportHeader.getScheme().getSchemeId()));
             }
 
-            Calendar createdOn = Calendar.getInstance();
+            DateTime createdOn = new DateTime();
             DateTime created = reportHeader.getToDate().withZone(DateTimeZone.forID("Africa/Nairobi")).hourOfDay().withMaximumValue();
-
-
-            //DateTime created = reportHeader.getToDate().plusDays(1);
-
-            createdOn.setTimeInMillis(created.getMillis());
-            builder.and(QAccount.account.createdOn.loe(createdOn));
+            createdOn = created;
 
             JPAQuery query = new JPAQuery(entityManager);
             QAccount qAccount = QAccount.account;

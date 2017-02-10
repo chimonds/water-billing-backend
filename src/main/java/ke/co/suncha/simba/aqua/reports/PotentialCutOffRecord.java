@@ -1,6 +1,6 @@
 package ke.co.suncha.simba.aqua.reports;
 
-import java.util.Calendar;
+import org.joda.time.DateTime;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com> on 5/8/15.
@@ -9,7 +9,7 @@ public class PotentialCutOffRecord extends BaseRecord {
     private Double beforeBilling;
     private Double afterBilling;
     private Double billedAmount;
-    private Calendar lastBillingMonth;
+    private DateTime lastBillingMonth;
 
     public Double getBeforeBilling() {
         return beforeBilling;
@@ -35,11 +35,11 @@ public class PotentialCutOffRecord extends BaseRecord {
         this.billedAmount = billedAmount;
     }
 
-    public Calendar getLastBillingMonth() {
+    public DateTime getLastBillingMonth() {
         return lastBillingMonth;
     }
 
-    public void setLastBillingMonth(Calendar lastBillingMonth) {
+    public void setLastBillingMonth(DateTime lastBillingMonth) {
         this.lastBillingMonth = lastBillingMonth;
     }
 }

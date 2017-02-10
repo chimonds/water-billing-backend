@@ -118,7 +118,7 @@ public class BillingMonthService {
             DateTime lastDayOfTheMonth = today.dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
             DateTime firstDayOfTheMonth = today.dayOfMonth().withMinimumValue().hourOfDay().withMinimumValue();
             DateTime billingDate = new DateTime();
-            billingDate = billingDate.withMillis(billingMonth.getMonth().getTimeInMillis());
+            billingDate = billingDate.withMillis(billingMonth.getMonth().getMillis());
 
             //Check if billing month is between first and last day of the month
             if (billingDate.isBefore(firstDayOfTheMonth) || billingDate.isAfter(lastDayOfTheMonth)) {

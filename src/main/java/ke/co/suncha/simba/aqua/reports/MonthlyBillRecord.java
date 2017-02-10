@@ -1,7 +1,8 @@
 package ke.co.suncha.simba.aqua.reports;
 
+import org.joda.time.DateTime;
+
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -11,7 +12,7 @@ public class MonthlyBillRecord extends BaseRecord {
     private String location;
     private String meterSize;
     private String meterNo;
-    private Date billingMonth;
+    private DateTime billingMonth;
     private Integer currentReading;
     private Integer PreviousReading;
     private Integer unitsBilled;
@@ -84,11 +85,11 @@ public class MonthlyBillRecord extends BaseRecord {
         this.meterNo = meterNo;
     }
 
-    public Date getBillingMonth() {
+    public DateTime getBillingMonth() {
         return billingMonth;
     }
 
-    public void setBillingMonth(Date billingMonth) {
+    public void setBillingMonth(DateTime billingMonth) {
         this.billingMonth = billingMonth;
     }
 
