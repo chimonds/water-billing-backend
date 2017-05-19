@@ -115,8 +115,8 @@ public class BillingMonthService {
         //Check if strict transaction mode enabled
         if (systemOptionService.isStrictModeEnabled()) {
             DateTime today = new DateTime();
-            DateTime lastDayOfTheMonth = today.dayOfMonth().withMaximumValue().hourOfDay().withMaximumValue();
-            DateTime firstDayOfTheMonth = today.dayOfMonth().withMinimumValue().hourOfDay().withMinimumValue();
+            DateTime lastDayOfTheMonth = today.dayOfMonth().withMaximumValue().withTimeAtStartOfDay().hourOfDay().withMaximumValue();
+            DateTime firstDayOfTheMonth = today.dayOfMonth().withMinimumValue().withTimeAtStartOfDay();
             DateTime billingDate = new DateTime();
             billingDate = billingDate.withMillis(billingMonth.getMonth().getMillis());
 

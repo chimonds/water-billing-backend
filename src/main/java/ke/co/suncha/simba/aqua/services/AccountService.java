@@ -1489,6 +1489,14 @@ public class AccountService {
         return balance;
     }
 
+    public Double getAccountBalanceByTransDate(Long accountId, DateTime toDate) {
+        Double balance = 0d;
+        // update balances
+        balance += billService.getAccountBillsByTransDateWithBalanceBF(accountId, toDate);
+        balance -= paymentService.getTotalByAccountByDate(accountId, toDate.hourOfDay().withMaximumValue());
+        return balance;
+    }
+
     public RestResponse getAccountsReceivables(RestRequestObject<ReportsParam> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());

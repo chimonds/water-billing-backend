@@ -36,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -89,6 +90,8 @@ public class PostBankFileServiceImpl implements PostBankFileService {
 
     @Autowired
     BillingMonthService billingMonthService;
+
+    private static List<Long> processingIds = new ArrayList<>();
 
     @Override
     @Transactional
@@ -144,6 +147,14 @@ public class PostBankFileServiceImpl implements PostBankFileService {
                         responseObject.setMessage("File voided successfully.");
                         response = new RestResponse(responseObject, HttpStatus.OK);
                         return response;
+                    }
+
+                    if (processingIds.contains(dbPostBankFile.getFileId())) {
+                        responseObject.setMessage("We are busy processing your file");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    } else {
+                        processingIds.add(dbPostBankFile.getFileId());
                     }
 
                     if (dbPostBankFile.getLineCount() == 0) {

@@ -315,7 +315,8 @@ public class MPESAService {
                 RestPageRequest p = requestObject.getObject();
                 BooleanBuilder builder = new BooleanBuilder();
                 if (!p.getFilter().isEmpty()) {
-                    builder.or(QMPESATransaction.mPESATransaction.account.accNo.containsIgnoreCase(p.getFilter()));
+                    builder.or(QMPESATransaction.mPESATransaction.mpesacode.containsIgnoreCase(p.getFilter()));
+                    builder.or(QMPESATransaction.mPESATransaction.mpesaacc.containsIgnoreCase(p.getFilter()));
                     builder.or(QMPESATransaction.mPESATransaction.mpesa_msisdn.containsIgnoreCase(p.getFilter()));
                     builder.or(QMPESATransaction.mPESATransaction.mpesa_sender.containsIgnoreCase(p.getFilter()));
                 }

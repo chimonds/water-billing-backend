@@ -690,6 +690,46 @@ public class BillService {
         return amount;
     }
 
+    @Transactional
+    public Double getAccountBillsByTransDateWithBalanceBF(Long accountId, DateTime toDate) {
+        Double amount = 0d;
+        //Get balance brought forward
+        BooleanBuilder whereAccount = new BooleanBuilder();
+        whereAccount.and(QAccount.account.accountId.eq(accountId));
+        JPAQuery query = new JPAQuery(entityManager);
+        Double balanceBf = query.from(QAccount.account).where(whereAccount).singleResult(QAccount.account.balanceBroughtForward);
+        if (balanceBf != null) {
+            amount += balanceBf;
+        }
+
+        BooleanBuilder whereBills = new BooleanBuilder();
+        whereBills.and(QBill.bill.account.accountId.eq(accountId));
+        whereBills.and(QBill.bill.transactionDate.loe(toDate));
+        query = new JPAQuery(entityManager);
+        List<Tuple> tuples = query.from(QBill.bill).where(whereBills).list(QBill.bill.billId, QBill.bill.amount, QBill.bill.meterRent);
+        if (tuples != null) {
+            for (Tuple tuple : tuples) {
+                Long billId = tuple.get(QBill.bill.billId);
+                Double billAmount = tuple.get(QBill.bill.amount);
+                Double meterRent = tuple.get(QBill.bill.meterRent);
+                amount += billAmount;
+                amount += meterRent;
+
+                //get bill items
+                BooleanBuilder whereBillItems = new BooleanBuilder();
+                whereBillItems.and(QBillItem.billItem.bill.billId.eq(billId));
+                JPAQuery queryBillItems = new JPAQuery(entityManager);
+                List<Double> billItems = queryBillItems.from(QBillItem.billItem).where(whereBillItems).list(QBillItem.billItem.amount);
+                if (billItems != null) {
+                    for (Double a : billItems) {
+                        amount += a;
+                    }
+                }
+            }
+        }
+        return amount;
+    }
+
     //TODO; refactor
     @Transactional
     public Double getAccountBillsByDateWithBalanceBF(Long accountId, DateTime toDate) {
@@ -727,35 +767,6 @@ public class BillService {
                     }
                 }
             }
-
-            //SimpleDateFormat format1 = new SimpleDateFormat("dd MMM, yyyy");
-            //String formatted = format1.format(calendar.getTime());
-            //log.info("Get bills by:"+formatted);
-
-
-            //Account account = accountRepository.findOne(accountId);
-            // update balances
-
-            // add balance b/f
-            //amount += account.getBalanceBroughtForward();
-
-//            List<Bill> bills = account.getBills();
-//            if (bills != null) {
-//                for (Bill bill : bills)
-////                if (bill.getTransactionDate().before(calendar)) {
-//                    if (bill.getBillingMonth().getMonth().before(calendar)) {
-//                        amount += bill.getAmount();
-//                        amount += bill.getMeterRent();
-//
-//                        // get bill items
-//                        List<BillItem> billItems = bill.getBillItems();
-//                        if (billItems != null) {
-//                            for (BillItem billItem : billItems) {
-//                                amount += billItem.getAmount();
-//                            }
-//                        }
-//                    }
-//            }
         }
         return amount;
     }

@@ -352,7 +352,7 @@ public class TaskService {
             }
         }
 
-    }
+    }   
 
     @Transactional
     public void addPendingReminderNotification(Long roleId, Integer count) {
