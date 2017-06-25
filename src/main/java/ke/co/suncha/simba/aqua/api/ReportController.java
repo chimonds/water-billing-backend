@@ -31,6 +31,12 @@ public class ReportController extends AbstractRestHandler {
         return reportService.getPayments(requestObject);
     }
 
+    @RequestMapping(value = "/accountsToActivate", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    @ApiOperation(value = "Get a list of accounts to activate.", notes = "The list is not paginated.")
+    public RestResponse getAccountsToActivate(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return reportService.getAccountsToActivate(requestObject);
+    }
+
     @RequestMapping(value = "/billingCharges", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ApiOperation(value = "Get a list of payments.", notes = "The list is not paginated.")
     public RestResponse getBillingChecklistCharges(@RequestBody RestRequestObject<AccountsReportRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {

@@ -16,6 +16,8 @@ import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.reports.scheduled.QAccountBalanceRecord;
 import ke.co.suncha.simba.aqua.repository.*;
+import ke.co.suncha.simba.aqua.toActivate.QToActivate;
+import ke.co.suncha.simba.aqua.toActivate.ToActivateRecord;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -306,11 +308,12 @@ public class ReportService {
                                 //lastDateBeforeBillingCycle.add(Calendar.DAY_OF_MONTH, 1);
                                 //log.info("lastDateBeforeBillingCycle:" + lastDateBeforeBillingCycle.getTime());
 
-                                previousBillingDate = previousBillingDate.withMillis(timestamp.getTime());
+                                previousBillingDate = previousBillingDate.withMillis(timestamp.getTime()).plusMillis(10);
                             }
                         }
 
 
+                        //Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
                         Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
 
 
@@ -1845,4 +1848,90 @@ public class ReportService {
         return response;
     }
 
+    public RestResponse getAccountsToActivate(RestRequestObject<AccountsReportRequest> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "report_accounts_to_activate");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                AccountsReportRequest accountsReportRequest = requestObject.getObject();
+
+                if (accountsReportRequest.getFromDate() == null) {
+                    responseObject.setMessage("From date can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (accountsReportRequest.getToDate() == null) {
+                    responseObject.setMessage("To date can not be empty");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (accountsReportRequest.getFromDate().isAfter(accountsReportRequest.getToDate())) {
+                    responseObject.setMessage("From date can not be after to date");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                BooleanBuilder builder = new BooleanBuilder();
+
+                if (accountsReportRequest.getSchemeId() != null) {
+                    builder.and(QToActivate.toActivate.account.zone.scheme.schemeId.eq(accountsReportRequest.getSchemeId()));
+                }
+
+                if (accountsReportRequest.getZoneId() != null) {
+                    builder.and(QToActivate.toActivate.account.zone.zoneId.eq(accountsReportRequest.getZoneId()));
+                }
+
+                builder.and(QToActivate.toActivate.transactionDate.goe(accountsReportRequest.getFromDate()));
+                builder.and(QToActivate.toActivate.transactionDate.loe(accountsReportRequest.getToDate()));
+
+                JPAQuery query = new JPAQuery(entityManager);
+
+                List<Tuple> tupleList = query.from(QToActivate.toActivate).where(builder).list(
+                        QToActivate.toActivate.account.accNo,
+                        QToActivate.toActivate.account.consumer.firstName,
+                        QToActivate.toActivate.account.consumer.middleName,
+                        QToActivate.toActivate.account.consumer.lastName,
+                        QToActivate.toActivate.account.zone.name,
+                        QToActivate.toActivate.transactionDate);
+
+                List<ToActivateRecord> toActivateRecords = new ArrayList<>();
+                if (!tupleList.isEmpty()) {
+                    for (Tuple tuple : tupleList) {
+                        ToActivateRecord toActivateRecord = new ToActivateRecord();
+                        String consumerName = "";
+                        consumerName = tuple.get(QToActivate.toActivate.account.consumer.firstName) + " " + tuple.get(QToActivate.toActivate.account.consumer.middleName) + " " + tuple.get(QToActivate.toActivate.account.consumer.lastName);
+                        consumerName = consumerName.replace("null", "").toUpperCase();
+                        toActivateRecord.setAccName(consumerName);
+                        toActivateRecord.setZone(tuple.get(QToActivate.toActivate.account.zone.name));
+                        toActivateRecord.setPaidOn(tuple.get(QToActivate.toActivate.transactionDate));
+
+                        toActivateRecords.add(toActivateRecord);
+                    }
+                }
+
+                log.info("Packaged report data...");
+                ReportObject report = new ReportObject();
+                report.setDate(Calendar.getInstance());
+
+                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+                report.setTitle(this.optionService.getOption("REPORT:ACCOUNTS_TO_ACTIVATE").getValue());
+                report.setContent(toActivateRecords);
+                log.info("Sending Payload send to client...");
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(report);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
 }

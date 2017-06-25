@@ -43,6 +43,7 @@ import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeader;
 import ke.co.suncha.simba.aqua.repository.*;
+import ke.co.suncha.simba.aqua.toActivate.ToActivateService;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -126,6 +127,9 @@ public class AccountService {
 
     @Autowired
     EntityManager entityManager;
+
+    @Autowired
+    ToActivateService toActivateService;
 
 
     private RestResponse response;
@@ -260,6 +264,10 @@ public class AccountService {
                 }
             }
             account = accountRepository.save(account);
+
+            //Check if to move account to the list to activate
+
+            toActivateService.create(account.getAccountId());
         } catch (Exception ex) {
             log.error(ex.getMessage());
             ex.printStackTrace();
