@@ -226,6 +226,16 @@ public class BillService {
 
                 BillRequest billRequest = requestObject.getObject();
 
+                //Check if not to include water sale in bill
+                if (!billRequest.getBillWaterSale()) {
+                    if (billRequest.getPreviousReading() != billRequest.getCurrentReading()) {
+                        responseObject.setMessage("Previous reading and current reading miss match");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+                }
+
                 Bill bill = new Bill();
 
                 //set
@@ -262,12 +272,15 @@ public class BillService {
                 if (unitsConsumed > billOnAverageUnits) {
                     bill.setConsumptionType("Actual");
                 } else {
-                    unitsConsumed = account.getAverageConsumption();
+                    if (billRequest.getBillWaterSale()) {
+                        unitsConsumed = account.getAverageConsumption();
+                    }
                     bill.setConsumptionType("Average");
                 }
 
                 //set units consumed
                 bill.setUnitsBilled(unitsConsumed);
+                bill.setBillWaterSale(billRequest.getBillWaterSale());
 
                 //set meter rent
                 if (account.isMetered()) {
@@ -292,10 +305,14 @@ public class BillService {
                 bill.setContent(billMeta.getContent());
 
                 //check billed amount
-                if (bill.getAmount() <= 0) {
-                    responseObject.setMessage("Sorry we could not save the bill. Invalid billing amount.");
-                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                    return response;
+                if (billRequest.getBillWaterSale()) {
+                    if (bill.getAmount() <= 0) {
+                        responseObject.setMessage("Sorry we could not save the bill. Invalid billing amount.");
+                        response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                        return response;
+                    }
+                }else{
+                    bill.setAmount(0d);
                 }
 
                 //set billcode

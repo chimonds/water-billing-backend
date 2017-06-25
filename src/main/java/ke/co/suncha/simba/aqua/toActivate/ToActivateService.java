@@ -31,7 +31,8 @@ public class ToActivateService {
     public void create(Long accountId) {
         Account account = accountService.getByAccountId(accountId);
         if (account != null) {
-            if (account.getIsCutOff() == Boolean.FALSE) {
+
+            if (account.getIsCutOff() == Boolean.TRUE) {
                 if (account.getOutstandingBalance() <= 0) {
 
                     //Check if account was added within the month

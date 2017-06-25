@@ -23,7 +23,6 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
-import ke.co.suncha.simba.Application;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -34,13 +33,9 @@ import ke.co.suncha.simba.aqua.models.Tariff;
 import ke.co.suncha.simba.aqua.models.TariffMatrix;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.TariffRepository;
-
 import ke.co.suncha.simba.aqua.utils.BillMeta;
-import ke.co.suncha.simba.aqua.utils.TariffRateType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.boot.actuate.metrics.GaugeService;
@@ -121,45 +116,47 @@ public class TariffService {
         log.info("Calculating bill for:" + account.getAccNo());
         Double amount = 0.0;
         String content = "";
+        if (billMeta.getBillWaterSale()) {
 
-        List<TariffMatrix> matrices = account.getTariff().getTariffMatrixes();
-        if (matrices.size() > 0) {
-            for (TariffMatrix tm : matrices) {
-                Integer matrixRange = tm.getMaximum() - tm.getMinimum();
-                if (tm.getMinimum() > 0) {
-                    matrixRange += 1;
-                }
-
-                log.info("Matrix range:" + matrixRange);
-
-                Integer unitsBillable = 0;
-                if (unitsConsumed >= matrixRange) {
-                    unitsBillable = matrixRange;
-                } else {
-                    unitsBillable = unitsConsumed;
-                }
-                log.info("Units Billable:" + unitsBillable);
-
-                //Update Units Consumed
-                unitsConsumed -= unitsBillable;
-
-                if (unitsBillable > 0) {
-                    log.info("Tariff Type:" + tm.getRateType());
-                    Double thisAmount = 0.0;
-                    if (tm.getRateType().compareToIgnoreCase("FLAT") == 0) {
-                        amount += tm.getAmount();
-                        thisAmount = tm.getAmount();
-                    } else if (tm.getRateType().compareToIgnoreCase("PER_UNIT") == 0) {
-                        amount += (unitsBillable * tm.getAmount());
-                        thisAmount = unitsBillable * tm.getAmount();
+            List<TariffMatrix> matrices = account.getTariff().getTariffMatrixes();
+            if (matrices.size() > 0) {
+                for (TariffMatrix tm : matrices) {
+                    Integer matrixRange = tm.getMaximum() - tm.getMinimum();
+                    if (tm.getMinimum() > 0) {
+                        matrixRange += 1;
                     }
 
-                    if (tm.getMinimum() == 0) {
-                        content = content + unitsBillable + " Min KES " + tm.getAmount() + " = " + thisAmount + "#";
+                    log.info("Matrix range:" + matrixRange);
+
+                    Integer unitsBillable = 0;
+                    if (unitsConsumed >= matrixRange) {
+                        unitsBillable = matrixRange;
                     } else {
-                        content = content + unitsBillable + " @ KES " + tm.getAmount() + " = " + thisAmount + "#";
+                        unitsBillable = unitsConsumed;
                     }
-                    log.info("Current Billed Amount:" + amount);
+                    log.info("Units Billable:" + unitsBillable);
+
+                    //Update Units Consumed
+                    unitsConsumed -= unitsBillable;
+
+                    if (unitsBillable > 0) {
+                        log.info("Tariff Type:" + tm.getRateType());
+                        Double thisAmount = 0.0;
+                        if (tm.getRateType().compareToIgnoreCase("FLAT") == 0) {
+                            amount += tm.getAmount();
+                            thisAmount = tm.getAmount();
+                        } else if (tm.getRateType().compareToIgnoreCase("PER_UNIT") == 0) {
+                            amount += (unitsBillable * tm.getAmount());
+                            thisAmount = unitsBillable * tm.getAmount();
+                        }
+
+                        if (tm.getMinimum() == 0) {
+                            content = content + unitsBillable + " Min KES " + tm.getAmount() + " = " + thisAmount + "#";
+                        } else {
+                            content = content + unitsBillable + " @ KES " + tm.getAmount() + " = " + thisAmount + "#";
+                        }
+                        log.info("Current Billed Amount:" + amount);
+                    }
                 }
             }
         }
@@ -184,7 +181,6 @@ public class TariffService {
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
-
 
 
                 RestPageRequest p = requestObject.getObject();

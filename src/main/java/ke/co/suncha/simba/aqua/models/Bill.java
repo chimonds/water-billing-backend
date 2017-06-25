@@ -87,6 +87,8 @@ public class Bill extends SimbaBaseEntity implements Serializable {
     @Transient
     private Boolean billed = true;
 
+    @Column(name = "bill_water_sale")
+    private Boolean billWaterSale = Boolean.TRUE;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "transaction_date")
@@ -337,6 +339,14 @@ public class Bill extends SimbaBaseEntity implements Serializable {
      */
     public void setConsumptionType(String consumptionType) {
         this.consumptionType = consumptionType;
+    }
+
+    public Boolean getBillWaterSale() {
+        return billWaterSale;
+    }
+
+    public void setBillWaterSale(Boolean billWaterSale) {
+        this.billWaterSale = billWaterSale;
     }
 
     @Override

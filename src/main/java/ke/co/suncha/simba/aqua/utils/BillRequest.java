@@ -1,7 +1,6 @@
 package ke.co.suncha.simba.aqua.utils;
 
 import ke.co.suncha.simba.aqua.models.BillItemType;
-import ke.co.suncha.simba.aqua.models.BillingMonth;
 
 import java.util.List;
 
@@ -12,7 +11,7 @@ public class BillRequest {
     private Integer currentReading;
     private Integer previousReading;
     private List<BillItemType> billItemTypes;
-
+    private Boolean billWaterSale = Boolean.TRUE;
 
     public Integer getCurrentReading() {
         return currentReading;
@@ -36,5 +35,13 @@ public class BillRequest {
 
     public void setBillItemTypes(List<BillItemType> billItemTypes) {
         this.billItemTypes = billItemTypes;
+    }
+
+    public Boolean getBillWaterSale() {
+        return billWaterSale;
+    }
+
+    public void setBillWaterSale(Boolean billWaterSale) {
+        this.billWaterSale = billWaterSale;
     }
 }
