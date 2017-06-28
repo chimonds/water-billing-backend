@@ -1500,8 +1500,9 @@ public class AccountService {
     public Double getAccountBalanceByTransDate(Long accountId, DateTime toDate) {
         Double balance = 0d;
         // update balances
-        balance += billService.getAccountBillsByTransDateWithBalanceBF(accountId, toDate);
-        balance -= paymentService.getTotalByAccountByDate(accountId, toDate.hourOfDay().withMaximumValue());
+        Double bills = billService.getAccountBillsByTransDateWithBalanceBF(accountId, toDate.hourOfDay().withMaximumValue());
+        Double payments = paymentService.getTotalByAccountByDate(accountId, toDate.hourOfDay().withMaximumValue());
+        balance = bills - payments;
         return balance;
     }
 

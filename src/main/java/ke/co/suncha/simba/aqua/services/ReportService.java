@@ -177,9 +177,9 @@ public class ReportService {
                 //bMonth.setTime(billingMonth.getMonth().getTime());
                 //billingMonth.getMonth();
 
-                DateTime paymentBillingDate = bMonth;
-                paymentBillingDate.minusMonths(1);
-                paymentBillingDate.withDayOfMonth(24);
+                //DateTime paymentBillingDate = bMonth;
+                //paymentBillingDate.minusMonths(1);
+                //paymentBillingDate.withDayOfMonth(24);
                 //paymentBillingDate.add(Calendar.MONTH, -1);
                 //paymentBillingDate.set(Calendar.DATE, 24);
                 ///log.info("Payment billing date:" + paymentBillingDate.getTime());
@@ -193,7 +193,7 @@ public class ReportService {
                 //log.info("To date:" + endDate);
 
 
-                BillingMonth paymentBillingMonth = billingMonthRepository.findByMonth(paymentBillingDate);
+                //BillingMonth paymentBillingMonth = billingMonthRepository.findByMonth(paymentBillingDate);
                 //log.info("Payment billing Month id:" + paymentBillingMonth.getBillingMonthId());
 
                 //get bills belonging to billing month
@@ -237,7 +237,6 @@ public class ReportService {
 
                     if (include) {
                         counter++;
-
                         MonthlyBillRecord monthlyBillRecord = new MonthlyBillRecord();
                         monthlyBillRecord.setAccName(b.getAccount().getAccName());
                         monthlyBillRecord.setAccNo(b.getAccount().getAccNo());
@@ -277,45 +276,29 @@ public class ReportService {
 
 
                         Long accountId = billRepository.findAccountIdByBillId(b.getBillId());
-                        Integer billCode = billRepository.findPreviousBillCode(accountId, b.getBillCode());
-
-
-                        //balance from last bill
-                        DateTime lastDateBeforeBillingCycle = new DateTime();
-                        lastDateBeforeBillingCycle = billingMonth.getMonth();
-                        lastDateBeforeBillingCycle = lastDateBeforeBillingCycle.withDayOfMonth(1);
-
-                        //lastDateBeforeBillingCycle.setTime(billingMonth.getMonth().getTime());
-                        //lastDateBeforeBillingCycle.set(Calendar.DAY_OF_MONTH, 1);
-                        //log.info("Bill Code:" + billCode);
-
 
                         DateTime previousBillingDate = new DateTime();
 
-                        if (billCode != null) {
+                        Integer previousBillCode = billRepository.findPreviousBillCode(accountId, b.getBillCode());
+
+                        if (previousBillCode != null) {
                             //get the actual previous bill
                             // Calendar c = Calendar.getInstance();
 //                            log.info("account id:" + accountId);
 //                            log.info("bill code:" + billCode);
-                            Timestamp timestamp = billRepository.findPreviousBillDate(accountId, billCode);
+                            Timestamp timestamp = billRepository.findPreviousBillDate(accountId, previousBillCode);
                             if (timestamp != null) {
-                                //log.info("Last bill:" + timestamp.getTime());
-                                //lastDateBeforeBillingCycle = new DateTime();
-                                //lastDateBeforeBillingCycle = lastDateBeforeBillingCycle.withMillis(timestamp.getTime());
-                                //lastDateBeforeBillingCycle = lastDateBeforeBillingCycle.withDayOfMonth(1);
-
-                                //lastDateBeforeBillingCycle.setTimeInMillis(timestamp.getTime());
-                                //lastDateBeforeBillingCycle.add(Calendar.DAY_OF_MONTH, 1);
-                                //log.info("lastDateBeforeBillingCycle:" + lastDateBeforeBillingCycle.getTime());
-
-                                previousBillingDate = previousBillingDate.withMillis(timestamp.getTime()).plusMillis(10);
+                                previousBillingDate = previousBillingDate.withMillis(timestamp.getTime());
                             }
                         }
 
+                        log.info("Previous bill code:" + previousBillCode);
+                        log.info("Previous billing date: " + previousBillingDate);
 
                         //Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
-                        Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
+                        Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), previousBillingDate.plusSeconds(1));
 
+                        log.info("Balance before bill:" + balanceBeforeBill);
 
                         //Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
                         Integer intBillCode = this.getYearMonthDayFromCalendar(previousBillingDate);
