@@ -1,6 +1,5 @@
 package ke.co.suncha.simba.aqua.repository;
 
-import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.AccountSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

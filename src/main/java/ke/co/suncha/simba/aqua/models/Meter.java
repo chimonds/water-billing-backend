@@ -25,6 +25,7 @@ package ke.co.suncha.simba.aqua.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.account.Account;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

@@ -23,7 +23,6 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
-import ke.co.suncha.simba.aqua.models.Account;
 import ke.co.suncha.simba.aqua.models.Meter;
 
 import org.springframework.data.domain.Page;

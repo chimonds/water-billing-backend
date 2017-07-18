@@ -2,7 +2,7 @@ package ke.co.suncha.simba.aqua.toActivate;
 
 import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
-import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

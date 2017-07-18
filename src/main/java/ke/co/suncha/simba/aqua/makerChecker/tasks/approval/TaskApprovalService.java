@@ -18,7 +18,7 @@ import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeService;
 import ke.co.suncha.simba.aqua.services.AccountService;
-import ke.co.suncha.simba.aqua.services.BillService;
+import ke.co.suncha.simba.aqua.billing.BillService;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

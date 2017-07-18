@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.models;
 
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.account.Account;
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;

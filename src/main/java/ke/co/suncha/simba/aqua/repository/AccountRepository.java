@@ -23,9 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
-import com.mysema.query.BooleanBuilder;
-import ke.co.suncha.simba.aqua.models.Account;
-import ke.co.suncha.simba.aqua.models.BillingMonth;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.models.Meter;
 
 import ke.co.suncha.simba.aqua.models.Zone;

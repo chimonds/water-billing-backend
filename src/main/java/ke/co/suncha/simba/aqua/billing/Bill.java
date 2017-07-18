@@ -21,10 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.models;
+package ke.co.suncha.simba.aqua.billing;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.account.Account;
+import ke.co.suncha.simba.aqua.models.BillItem;
+import ke.co.suncha.simba.aqua.models.BillingMonth;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 

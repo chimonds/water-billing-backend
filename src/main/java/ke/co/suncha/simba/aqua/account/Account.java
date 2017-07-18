@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.models;
+package ke.co.suncha.simba.aqua.account;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
-import ke.co.suncha.simba.aqua.account.OnStatus;
+import ke.co.suncha.simba.aqua.billing.Bill;
+import ke.co.suncha.simba.aqua.models.*;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
@@ -122,6 +123,9 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tariff_id")
     private Tariff tariff;
+
+    @Column(name = "billing_frequency")
+    private Integer billingFrequency = BillingFrequency.MONTHLY;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_category_id")
@@ -507,6 +511,14 @@ public class Account extends SimbaBaseEntity implements Serializable {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public Integer getBillingFrequency() {
+        return billingFrequency;
+    }
+
+    public void setBillingFrequency(Integer billingFrequency) {
+        this.billingFrequency = billingFrequency;
     }
 
     @Override

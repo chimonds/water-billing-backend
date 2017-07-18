@@ -30,7 +30,7 @@ import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
-import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.models.AccountStatusHistory;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;

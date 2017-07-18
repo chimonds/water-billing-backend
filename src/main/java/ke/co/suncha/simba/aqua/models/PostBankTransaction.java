@@ -2,6 +2,7 @@ package ke.co.suncha.simba.aqua.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.postbank.PostBankFile;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;

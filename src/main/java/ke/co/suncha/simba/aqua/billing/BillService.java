@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.services;
+package ke.co.suncha.simba.aqua.billing;
 
 import com.mysema.query.BooleanBuilder;
 import com.mysema.query.Tuple;
@@ -35,7 +35,9 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.account.OnStatus;
+import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
@@ -45,6 +47,7 @@ import ke.co.suncha.simba.aqua.reports.BillRecord;
 import ke.co.suncha.simba.aqua.reports.MeterRecord;
 import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.repository.*;
+import ke.co.suncha.simba.aqua.services.*;
 import ke.co.suncha.simba.aqua.utils.BillMeta;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;

@@ -1,11 +1,10 @@
 package ke.co.suncha.simba.aqua.makerChecker.tasks;
 
 import ke.co.suncha.simba.admin.models.User;
-import ke.co.suncha.simba.admin.models.UserRole;
 import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskType;
-import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.account.Account;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 

@@ -28,7 +28,7 @@ import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
-import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.models.Tariff;
 import ke.co.suncha.simba.aqua.models.TariffMatrix;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;

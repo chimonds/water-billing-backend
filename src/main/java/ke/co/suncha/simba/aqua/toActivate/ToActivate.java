@@ -1,7 +1,7 @@
 package ke.co.suncha.simba.aqua.toActivate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import ke.co.suncha.simba.aqua.models.Account;
+import ke.co.suncha.simba.aqua.account.Account;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 

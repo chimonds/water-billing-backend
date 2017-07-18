@@ -1,22 +1,10 @@
 package ke.co.suncha.simba.aqua.makerChecker.type;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import ke.co.suncha.simba.admin.models.User;
-import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
-import ke.co.suncha.simba.aqua.models.Bill;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.Calendar;
-import java.util.List;
 
 /**
  * Created by maitha on 11/16/16.

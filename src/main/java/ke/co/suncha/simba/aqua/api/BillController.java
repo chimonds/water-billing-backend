@@ -31,7 +31,7 @@ import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
-import ke.co.suncha.simba.aqua.services.BillService;
+import ke.co.suncha.simba.aqua.billing.BillService;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

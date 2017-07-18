@@ -3,7 +3,6 @@ package ke.co.suncha.simba.aqua.makerChecker.tasks.approval;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.aqua.makerChecker.Approval;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
-import ke.co.suncha.simba.aqua.models.Account;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 

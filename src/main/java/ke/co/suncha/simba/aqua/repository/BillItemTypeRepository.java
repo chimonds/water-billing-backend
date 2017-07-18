@@ -23,7 +23,6 @@
  */
 package ke.co.suncha.simba.aqua.repository;
 
-import ke.co.suncha.simba.aqua.models.Bill;
 import ke.co.suncha.simba.aqua.models.BillItemType;
 
 import org.springframework.data.domain.Page;
