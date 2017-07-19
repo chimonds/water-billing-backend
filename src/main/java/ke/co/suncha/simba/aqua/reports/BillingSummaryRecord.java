@@ -1,9 +1,5 @@
 package ke.co.suncha.simba.aqua.reports;
 
-import ke.co.suncha.simba.aqua.models.BillItemType;
-
-import java.util.List;
-
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com> on 5/7/15.
  */
@@ -26,8 +22,8 @@ public class BillingSummaryRecord {
     private Integer activeAccounts = 0;
     private Integer inactiveAccounts = 0;
 
-    private Integer unitsActualConsumption = 0;
-    private Integer unitsEstimatedConsumption = 0;
+    private Double unitsActualConsumption = 0d;
+    private Double unitsEstimatedConsumption = 0d;
 
     private Double balancesActiveAccounts = 0.0;
     private Double balancesInactiveAccounts = 0.0;
@@ -112,19 +108,19 @@ public class BillingSummaryRecord {
         this.inactiveAccounts = inactiveAccounts;
     }
 
-    public Integer getUnitsActualConsumption() {
+    public Double getUnitsActualConsumption() {
         return unitsActualConsumption;
     }
 
-    public void setUnitsActualConsumption(Integer unitsActualConsumption) {
+    public void setUnitsActualConsumption(Double unitsActualConsumption) {
         this.unitsActualConsumption = unitsActualConsumption;
     }
 
-    public Integer getUnitsEstimatedConsumption() {
+    public Double getUnitsEstimatedConsumption() {
         return unitsEstimatedConsumption;
     }
 
-    public void setUnitsEstimatedConsumption(Integer unitsEstimatedConsumption) {
+    public void setUnitsEstimatedConsumption(Double unitsEstimatedConsumption) {
         this.unitsEstimatedConsumption = unitsEstimatedConsumption;
     }
 

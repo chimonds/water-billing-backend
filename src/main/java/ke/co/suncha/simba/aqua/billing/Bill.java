@@ -57,19 +57,19 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 
     @NotNull
     @Column(name = "current_reading")
-    private Integer currentReading = 0;
+    private Double currentReading = 0d;
 
     @NotNull
     @Column(name = "previous_reading")
-    private Integer previousReading = 0;
+    private Double previousReading = 0d;
 
     @NotNull
     @Column(name = "units_billed")
-    private Integer unitsBilled = 0;
+    private Double unitsBilled = 0d;
 
     @NotNull
     @Column(name = "average_consumption")
-    private Integer averageConsumption = 0;
+    private Double averageConsumption = 0d;
 
     @NotNull
     @Column(name = "bill_code")
@@ -142,14 +142,14 @@ public class Bill extends SimbaBaseEntity implements Serializable {
     /**
      * @return the unitsBilled
      */
-    public Integer getUnitsBilled() {
+    public Double getUnitsBilled() {
         return unitsBilled;
     }
 
     /**
      * @param unitsBilled the unitsBilled to set
      */
-    public void setUnitsBilled(Integer unitsBilled) {
+    public void setUnitsBilled(Double unitsBilled) {
         this.unitsBilled = unitsBilled;
     }
 
@@ -240,42 +240,42 @@ public class Bill extends SimbaBaseEntity implements Serializable {
     /**
      * @return the currentReading
      */
-    public Integer getCurrentReading() {
+    public Double getCurrentReading() {
         return currentReading;
     }
 
     /**
      * @param currentReading the currentReading to set
      */
-    public void setCurrentReading(Integer currentReading) {
+    public void setCurrentReading(Double currentReading) {
         this.currentReading = currentReading;
     }
 
     /**
      * @return the previousReading
      */
-    public Integer getPreviousReading() {
+    public Double getPreviousReading() {
         return previousReading;
     }
 
     /**
      * @param previousReading the previousReading to set
      */
-    public void setPreviousReading(Integer previousReading) {
+    public void setPreviousReading(Double previousReading) {
         this.previousReading = previousReading;
     }
 
     /**
      * @return the averageConsumption
      */
-    public Integer getAverageConsumption() {
+    public Double getAverageConsumption() {
         return averageConsumption;
     }
 
     /**
      * @param averageConsumption the averageConsumption to set
      */
-    public void setAverageConsumption(Integer averageConsumption) {
+    public void setAverageConsumption(Double averageConsumption) {
         this.averageConsumption = averageConsumption;
     }
 

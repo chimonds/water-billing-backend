@@ -80,7 +80,7 @@ public class Account extends SimbaBaseEntity implements Serializable {
     private String accountStatus;
 
     @Column(name = "average_consumption")
-    private Integer averageConsumption = 0;
+    private Double averageConsumption = 0d;
 
     @Column(name = "cut_off")
     private Boolean active = Boolean.FALSE;
@@ -256,14 +256,14 @@ public class Account extends SimbaBaseEntity implements Serializable {
     /**
      * @return the averageConsumption
      */
-    public Integer getAverageConsumption() {
+    public Double getAverageConsumption() {
         return averageConsumption;
     }
 
     /**
      * @param averageConsumption the averageConsumption to set
      */
-    public void setAverageConsumption(Integer averageConsumption) {
+    public void setAverageConsumption(Double averageConsumption) {
         this.averageConsumption = averageConsumption;
     }
 

@@ -8,24 +8,24 @@ import java.util.List;
  * Created by manyala on 4/25/15.
  */
 public class BillRequest {
-    private Integer currentReading;
-    private Integer previousReading;
+    private Double currentReading;
+    private Double previousReading;
     private List<BillItemType> billItemTypes;
     private Boolean billWaterSale = Boolean.TRUE;
 
-    public Integer getCurrentReading() {
+    public Double getCurrentReading() {
         return currentReading;
     }
 
-    public void setCurrentReading(Integer currentReading) {
+    public void setCurrentReading(Double currentReading) {
         this.currentReading = currentReading;
     }
 
-    public Integer getPreviousReading() {
+    public Double getPreviousReading() {
         return previousReading;
     }
 
-    public void setPreviousReading(Integer previousReading) {
+    public void setPreviousReading(Double previousReading) {
         this.previousReading = previousReading;
     }
 

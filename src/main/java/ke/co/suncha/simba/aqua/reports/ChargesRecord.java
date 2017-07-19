@@ -21,11 +21,11 @@ public class ChargesRecord extends BaseRecord {
     Double otherCharges = 0d;
     Double totalBill = 0d;
     Double balanceBroughtForward = 0d;
-    Integer currentReading = 0;
-    Integer previousReading = 0;
-    Integer units = 0;
+    Double currentReading = 0d;
+    Double previousReading = 0d;
+    Double units = 0d;
     String consumption;
-    Integer average = 0;
+    Double average = 0d;
 
     public Double getBalanceBroughtForward() {
         return balanceBroughtForward;
@@ -35,27 +35,27 @@ public class ChargesRecord extends BaseRecord {
         this.balanceBroughtForward = balanceBroughtForward;
     }
 
-    public Integer getCurrentReading() {
+    public Double getCurrentReading() {
         return currentReading;
     }
 
-    public void setCurrentReading(Integer currentReading) {
+    public void setCurrentReading(Double currentReading) {
         this.currentReading = currentReading;
     }
 
-    public Integer getPreviousReading() {
+    public Double getPreviousReading() {
         return previousReading;
     }
 
-    public void setPreviousReading(Integer previousReading) {
+    public void setPreviousReading(Double previousReading) {
         this.previousReading = previousReading;
     }
 
-    public Integer getUnits() {
+    public Double getUnits() {
         return units;
     }
 
-    public void setUnits(Integer units) {
+    public void setUnits(Double units) {
         this.units = units;
     }
 
@@ -67,11 +67,11 @@ public class ChargesRecord extends BaseRecord {
         this.consumption = consumption;
     }
 
-    public Integer getAverage() {
+    public Double getAverage() {
         return average;
     }
 
-    public void setAverage(Integer average) {
+    public void setAverage(Double average) {
         this.average = average;
     }
 

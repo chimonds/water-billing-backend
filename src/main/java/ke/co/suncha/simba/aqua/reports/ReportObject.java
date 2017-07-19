@@ -15,7 +15,7 @@ public class ReportObject {
     private Double amount1;
     private Double meterRent;
     private Double charges;
-    private Integer units;
+    private Double units;
     private String company;
     private Object content;
     private String heading1;
@@ -115,11 +115,11 @@ public class ReportObject {
         this.charges = charges;
     }
 
-    public Integer getUnits() {
+    public Double getUnits() {
         return units;
     }
 
-    public void setUnits(Integer units) {
+    public void setUnits(Double units) {
         this.units = units;
     }
 

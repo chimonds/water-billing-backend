@@ -63,7 +63,7 @@ public class Meter extends SimbaBaseEntity implements Serializable {
 
     @NotNull
     @Column(name = "initial_reading")
-    private Integer initialReading = 0;
+    private Double initialReading = 0d;
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "meter_owner_id")
@@ -145,14 +145,14 @@ public class Meter extends SimbaBaseEntity implements Serializable {
     /**
      * @return the initialReading
      */
-    public Integer getInitialReading() {
+    public Double getInitialReading() {
         return initialReading;
     }
 
     /**
      * @param initialReading the initialReading to set
      */
-    public void setInitialReading(Integer initialReading) {
+    public void setInitialReading(Double initialReading) {
         this.initialReading = initialReading;
     }
 

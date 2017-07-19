@@ -107,7 +107,7 @@ public class TariffService {
     public BillMeta calculate(BillMeta billMeta, Long accountId) {
         BillMeta result = new BillMeta();
 
-        Integer unitsConsumed = billMeta.getUnits();
+        Double unitsConsumed = billMeta.getUnits();
 
         Account account = accountRepository.findOne(accountId);
         if (account == null) {
@@ -121,14 +121,14 @@ public class TariffService {
             List<TariffMatrix> matrices = account.getTariff().getTariffMatrixes();
             if (matrices.size() > 0) {
                 for (TariffMatrix tm : matrices) {
-                    Integer matrixRange = tm.getMaximum() - tm.getMinimum();
+                    Double matrixRange = tm.getMaximum() - tm.getMinimum();
                     if (tm.getMinimum() > 0) {
                         matrixRange += 1;
                     }
 
                     log.info("Matrix range:" + matrixRange);
 
-                    Integer unitsBillable = 0;
+                    Double unitsBillable = 0.0;
                     if (unitsConsumed >= matrixRange) {
                         unitsBillable = matrixRange;
                     } else {

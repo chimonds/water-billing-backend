@@ -13,9 +13,9 @@ public class MonthlyBillRecord extends BaseRecord {
     private String meterSize;
     private String meterNo;
     private DateTime billingMonth;
-    private Integer currentReading;
-    private Integer PreviousReading;
-    private Integer unitsBilled;
+    private Double currentReading;
+    private Double PreviousReading;
+    private Double unitsBilled;
     private String consumptionType;
     private Double balanceBf;
     private Double totalPayments;
@@ -93,27 +93,27 @@ public class MonthlyBillRecord extends BaseRecord {
         this.billingMonth = billingMonth;
     }
 
-    public Integer getCurrentReading() {
+    public Double getCurrentReading() {
         return currentReading;
     }
 
-    public void setCurrentReading(Integer currentReading) {
+    public void setCurrentReading(Double currentReading) {
         this.currentReading = currentReading;
     }
 
-    public Integer getPreviousReading() {
+    public Double getPreviousReading() {
         return PreviousReading;
     }
 
-    public void setPreviousReading(Integer previousReading) {
+    public void setPreviousReading(Double previousReading) {
         PreviousReading = previousReading;
     }
 
-    public Integer getUnitsBilled() {
+    public Double getUnitsBilled() {
         return unitsBilled;
     }
 
-    public void setUnitsBilled(Integer unitsBilled) {
+    public void setUnitsBilled(Double unitsBilled) {
         this.unitsBilled = unitsBilled;
     }
 

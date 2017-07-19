@@ -36,6 +36,7 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.account.Account;
+import ke.co.suncha.simba.aqua.account.BillingFrequency;
 import ke.co.suncha.simba.aqua.account.OnStatus;
 import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
@@ -220,11 +221,16 @@ public class BillService {
                 log.info("Billing account:" + account.getAccNo());
 
                 Bill lastBill = this.getAccountLastBill(accountId);
-                if (lastBill.isBilled()) {
-                    responseObject.setMessage("The account has already being billed this month.");
-                    responseObject.setPayload("");
-                    response = new RestResponse(responseObject, HttpStatus.CONFLICT);
-                    return response;
+
+                if (account.getBillingFrequency() == BillingFrequency.MONTHLY) {
+
+                    if (lastBill.isBilled()) {
+                        responseObject.setMessage("The account has already being billed this month.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+
                 }
 
                 BillRequest billRequest = requestObject.getObject();
@@ -260,7 +266,7 @@ public class BillService {
                 bill.setPreviousReading(billRequest.getPreviousReading());
 
                 //get units consumed
-                Integer unitsConsumed = bill.getCurrentReading() - bill.getPreviousReading();
+                Double unitsConsumed = bill.getCurrentReading() - bill.getPreviousReading();
 
                 Integer billOnAverageUnits = 0;
                 try {
@@ -314,7 +320,7 @@ public class BillService {
                         response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                         return response;
                     }
-                }else{
+                } else {
                     bill.setAmount(0d);
                 }
 
@@ -478,22 +484,29 @@ public class BillService {
 
         Account account = accountRepository.findOne(accountId);
 
-        log.info("Getting the most current bill for:" + account.getAccNo());
-        Page<Bill> bills;
-        bills = billRepository.findByAccountOrderByBillCodeDesc(account, new PageRequest(0, 1));
 
-        if (!bills.hasContent()) {
-            // seems its iniatial bill so check if account is metered
+        log.info("Getting the most current bill for:" + account.getAccNo());
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QBill.bill.account.accountId.eq(accountId));
+
+        JPAQuery query = new JPAQuery(entityManager);
+        Long lastBillId = query.from(QBill.bill).where(builder).orderBy(QBill.bill.billCode.desc()).singleResult(QBill.bill.billId.max());
+
+        if (lastBillId == null) {
+            // seems its initial bill so check if account is metered
             if (account.isMetered()) {
                 lastBill.setCurrentReading(account.getMeter().getInitialReading());
                 lastBill.setBilled(false);
             } else {
                 // TODO;
-                lastBill.setCurrentReading(0);
+                lastBill.setCurrentReading(0.0);
                 lastBill.setBilled(false);
             }
         } else {
-            lastBill = bills.getContent().get(0);
+
+            lastBill = billRepository.findOne(lastBillId);
+
             log.info("Most current bill:" + lastBill.toString());
 
             if (account.getMeter() != null) {
@@ -522,6 +535,13 @@ public class BillService {
                 log.info("Billed:true");
             }
         }
+
+        if (account != null) {
+            if (account.getBillingFrequency() == BillingFrequency.ANY_TIME) {
+                lastBill.setBilled(Boolean.FALSE);
+            }
+        }
+
         return lastBill;
     }
 
@@ -845,7 +865,7 @@ public class BillService {
 
                 Iterable<Bill> bills = billRepository.findAll(builder);
                 List<MeterRecord> meterRecords = new ArrayList<>();
-                Integer totalUnits = 0;
+                Double totalUnits = 0d;
                 for (Bill b : bills) {
                     MeterRecord mr = new MeterRecord();
                     if (b.getAccount() != null) {
@@ -911,7 +931,7 @@ public class BillService {
 
                 BooleanBuilder builder = new BooleanBuilder();
                 builder.and(QBill.bill.billingMonth.billingMonthId.eq(accountsReportRequest.getBillingMonthId()));
-                builder.and(QBill.bill.currentReading.subtract(QBill.bill.previousReading).eq(0));
+                builder.and(QBill.bill.currentReading.subtract(QBill.bill.previousReading).eq(0d));
 
                 //On cut off
                 if (accountsReportRequest.getIsCutOff() != null) {
@@ -942,7 +962,7 @@ public class BillService {
 
                 List<MeterRecord> meterRecords = new ArrayList<>();
 
-                Integer totalUnits = 0;
+                Double totalUnits = 0.0;
                 for (Bill b : bills) {
                     MeterRecord mr = new MeterRecord();
                     if (b.getAccount() != null) {
@@ -1034,7 +1054,7 @@ public class BillService {
 
                 Iterable<Bill> bills = billRepository.findAll(builder);
                 List<MeterRecord> meterRecords = new ArrayList<>();
-                Integer totalUnits = 0;
+                Double totalUnits = 0d;
                 for (Bill b : bills) {
                     MeterRecord mr = new MeterRecord();
                     if (b.getAccount() != null) {
@@ -1127,7 +1147,7 @@ public class BillService {
                 Iterable<Bill> bills = billRepository.findAll(builder);
                 List<BillRecord> billRecords = new ArrayList<>();
 
-                Integer totalUnits = 0;
+                Double totalUnits = 0.0;
                 Double totalAmountBilled = 0.0;
                 Double totalMeterRent = 0.0;
                 Double totalCharges = 0.0;
@@ -1243,7 +1263,7 @@ public class BillService {
                 Iterable<Bill> bills = billRepository.findAll(builder);
                 List<BillRecord> billRecords = new ArrayList<>();
 
-                Integer totalUnits = 0;
+                Double totalUnits = 0.0;
                 Double totalAmountBilled = 0.0;
                 Double totalMeterRent = 0.0;
                 Double totalCharges = 0.0;

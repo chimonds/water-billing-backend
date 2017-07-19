@@ -23,23 +23,14 @@
  */
 package ke.co.suncha.simba.aqua.models;
 
-import java.io.Serializable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
+import ke.co.suncha.simba.aqua.account.Account;
+
+import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
-import ke.co.suncha.simba.aqua.account.Account;
+import java.io.Serializable;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
@@ -65,7 +56,7 @@ public class MeterAllocation extends SimbaBaseEntity implements Serializable {
 	
 
 	@Column(name = "reading")
-	private Integer reading = 0;
+	private Double reading = 0.0;
 
 	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "meter_id")
@@ -124,7 +115,7 @@ public class MeterAllocation extends SimbaBaseEntity implements Serializable {
 	/**
 	 * @return the reading
 	 */
-	public Integer getReading() {
+	public Double getReading() {
 		return reading;
 	}
 
@@ -132,7 +123,7 @@ public class MeterAllocation extends SimbaBaseEntity implements Serializable {
 	 * @param reading
 	 *            the reading to set
 	 */
-	public void setReading(Integer reading) {
+	public void setReading(Double reading) {
 		this.reading = reading;
 	}
 

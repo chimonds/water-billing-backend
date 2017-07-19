@@ -7,11 +7,11 @@ public class MeterRecord {
     private  String accNo;
     private String accName;
     private String zone;
-    private Integer currentReading;
-    private Integer previousReading;
-    private Integer units;
+    private Double currentReading;
+    private Double previousReading;
+    private Double units;
     private String consumption;
-    private Integer average;
+    private Double average;
 
 
     public String getAccNo() {
@@ -38,27 +38,27 @@ public class MeterRecord {
         this.zone = zone;
     }
 
-    public Integer getCurrentReading() {
+    public Double getCurrentReading() {
         return currentReading;
     }
 
-    public void setCurrentReading(Integer currentReading) {
+    public void setCurrentReading(Double currentReading) {
         this.currentReading = currentReading;
     }
 
-    public Integer getPreviousReading() {
+    public Double getPreviousReading() {
         return previousReading;
     }
 
-    public void setPreviousReading(Integer previousReading) {
+    public void setPreviousReading(Double previousReading) {
         this.previousReading = previousReading;
     }
 
-    public Integer getUnits() {
+    public Double getUnits() {
         return units;
     }
 
-    public void setUnits(Integer units) {
+    public void setUnits(Double units) {
         this.units = units;
     }
 
@@ -70,11 +70,11 @@ public class MeterRecord {
         this.consumption = consumption;
     }
 
-    public Integer getAverage() {
+    public Double getAverage() {
         return average;
     }
 
-    public void setAverage(Integer average) {
+    public void setAverage(Double average) {
         this.average = average;
     }
 }

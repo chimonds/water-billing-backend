@@ -1226,7 +1226,7 @@ public class ReportService {
                 unitsOnActualBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Actual"));
                 unitsOnActualBuilder.and(zoneBillsBuilder);
                 unitsOnActualBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                Integer unitsBilledOnActual = query.from(QBill.bill).where(unitsOnActualBuilder).singleResult(QBill.bill.unitsBilled.sum());
+                Double unitsBilledOnActual = query.from(QBill.bill).where(unitsOnActualBuilder).singleResult(QBill.bill.unitsBilled.sum());
                 bsr.setUnitsActualConsumption(unitsBilledOnActual);
 
                 //Get units billed on average
@@ -1235,7 +1235,7 @@ public class ReportService {
                 unitsOnAverageBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Average"));
                 unitsOnAverageBuilder.and(zoneBillsBuilder);
                 unitsOnAverageBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
-                Integer unitsOnAverage = query.from(QBill.bill).where(unitsOnAverageBuilder).singleResult(QBill.bill.unitsBilled.sum());
+                Double unitsOnAverage = query.from(QBill.bill).where(unitsOnAverageBuilder).singleResult(QBill.bill.unitsBilled.sum());
                 bsr.setUnitsEstimatedConsumption(unitsOnAverage);
 
 

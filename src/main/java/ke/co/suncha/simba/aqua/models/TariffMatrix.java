@@ -1,7 +1,6 @@
 package ke.co.suncha.simba.aqua.models;
 
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
-import ke.co.suncha.simba.aqua.utils.TariffRateType;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -26,11 +25,11 @@ public class TariffMatrix extends SimbaBaseEntity implements Serializable {
 
     @NotNull
     @Column(name = "minimum")
-    private Integer minimum = 0;
+    private Double minimum = 0.0;
 
     @NotNull
     @Column(name = "maximum")
-    private Integer maximum = 0;
+    private Double maximum = 0.0;
 
     @NotNull
     @Column(name = "amount")
@@ -53,19 +52,19 @@ public class TariffMatrix extends SimbaBaseEntity implements Serializable {
         this.tariffMatrixId = tariffMatrixId;
     }
 
-    public Integer getMinimum() {
+    public Double getMinimum() {
         return minimum;
     }
 
-    public void setMinimum(Integer minimum) {
+    public void setMinimum(Double minimum) {
         this.minimum = minimum;
     }
 
-    public Integer getMaximum() {
+    public Double getMaximum() {
         return maximum;
     }
 
-    public void setMaximum(Integer maximum) {
+    public void setMaximum(Double maximum) {
         this.maximum = maximum;
     }
 
