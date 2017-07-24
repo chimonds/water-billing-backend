@@ -112,6 +112,15 @@ public class Bill extends SimbaBaseEntity implements Serializable {
     @JoinColumn(name = "account_id")
     private Account account;
 
+    @JsonIgnore
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_account_id")
+    private Account parentAccount;
+
+    @Column(name = "is_transferred")
+    private Boolean transferred = Boolean.FALSE;
+
     // Bills belong to a billing month
     @ManyToOne(fetch = FetchType.EAGER)
     @NotNull
@@ -350,6 +359,22 @@ public class Bill extends SimbaBaseEntity implements Serializable {
 
     public void setBillWaterSale(Boolean billWaterSale) {
         this.billWaterSale = billWaterSale;
+    }
+
+    public Account getParentAccount() {
+        return parentAccount;
+    }
+
+    public void setParentAccount(Account parentAccount) {
+        this.parentAccount = parentAccount;
+    }
+
+    public Boolean getTransferred() {
+        return transferred;
+    }
+
+    public void setTransferred(Boolean transferred) {
+        this.transferred = transferred;
     }
 
     @Override

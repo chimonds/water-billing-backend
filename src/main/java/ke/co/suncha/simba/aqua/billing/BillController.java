@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.api;
+package ke.co.suncha.simba.aqua.billing;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -29,9 +29,9 @@ import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
-import ke.co.suncha.simba.aqua.billing.BillService;
 import ke.co.suncha.simba.aqua.utils.BillRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -65,6 +65,11 @@ public class BillController {
     @ApiOperation(value = "Get a paginated list of all connection locations.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
     public RestResponse deleteBill(@ApiParam(value = "The ID of the existing consumer resource.", required = true) @PathVariable("id") Long billId, @RequestBody RestRequestObject<Task> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.deleteBill(requestObject, billId);
+    }
+
+    @RequestMapping(value = "transfer/{id}", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
+    public RestResponse transferBill(@PathVariable("id") Long billId, @RequestBody RestRequestObject<Account> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return billService.transferBill(requestObject, billId);
     }
 
 
@@ -105,7 +110,7 @@ public class BillController {
         return billService.getBillingChecklistReport(requestObject);
     }
 
-    @RequestMapping(value = "/billOnAverageUnits", method = RequestMethod.POST, consumes = { "application/json"}, produces = { "application/json" })
+    @RequestMapping(value = "/billOnAverageUnits", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
     public RestResponse getBillOnAverageUnits(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return billService.getBillOnAverageUnits();
     }

@@ -35,6 +35,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.admin.version.ReleaseManager;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.account.BillingFrequency;
 import ke.co.suncha.simba.aqua.account.OnStatus;
@@ -66,6 +67,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -141,6 +143,10 @@ public class BillService {
 
     @Autowired
     EntityManager entityManager;
+
+
+    @Autowired
+    ReleaseManager releaseManager;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -344,6 +350,10 @@ public class BillService {
 
                 //set account
                 bill.setAccount(account);
+
+                //set parent account
+                bill.setParentAccount(account);
+                bill.setTransferred(Boolean.FALSE);
                 Bill createdBill = billRepository.save(bill);
 
                 log.info("Applying charges to bill...");
@@ -406,9 +416,10 @@ public class BillService {
                 accountService.updateBalance(account.getAccountId());
 
                 //send sms
-                log.info("Saving SMS notification...");
-                smsService.saveNotification(account.getAccountId(), 0L, createdBill.getBillId(), SMSNotificationType.BILL);
-
+                if (account.getBillingFrequency() == BillingFrequency.MONTHLY) {
+                    log.info("Saving SMS notification...");
+                    smsService.saveNotification(account.getAccountId(), 0L, createdBill.getBillId(), SMSNotificationType.BILL);
+                }
 
                 log.info("Account billed successfully:" + account.getAccNo());
 
@@ -1347,6 +1358,105 @@ public class BillService {
 
     public Bill getById(Long billId) {
         return billRepository.findOne(billId);
+    }
+
+    @PostConstruct
+    public void addPermissions() {
+        releaseManager.addPermission("bill_transfer");
+    }
+
+    public RestResponse transferBill(RestRequestObject<Account> requestObject, Long billId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "bill_transfer");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                String emailAddress = authManager.getEmailFromToken(requestObject.getToken());
+                Bill bill = billRepository.findOne(billId);
+                Long parentAccountId = bill.getAccount().getAccountId();
+
+                if (bill == null) {
+                    responseObject.setMessage("Invalid bill resource.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                Account parentAccount = accountService.getByAccountId(parentAccountId);
+
+                if (parentAccount.getBillingFrequency() != BillingFrequency.ANY_TIME) {
+                    responseObject.setMessage("Invalid account billing frequency.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                Account account = accountService.getByAccountId(requestObject.getObject().getAccountId());
+                if (account == null) {
+                    responseObject.setMessage("Invalid account resource");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (account.getBillingFrequency() != BillingFrequency.MONTHLY) {
+                    responseObject.setMessage("Invalid account billing frequency.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (account.getAccountId() == bill.getAccount().getAccountId()) {
+                    responseObject.setMessage("You can not perform bill to same account.");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+
+                DateTime transDate = new DateTime();
+                transDate = transDate.withMillis(bill.getTransactionDate().getMillis());
+                if (!billingMonthService.canTransact(transDate)) {
+                    responseObject.setMessage("Sorry we could not complete your request. Invalid bill transaction date");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+
+                //audit trail
+                //Start - audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setParentID(String.valueOf(billId));
+                auditRecord.setParentObject("BILLS");
+                auditRecord.setCurrentData(bill.toString());
+                auditRecord.setNotes("SUBMITTED TRANSFER BILL FROM:" + bill.getAccount().getAccNo() + " TO: " + account.getAccNo());
+                auditService.log(AuditOperation.ACCESSED, auditRecord);
+                //End - audit trail
+
+
+                //set transfer params
+                bill.setTransferred(Boolean.TRUE);
+                bill.setAccount(account);
+                bill.setLastModifiedDate(new DateTime());
+                bill = billRepository.save(bill);
+
+                //Update the two account balances
+                accountService.updateBalance(bill.getParentAccount().getAccountId());
+                accountService.updateBalance(bill.getAccount().getAccountId());
+
+                responseObject.setMessage("Bill transfer request submitted successfully.");
+                responseObject.setPayload("");
+                response = new RestResponse(responseObject, HttpStatus.OK);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
     }
 
 }

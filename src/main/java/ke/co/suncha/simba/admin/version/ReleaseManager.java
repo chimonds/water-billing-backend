@@ -211,9 +211,9 @@ public class ReleaseManager {
                             "sms_approve,\n" +
                             "report_consumers_without_phone_numbers,\n" +
                             "stats_sms_balance,\n" +
-                            "payment_void,\n"+
-                            "bill_edit_previous_reading,\n"+
-                            "report_accounts,\n"+
+                            "payment_void,\n" +
+                            "bill_edit_previous_reading,\n" +
+                            "report_accounts,\n" +
                             "settings_view";
                     String[] permissions = content.split(",");
                     if (permissions.length > 0) {
@@ -251,7 +251,7 @@ public class ReleaseManager {
                 }
 
                 try {
-                   //  Setup default user
+                    //  Setup default user
                     User user = new User();
                     user.setEmailAddress("maitha.manyala@gmail.com");
                     user.setFirstName("Maitha");
@@ -365,12 +365,6 @@ public class ReleaseManager {
                     pt.setUnique(true);
                     pt.setDescription("Other");
                     paymentTypeRepository.save(pt);
-
-
-
-
-
-
 
 
                 } catch (Exception ex) {
@@ -525,6 +519,17 @@ public class ReleaseManager {
         } catch (Exception ex) {
             // ex.printStackTrace();
             //System.out.println(ex.getMessage());
+        }
+    }
+
+    public void addPermission(String name) {
+        try {
+            SystemAction systemAction = new SystemAction();
+            systemAction.setName(name);
+            systemAction.setDescription("Auto generated");
+            systemActionRepository.save(systemAction);
+        } catch (Exception ex) {
+
         }
     }
 }

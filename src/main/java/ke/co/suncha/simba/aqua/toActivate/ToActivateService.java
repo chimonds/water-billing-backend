@@ -2,6 +2,7 @@ package ke.co.suncha.simba.aqua.toActivate;
 
 import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
+import ke.co.suncha.simba.admin.version.ReleaseManager;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.services.AccountService;
 import org.joda.time.DateTime;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 
 /**
@@ -27,6 +29,9 @@ public class ToActivateService {
 
     @Autowired
     EntityManager entityManager;
+
+    @Autowired
+    ReleaseManager releaseManager;
 
     public void create(Long accountId) {
         Account account = accountService.getByAccountId(accountId);
@@ -60,5 +65,10 @@ public class ToActivateService {
                 }
             }
         }
+    }
+
+    @PostConstruct
+    public void addPermissions() {
+        releaseManager.addPermission("report_accounts_to_activate");
     }
 }
