@@ -501,8 +501,14 @@ public class BillService {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QBill.bill.account.accountId.eq(accountId));
 
+        //Check account billing frequency. If account billed montly do not fetch transfered bills
+        if (account.getBillingFrequency() == BillingFrequency.MONTHLY) {
+            builder.and(QBill.bill.transferred.eq(Boolean.FALSE));
+        }
+
         JPAQuery query = new JPAQuery(entityManager);
         Long lastBillId = query.from(QBill.bill).where(builder).orderBy(QBill.bill.billCode.desc()).singleResult(QBill.bill.billId.max());
+
 
         if (lastBillId == null) {
             // seems its initial bill so check if account is metered
@@ -528,7 +534,6 @@ public class BillService {
                 }
             }
 
-            lastBill.setBilled(true);
 
             //log.info("Most current bill:" + lastBill.getBillingMonth().getMonth().get(Calendar.YEAR) + "-" + lastBill.getBillingMonth().getMonth().get(Calendar.MONTH));
             log.info("Billing month:" + billingMonth.getMonth().toString("MMM, yyyy"));
@@ -537,14 +542,19 @@ public class BillService {
                 log.info("Billed:false");
                 lastBill.setBilled(Boolean.FALSE);
             } else {
-                log.info("Billed:true");
+                log.info("Billed:Yes");
                 lastBill.setBilled(Boolean.TRUE);
             }
 
             if (lastBill.getBillingMonth().getMonth().equals(billingMonth.getMonth())) {
                 lastBill.setBilled(Boolean.TRUE);
-                log.info("Billed:true");
+                log.info("Billed:Yes");
             }
+//            if (lastBill.isBilled()) {
+//                if (lastBill.getTransferred()) {
+//                    lastBill.setBilled(Boolean.FALSE);
+//                }
+//            }
         }
 
         if (account != null) {

@@ -17,6 +17,7 @@ import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
 import ke.co.suncha.simba.aqua.billing.Bill;
 import ke.co.suncha.simba.aqua.billing.BillService;
 import ke.co.suncha.simba.aqua.billing.QBill;
+import ke.co.suncha.simba.aqua.billing.TransferredBill;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.reports.*;
 import ke.co.suncha.simba.aqua.reports.scheduled.QAccountBalanceRecord;
@@ -143,6 +144,19 @@ public class ReportService {
         return val;
     }
 
+    private List<String> getContentMeta(String value) {
+        String[] billContent = value.split("#");
+        List<String> list = new ArrayList<>();
+        if (billContent.length > 0) {
+            for (String s : billContent) {
+                if (s.length() > 0) {
+                    list.add(s);
+                }
+            }
+        }
+        return list;
+    }
+
     public RestResponse getMonthlyBills(RestRequestObject<ReportsParam> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -175,53 +189,44 @@ public class ReportService {
                 }
 
                 //SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
-                //String formatted = format1.format(billingMonth.getMonth().getTime());
                 log.info("Getting bills for billing month:" + billingMonth.getMonth().toString("yyyy-MM-dd"));
 
                 DateTime bMonth = billingMonth.getMonth();
-                //bMonth.setTime(billingMonth.getMonth().getTime());
-                //billingMonth.getMonth();
 
-                //DateTime paymentBillingDate = bMonth;
-                //paymentBillingDate.minusMonths(1);
-                //paymentBillingDate.withDayOfMonth(24);
-                //paymentBillingDate.add(Calendar.MONTH, -1);
-                //paymentBillingDate.set(Calendar.DATE, 24);
-                ///log.info("Payment billing date:" + paymentBillingDate.getTime());
+                //get bill id's belonging to billing month
+                List<Long> billIds = new ArrayList<>();
 
-                //log.info("Billing Month:" + billingMonth.getMonth().getTime());
+                //Bills builder
+                BooleanBuilder billsBuilder = new BooleanBuilder();
+                billsBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+                billsBuilder.and(QBill.bill.transferred.eq(Boolean.FALSE));
 
-                //DateTime startDate = new DateTime(billingMonth.getMonth()).withDayOfMonth(1);
-                //log.info("Start date:" + startDate);
+                //Zone param
+                if (params.containsKey("zoneId")) {
+                    Object zoneId = params.get("zoneId");
+                    billsBuilder.and(QBill.bill.account.zone.zoneId.eq(Long.valueOf(zoneId.toString())));
+                }
 
-                //DateTime endDate = startDate.plusMonths(1).minusMinutes(1);
-                //log.info("To date:" + endDate);
-
-
-                //BillingMonth paymentBillingMonth = billingMonthRepository.findByMonth(paymentBillingDate);
-                //log.info("Payment billing Month id:" + paymentBillingMonth.getBillingMonthId());
-
-                //get bills belonging to billing month
-                List<BigInteger> bills = new ArrayList<>();
 
                 if (params.containsKey("accNo")) {
                     //Get account number from params
                     String accNo = params.get("accNo").toString();
                     if (!accNo.isEmpty() && accNo != null) {
                         Account account = accountRepository.findByaccNo(accNo);
-                        bills = billRepository.findAllByBillingMonthAndAccount_AccNo(billingMonth.getBillingMonthId(), account.getAccountId());
-                        if (bills.isEmpty()) {
-                            responseObject.setMessage("No bill found found for account number " + accNo);
-                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                            return response;
+                        if (account != null) {
+                            billsBuilder.and(QBill.bill.account.accountId.eq(account.getAccountId()));
                         }
                     }
-                } else {
-                    bills = billRepository.findAllByBillingMonth(billingMonth.getBillingMonthId());
                 }
 
-                log.info("Bills " + bills.size() + " found.");
-                if (bills == null || bills.isEmpty()) {
+                JPAQuery query = new JPAQuery(entityManager);
+                billIds = query.from(QBill.bill).where(billsBuilder).list(QBill.bill.billId);
+                if (billIds == null) {
+                    billIds = new ArrayList<>();
+                }
+
+                log.info("Bills " + billIds.size() + " found.");
+                if (billIds == null || billIds.isEmpty()) {
                     responseObject.setMessage("No bills found");
                     response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     return response;
@@ -229,183 +234,223 @@ public class ReportService {
 
                 List<MonthlyBillRecord> records = new ArrayList<>();
                 Integer counter = 0;
-                for (BigInteger billId : bills) {
-                    Bill b = billRepository.findOne(billId.longValue());
-                    Boolean include = true;
-                    if (params.containsKey("zoneId")) {
-                        Object zoneId = params.get("zoneId");
-                        if (b.getAccount().getZone().getZoneId() != Long.valueOf(zoneId.toString())) {
-                            include = false;
-                        }
+                for (Long billId : billIds) {
+                    Bill b = billRepository.findOne(billId);
+
+                    counter++;
+                    MonthlyBillRecord monthlyBillRecord = new MonthlyBillRecord();
+                    monthlyBillRecord.setAccName(b.getAccount().getAccName());
+                    monthlyBillRecord.setAccNo(b.getAccount().getAccNo());
+                    if (b.getAccount().isMetered()) {
+                        monthlyBillRecord.setMeterNo(b.getAccount().getMeter().getMeterNo());
+                        monthlyBillRecord.setMeterSize(b.getAccount().getMeter().getMeterSize().getSize());
                     }
+                    monthlyBillRecord.setLocation(b.getAccount().getLocation().getName());
+                    monthlyBillRecord.setBilledAmount(b.getAmount());
 
 
-                    if (include) {
-                        counter++;
-                        MonthlyBillRecord monthlyBillRecord = new MonthlyBillRecord();
-                        monthlyBillRecord.setAccName(b.getAccount().getAccName());
-                        monthlyBillRecord.setAccNo(b.getAccount().getAccNo());
-                        if (b.getAccount().isMetered()) {
-                            monthlyBillRecord.setMeterNo(b.getAccount().getMeter().getMeterNo());
-                            monthlyBillRecord.setMeterSize(b.getAccount().getMeter().getMeterSize().getSize());
-                        }
-                        monthlyBillRecord.setLocation(b.getAccount().getLocation().getName());
-                        monthlyBillRecord.setBilledAmount(b.getAmount());
+                    monthlyBillRecord.setConsumptionType(b.getConsumptionType());
+                    monthlyBillRecord.setPreviousReading(b.getPreviousReading());
+                    monthlyBillRecord.setCurrentReading(b.getCurrentReading());
+                    monthlyBillRecord.setUnitsBilled(b.getUnitsBilled());
+                    monthlyBillRecord.setBillingMonth(billingMonth.getMonth());
+                    monthlyBillRecord.setTotalBilledAmount(b.getTotalBilled());
 
-
-                        monthlyBillRecord.setConsumptionType(b.getConsumptionType());
-                        monthlyBillRecord.setPreviousReading(b.getPreviousReading());
-                        monthlyBillRecord.setCurrentReading(b.getCurrentReading());
-                        monthlyBillRecord.setUnitsBilled(b.getUnitsBilled());
-                        monthlyBillRecord.setBillingMonth(billingMonth.getMonth());
-                        monthlyBillRecord.setTotalBilledAmount(b.getTotalBilled());
-
-                        String[] billContent = b.getContent().split("#");
-                        List<String> list = new ArrayList<>();
-                        if (billContent.length > 0) {
-                            for (String s : billContent) {
-                                if (s.length() > 0) {
-                                    list.add(s);
-                                }
+                    String[] billContent = b.getContent().split("#");
+                    List<String> list = new ArrayList<>();
+                    if (billContent.length > 0) {
+                        for (String s : billContent) {
+                            if (s.length() > 0) {
+                                list.add(s);
                             }
                         }
-                        monthlyBillRecord.setBillSummaryList(list);
-                        //payments
-                        Double totalPayments = 0.0;
+                    }
+                    monthlyBillRecord.setBillSummaryList(list);
+                    //payments
+                    Double totalPayments = 0.0;
 
 
-                        //get payments from the previous month
-                        //List<Payment> payments = paymentRepository.findByBillingMonth_BillingMonthIdAndAccount(paymentBillingMonth.getBillingMonthId(), b.getAccount());
-                        //List<Payment> payments = paymentRepository.findByTransactionDateBetweenAndAccount(startDate, toDate, b.getAccount());
-                        Long paymentAccountId = b.getAccount().getAccountId();
+                    //get payments from the previous month
+                    //List<Payment> payments = paymentRepository.findByBillingMonth_BillingMonthIdAndAccount(paymentBillingMonth.getBillingMonthId(), b.getAccount());
+                    //List<Payment> payments = paymentRepository.findByTransactionDateBetweenAndAccount(startDate, toDate, b.getAccount());
+                    Long paymentAccountId = b.getAccount().getAccountId();
 
 
-                        Long accountId = billRepository.findAccountIdByBillId(b.getBillId());
+                    Long accountId = billRepository.findAccountIdByBillId(b.getBillId());
 
-                        DateTime previousBillingDate = new DateTime();
+                    DateTime previousBillingDate = new DateTime().dayOfMonth().withMinimumValue().hourOfDay().withMinimumValue();
 
-                        Integer previousBillCode = billRepository.findPreviousBillCode(accountId, b.getBillCode());
+                    Integer previousBillCode = billRepository.findPreviousBillCode(accountId, b.getBillCode());
+                    Boolean hadAPreviousBill = Boolean.FALSE;
 
-                        if (previousBillCode != null) {
-                            //get the actual previous bill
-                            // Calendar c = Calendar.getInstance();
+                    if (previousBillCode != null) {
+                        //get the actual previous bill
+                        // Calendar c = Calendar.getInstance();
 //                            log.info("account id:" + accountId);
 //                            log.info("bill code:" + billCode);
-                            Timestamp timestamp = billRepository.findPreviousBillDate(accountId, previousBillCode);
-                            if (timestamp != null) {
-                                previousBillingDate = previousBillingDate.withMillis(timestamp.getTime());
-                            }
+                        Timestamp timestamp = billRepository.findPreviousBillDate(accountId, previousBillCode);
+                        if (timestamp != null) {
+                            previousBillingDate = previousBillingDate.withMillis(timestamp.getTime());
+                            hadAPreviousBill = Boolean.TRUE;
+                        }
+                    }
+
+                    log.info("Previous bill code:" + previousBillCode);
+                    log.info("Previous billing date: " + previousBillingDate);
+
+                    //Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
+                    Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), previousBillingDate.plusSeconds(1));
+
+                    log.info("Balance before bill:" + balanceBeforeBill);
+
+
+                    //region Get transferred bills
+                    Double otherBillsTotal = 0.0;
+                    BooleanBuilder transferredBillIdsBuilder = new BooleanBuilder();
+                    transferredBillIdsBuilder.and(QBill.bill.account.accountId.eq(accountId));
+                    transferredBillIdsBuilder.and(QBill.bill.transactionDate.gt(previousBillingDate));
+                    transferredBillIdsBuilder.and(QBill.bill.transactionDate.loe(b.getTransactionDate()));
+                    transferredBillIdsBuilder.and(QBill.bill.transferred.eq(Boolean.TRUE));
+
+                    List<Long> transferredBillIds = new ArrayList<>();
+                    JPAQuery billIdsQuery = new JPAQuery(entityManager);
+                    transferredBillIds = billIdsQuery.from(QBill.bill).where(transferredBillIdsBuilder).list(QBill.bill.billId);
+
+                    if (transferredBillIds == null) {
+                        transferredBillIds = new ArrayList<>();
+                    }
+
+                    if (!transferredBillIds.isEmpty()) {
+                        List<TransferredBill> transferredBills = new ArrayList<>();
+                        for (Long transferredBillId : transferredBillIds) {
+                            Bill transferredBill = billService.getById(transferredBillId);
+                            TransferredBill tb = new TransferredBill();
+                            tb.setTransactionDate(transferredBill.getTransactionDate());
+                            tb.setUnits(transferredBill.getUnitsBilled());
+                            tb.setAmount(transferredBill.getTotalBilled());
+                            tb.setContent(this.getContentMeta(transferredBill.getContent()));
+
+                            otherBillsTotal += transferredBill.getTotalBilled();
+
+                            //add to list
+                            transferredBills.add(tb);
                         }
 
-                        log.info("Previous bill code:" + previousBillCode);
-                        log.info("Previous billing date: " + previousBillingDate);
-
-                        //Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), lastDateBeforeBillingCycle);
-                        Double balanceBeforeBill = accountService.getAccountBalanceByTransDate(b.getAccount().getAccountId(), previousBillingDate.plusSeconds(1));
-
-                        log.info("Balance before bill:" + balanceBeforeBill);
-
-                        //Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
-                        Integer intBillCode = this.getYearMonthDayFromCalendar(previousBillingDate);
-
-                        Double paymentsDoneOnBillingDay = 0.0;
-
-                        BooleanBuilder paymentsBuilder = new BooleanBuilder();
-                        paymentsBuilder.and(QPayment.payment.account.accountId.eq(accountId));
-                        paymentsBuilder.and(QPayment.payment.transactionDate.gt(previousBillingDate));
-                        paymentsBuilder.and(QPayment.payment.transactionDate.loe(b.getTransactionDate()));
-
-                        JPAQuery paymentsQuery = new JPAQuery(entityManager);
-
-
-                        List<Payment> payments = paymentsQuery.from(QPayment.payment).where(paymentsBuilder).list(QPayment.payment);
-                        if (payments == null) {
-                            payments = new ArrayList<>();
+                        if (!transferredBills.isEmpty()) {
+                            monthlyBillRecord.setHasOtherBills(Boolean.TRUE);
+                            monthlyBillRecord.setBills(transferredBills);
                         }
+                    }
 
-                        // paymentRepository.findByTransactionDate(paymentAccountId, startDate.toString("yyyy/MM/dd"), endDate.toString("yyyy/MM/dd"));
+                    monthlyBillRecord.setOtherBillsTotal(otherBillsTotal);
 
-                        if (!payments.isEmpty()) {
-                            //log.info("Payments: " + payments.size());
-                            List<PaymentRecord> paymentRecords = new ArrayList<>();
-
-                            for (Payment p : payments) {
+                    //endregion
 
 
-                                //Integer intPaymentCode = Integer.valueOf(p.getTransactionDate().get(Calendar.YEAR) + "" + p.getTransactionDate().get(Calendar.MONTH) + "" + p.getTransactionDate().get(Calendar.DAY_OF_MONTH));
-                                Integer intPaymentCode = this.getYearMonthDayFromCalendar(p.getTransactionDate());
+                    //Integer intBillCode = Integer.valueOf(lastBillingDate.get(Calendar.YEAR) + "" + lastBillingDate.get(Calendar.MONTH) + "" + lastBillingDate.get(Calendar.DAY_OF_MONTH));
+                    Integer intBillCode = this.getYearMonthDayFromCalendar(previousBillingDate);
 
-                                //log.info("intPaymentCode:" + intPaymentCode);
-                                //log.info("intBillCode:" + intBillCode);
-                                //log.info("Payment amount:" + p.getAmount());
-                                if (intPaymentCode > intBillCode) {
-                                    totalPayments += p.getAmount();
-                                    PaymentRecord paymentRecord = new PaymentRecord();
-                                    paymentRecord.setTransactionDate(p.getTransactionDate());
-                                    paymentRecord.setAmount(p.getAmount());
-                                    if (!p.getPaymentType().getName().equals("Water Sale")) {
-                                        paymentRecord.setReceiptNo(p.getReceiptNo() + "(" + p.getPaymentType().getName() + ")");
-                                    } else {
-                                        paymentRecord.setReceiptNo(p.getReceiptNo());
-                                    }
+                    Double paymentsDoneOnBillingDay = 0.0;
 
-                                    paymentRecords.add(paymentRecord);
+                    BooleanBuilder paymentsBuilder = new BooleanBuilder();
+                    paymentsBuilder.and(QPayment.payment.account.accountId.eq(accountId));
+                    paymentsBuilder.and(QPayment.payment.transactionDate.gt(previousBillingDate));
+                    paymentsBuilder.and(QPayment.payment.transactionDate.loe(b.getTransactionDate()));
 
-                                    //
-                                    //log.info("PAYMENT CODE:" + intPaymentCode);
-                                    //log.info("BILL CODE:" + intBillCode);
-                                    if (intBillCode.compareTo(intPaymentCode) == 0) {
-                                        paymentsDoneOnBillingDay += p.getAmount();
-                                        //log.info("Adding payments done on same day...");
-                                    }
+                    JPAQuery paymentsQuery = new JPAQuery(entityManager);
+
+                    List<Payment> payments = paymentsQuery.from(QPayment.payment).where(paymentsBuilder).list(QPayment.payment);
+                    if (payments == null) {
+                        payments = new ArrayList<>();
+                    }
+
+                    if (!payments.isEmpty()) {
+                        //log.info("Payments: " + payments.size());
+                        List<PaymentRecord> paymentRecords = new ArrayList<>();
+
+                        for (Payment p : payments) {
+
+
+                            //Integer intPaymentCode = Integer.valueOf(p.getTransactionDate().get(Calendar.YEAR) + "" + p.getTransactionDate().get(Calendar.MONTH) + "" + p.getTransactionDate().get(Calendar.DAY_OF_MONTH));
+                            Integer intPaymentCode = this.getYearMonthDayFromCalendar(p.getTransactionDate());
+
+                            //log.info("intPaymentCode:" + intPaymentCode);
+                            //log.info("intBillCode:" + intBillCode);
+                            //log.info("Payment amount:" + p.getAmount());
+                            if (intPaymentCode > intBillCode) {
+                                totalPayments += p.getAmount();
+                                PaymentRecord paymentRecord = new PaymentRecord();
+                                paymentRecord.setTransactionDate(p.getTransactionDate());
+                                paymentRecord.setAmount(p.getAmount());
+                                if (!p.getPaymentType().getName().equals("Water Sale")) {
+                                    paymentRecord.setReceiptNo(p.getReceiptNo() + "(" + p.getPaymentType().getName() + ")");
+                                } else {
+                                    paymentRecord.setReceiptNo(p.getReceiptNo());
+                                }
+
+                                paymentRecords.add(paymentRecord);
+
+                                //
+                                //log.info("PAYMENT CODE:" + intPaymentCode);
+                                //log.info("BILL CODE:" + intBillCode);
+                                if (intBillCode.compareTo(intPaymentCode) == 0) {
+                                    paymentsDoneOnBillingDay += p.getAmount();
+                                    //log.info("Adding payments done on same day...");
                                 }
                             }
-                            monthlyBillRecord.setPayments(paymentRecords);
-
                         }
-                        monthlyBillRecord.setTotalPayments(totalPayments);
+                        monthlyBillRecord.setPayments(paymentRecords);
 
-                        //set balance befor bill
-                        //log.info("Balance b4 bill:" + balanceBeforeBill);
-                        //log.info("Payments done on billing day:" + paymentsDoneOnBillingDay);
-                        balanceBeforeBill = balanceBeforeBill + paymentsDoneOnBillingDay;
+                    }
+                    monthlyBillRecord.setTotalPayments(totalPayments);
+
+                    //set balance befor bill
+                    //log.info("Balance b4 bill:" + balanceBeforeBill);
+                    //log.info("Payments done on billing day:" + paymentsDoneOnBillingDay);
+                    balanceBeforeBill = balanceBeforeBill + paymentsDoneOnBillingDay;
 
 
-                        Double paymentsOnBill = monthlyBillRecord.getTotalPayments();
+                    //less b/f transferred bills
+                    if (hadAPreviousBill) {
+                        balanceBeforeBill = balanceBeforeBill - otherBillsTotal;
+                    }
 
 
-                        monthlyBillRecord.setBalanceBf(balanceBeforeBill);
+                    Double paymentsOnBill = monthlyBillRecord.getTotalPayments();
 
-                        //check if in arreas
-                        if ((monthlyBillRecord.getBalanceBf() - monthlyBillRecord.getTotalPayments()) > 0) {
-                            monthlyBillRecord.setInArreas(true);
-                        }
-                        // bill.balanceBf-bill.totalPayments
 
-                        //Charges
-                        List<ChargeRecord> chargeRecords = new ArrayList<>();
-                        if (b.getMeterRent() > 0) {
+                    monthlyBillRecord.setBalanceBf(balanceBeforeBill);
+
+                    //check if in arreas
+                    if ((monthlyBillRecord.getBalanceBf() - monthlyBillRecord.getTotalPayments()) > 0) {
+                        monthlyBillRecord.setInArreas(true);
+                    }
+                    // bill.balanceBf-bill.totalPayments
+
+                    //Charges
+                    List<ChargeRecord> chargeRecords = new ArrayList<>();
+                    if (b.getMeterRent() > 0) {
+                        ChargeRecord chargeRecord = new ChargeRecord();
+                        chargeRecord.setName("Meter Rent");
+                        chargeRecord.setAmount(b.getMeterRent());
+                        chargeRecords.add(chargeRecord);
+                    }
+
+                    if (!b.getBillItems().isEmpty()) {
+                        for (BillItem bi : b.getBillItems()) {
                             ChargeRecord chargeRecord = new ChargeRecord();
-                            chargeRecord.setName("Meter Rent");
-                            chargeRecord.setAmount(b.getMeterRent());
+                            chargeRecord.setName(bi.getBillItemType().getName());
+                            chargeRecord.setAmount(bi.getAmount());
                             chargeRecords.add(chargeRecord);
                         }
-
-                        if (!b.getBillItems().isEmpty()) {
-                            for (BillItem bi : b.getBillItems()) {
-                                ChargeRecord chargeRecord = new ChargeRecord();
-                                chargeRecord.setName(bi.getBillItemType().getName());
-                                chargeRecord.setAmount(bi.getAmount());
-                                chargeRecords.add(chargeRecord);
-                            }
-                        }
-
-                        if (!chargeRecords.isEmpty()) {
-                            monthlyBillRecord.setCharges(chargeRecords);
-                        }
-
-                        records.add(monthlyBillRecord);
                     }
+
+                    if (!chargeRecords.isEmpty()) {
+                        monthlyBillRecord.setCharges(chargeRecords);
+                    }
+
+                    records.add(monthlyBillRecord);
+
                 }
 
 

@@ -1,7 +1,9 @@
 package ke.co.suncha.simba.aqua.reports;
 
+import ke.co.suncha.simba.aqua.billing.TransferredBill;
 import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -27,7 +29,10 @@ public class MonthlyBillRecord extends BaseRecord {
     private List<String> billSummaryList;
     private List<PaymentRecord> payments;
     private List<ChargeRecord> charges;
-    private Boolean inArreas=false;
+    private List<TransferredBill> bills = new ArrayList<>();
+    private Boolean hasOtherBills = Boolean.FALSE;
+    private Boolean inArreas = false;
+    private Double otherBillsTotal = 0.0;
 
     public Boolean getInArreas() {
         return inArreas;
@@ -179,5 +184,29 @@ public class MonthlyBillRecord extends BaseRecord {
 
     public void setCharges(List<ChargeRecord> charges) {
         this.charges = charges;
+    }
+
+    public List<TransferredBill> getBills() {
+        return bills;
+    }
+
+    public void setBills(List<TransferredBill> bills) {
+        this.bills = bills;
+    }
+
+    public Boolean getHasOtherBills() {
+        return hasOtherBills;
+    }
+
+    public void setHasOtherBills(Boolean hasOtherBills) {
+        this.hasOtherBills = hasOtherBills;
+    }
+
+    public Double getOtherBillsTotal() {
+        return otherBillsTotal;
+    }
+
+    public void setOtherBillsTotal(Double otherBillsTotal) {
+        this.otherBillsTotal = otherBillsTotal;
     }
 }
