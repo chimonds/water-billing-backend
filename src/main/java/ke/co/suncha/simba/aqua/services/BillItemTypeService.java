@@ -31,8 +31,10 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
+import ke.co.suncha.simba.admin.version.ReleaseManager;
 import ke.co.suncha.simba.aqua.models.BillItemType;
 import ke.co.suncha.simba.aqua.repository.BillItemTypeRepository;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 
 /**
@@ -66,6 +69,9 @@ public class BillItemTypeService {
     @Autowired
     private AuditService auditService;
 
+    @Autowired
+    ReleaseManager releaseManager;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -73,17 +79,82 @@ public class BillItemTypeService {
     }
 
     @Transactional
-    public RestResponse update(RestRequestObject<BillItemType> requestObject) {
+    public RestResponse create(RestRequestObject<BillItemType> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
-                response = authManager.grant(requestObject.getToken(), "settings_update");
+                response = authManager.grant(requestObject.getToken(), "bill_item_type_update");
                 if (response.getStatusCode() != HttpStatus.OK) {
                     return response;
                 }
 
                 BillItemType billItemType = requestObject.getObject();
-                BillItemType dbBillItemType = billItemTypeRepository.findOne(billItemType.getBillTypeId());
+                if (billItemType == null) {
+                    responseObject.setMessage("Bill item type can not be empty.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (StringUtils.isEmpty(billItemType.getName())) {
+                    responseObject.setMessage("Bill item type name can not be empty.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (billItemType.getAmount() == null) {
+                    responseObject.setMessage("Bill item type amount can not be empty.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                //check name if already exists
+                if (billItemTypeRepository.findByName(billItemType.getName()) != null) {
+                    responseObject.setMessage("Bill item type name already exists.");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                if (billItemType.getAmount() < 0) {
+                    responseObject.setMessage("Invalid amount");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                billItemType = billItemTypeRepository.save(billItemType);
+
+                responseObject.setMessage("Billing item type created successfully");
+                responseObject.setPayload(billItemType);
+                response = new RestResponse(responseObject, HttpStatus.OK);
+
+                //Start - audit trail
+                AuditRecord auditRecord = new AuditRecord();
+                auditRecord.setParentID(String.valueOf(billItemType.getBillTypeId()));
+                auditRecord.setParentObject("BILLING ITEM TYPE");
+                auditRecord.setCurrentData(billItemType.toString());
+                auditRecord.setNotes("CREATED BILLING ITEM TYPE");
+                auditService.log(AuditOperation.UPDATED, auditRecord);
+                //End - audit trail
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    @Transactional
+    public RestResponse update(RestRequestObject<BillItemType> requestObject, Long billItemTypeId) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "bill_item_type_update");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                BillItemType billItemType = requestObject.getObject();
+                BillItemType dbBillItemType = billItemTypeRepository.findOne(billItemTypeId);
                 if (dbBillItemType == null) {
                     responseObject.setMessage("Billing item type not found");
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
@@ -96,6 +167,7 @@ public class BillItemTypeService {
                         response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
                     } else {
                         dbBillItemType.setAmount(billItemType.getAmount());
+                        dbBillItemType.setName(billItemType.getName());
                         dbBillItemType = billItemTypeRepository.save(dbBillItemType);
 
                         responseObject.setMessage("Billing item type updated successfully");
@@ -147,6 +219,13 @@ public class BillItemTypeService {
             log.error(ex.getLocalizedMessage());
         }
         return response;
+    }
+
+    @PostConstruct
+    public void addPermissions() {
+        releaseManager.addPermission("bill_item_type_create");
+        releaseManager.addPermission("bill_item_type_update");
+        releaseManager.addPermission("bill_item_type_list");
     }
 
 }

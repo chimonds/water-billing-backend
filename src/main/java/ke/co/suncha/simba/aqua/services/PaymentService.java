@@ -375,14 +375,15 @@ public class PaymentService {
         payment.setAmount(task.getAmount());
         payment.setAccount(task.getAccount());
         payment.setNotes(task.getNotes());
+        payment.setTransactionDate(new DateTime());
 
-        DateTime transDate = payment.getTransactionDate();
-        if (!billingMonthService.canTransact(transDate)) {
-            task.setProcessed(Boolean.TRUE);
-            task.setNotesProcessed("Invalid billing/transaction date");
-            task = taskService.save(task);
-            return;
-        }
+        /**DateTime transDate = payment.getTransactionDate();
+         if (!billingMonthService.canTransact(transDate)) {
+         task.setProcessed(Boolean.TRUE);
+         task.setNotesProcessed("Invalid billing/transaction date");
+         task = taskService.save(task);
+         return;
+         }**/
 
         // check if all values are present
         if (payment.getAmount() == null) {
@@ -406,7 +407,7 @@ public class PaymentService {
             return;
         }
 
-        DateTime today = new DateTime();
+        DateTime today = new DateTime().plusMinutes(1);
         if (payment.getTransactionDate().isAfter(today)) {
             task.setProcessed(Boolean.TRUE);
             task.setNotesProcessed("Transaction date can not be greater than now");

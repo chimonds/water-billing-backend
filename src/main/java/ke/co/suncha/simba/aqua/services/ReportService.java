@@ -1803,12 +1803,16 @@ public class ReportService {
                         Double surchargeIrrigationFee = 0d;
                         Double surchageMisuseFee = 0d;
                         Double meterServicingFee = 0d;
+                        Double totalFines = 0.0;
 
                         query = new JPAQuery(entityManager);
                         BooleanBuilder billItemsBuilder = new BooleanBuilder();
                         billItemsBuilder.and(QBillItem.billItem.bill.billId.eq(tuple.get(QBill.bill.billId)));
                         Iterable<BillItem> billItems = billItemRepository.findAll(billItemsBuilder);
                         for (BillItem billItem : billItems) {
+
+                            totalFines += billItem.getAmount();
+
                             if (StringUtils.equalsIgnoreCase(billItem.getBillItemType().getName(), "Reconnection Fee")) {
                                 chargesRecord.setReconnectionFee(billItem.getAmount());
                             } else if (StringUtils.equalsIgnoreCase(billItem.getBillItemType().getName(), "At Owners Request Fee")) {
@@ -1832,7 +1836,7 @@ public class ReportService {
                         //Balance brought forward
 
 
-                        //payments by date
+                        //region payments by date
                         query = new JPAQuery(entityManager);
                         BooleanBuilder paymentsBuilder = new BooleanBuilder();
                         paymentsBuilder.and(QPayment.payment.account.accountId.eq(accountId));
@@ -1841,22 +1845,109 @@ public class ReportService {
                         if (paymentsLastDayOfTheMonth == null) {
                             paymentsLastDayOfTheMonth = 0d;
                         }
+                        //endregion
 
-                        //Get total bills by last date of the month
+                        //region Get total bills by last date of the month
                         query = new JPAQuery(entityManager);
                         BooleanBuilder billsBuilder = new BooleanBuilder();
                         billsBuilder.and(QBill.bill.account.accountId.eq(accountId));
                         billsBuilder.and(QBill.bill.billingMonth.month.loe(endMonthDate));
                         Double billsLastDayOfTheMonth = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.totalBilled.sum());
                         if (billsLastDayOfTheMonth == null) {
-                            billsLastDayOfTheMonth = 0d;
+                            billsLastDayOfTheMonth = 0.0;
                         }
+
+                        //endregion
+
+                        //region Get total meter rent by last date of the month
+
+                        query = new JPAQuery(entityManager);
+                        BooleanBuilder meterRentBuilder = new BooleanBuilder();
+                        meterRentBuilder.and(QBill.bill.account.accountId.eq(accountId));
+                        meterRentBuilder.and(QBill.bill.billingMonth.month.loe(endMonthDate));
+                        Double meterRentOnLastDayOfTheMonth = query.from(QBill.bill).where(meterRentBuilder).singleResult(QBill.bill.meterRent.sum());
+                        if (meterRentOnLastDayOfTheMonth == null) {
+                            meterRentOnLastDayOfTheMonth = 0.0;
+                        }
+
+                        //endregion
+
+                        //region Get total water sale by last date of the month
+
+                        query = new JPAQuery(entityManager);
+                        BooleanBuilder waterSaleBuilder = new BooleanBuilder();
+                        waterSaleBuilder.and(QBill.bill.account.accountId.eq(accountId));
+                        waterSaleBuilder.and(QBill.bill.billingMonth.month.loe(endMonthDate));
+                        Double waterSaleOnLastDayOfTheMonth = query.from(QBill.bill).where(waterSaleBuilder).singleResult(QBill.bill.amount.sum());
+                        if (waterSaleOnLastDayOfTheMonth == null) {
+                            waterSaleOnLastDayOfTheMonth = 0.0;
+                        }
+
+                        //endregion
+
+                        //region Get total fines by last date of the month
+
+                        query = new JPAQuery(entityManager);
+                        BooleanBuilder finesBuilder = new BooleanBuilder();
+                        finesBuilder.and(QBillItem.billItem.bill.account.accountId.eq(accountId));
+                        finesBuilder.and(QBillItem.billItem.bill.billingMonth.month.loe(endMonthDate));
+                        Double finesOnLastDayOfTheMonth = query.from(QBillItem.billItem).where(finesBuilder).singleResult(QBillItem.billItem.amount.sum());
+                        if (finesOnLastDayOfTheMonth == null) {
+                            finesOnLastDayOfTheMonth = 0.0;
+                        }
+
+                        //endregion
+
 
                         Double balanceLastDayOfTheMonth = (balanceBroughtForward + billsLastDayOfTheMonth) - paymentsLastDayOfTheMonth;
                         Double balanceBeforeBill = balanceLastDayOfTheMonth - totalBilled;
                         chargesRecord.setBalanceBroughtForward(balanceBeforeBill);
 
                         //accountService.getAccountBalanceByDate()
+                        if (accountId == 1719) {
+                            String s = "";
+                        }
+                        Double amountToAllocate = new Double(paymentsLastDayOfTheMonth);
+
+                        if (amountToAllocate > 0) {
+                            amountToAllocate -= balanceBroughtForward;
+                        }
+
+                        //fines
+                        finesOnLastDayOfTheMonth -= totalFines;
+                        if (amountToAllocate >= finesOnLastDayOfTheMonth) {
+                            chargesRecord.setFineArrears(0.0);
+                            amountToAllocate -= finesOnLastDayOfTheMonth;
+                        } else {
+                            finesOnLastDayOfTheMonth -= amountToAllocate;
+                            chargesRecord.setFineArrears(finesOnLastDayOfTheMonth);
+                            amountToAllocate = 0.0;
+                        }
+
+
+                        //Meter Rent
+                        meterRentOnLastDayOfTheMonth -= chargesRecord.getMeterRent();
+                        if (amountToAllocate >= meterRentOnLastDayOfTheMonth) {
+                            chargesRecord.setMeterRentArrears(0.0);
+                            amountToAllocate -= meterRentOnLastDayOfTheMonth;
+                        } else {
+                            meterRentOnLastDayOfTheMonth -= amountToAllocate;
+                            chargesRecord.setMeterRentArrears(meterRentOnLastDayOfTheMonth);
+                            amountToAllocate = 0.0;
+                        }
+
+
+                        //Water sale
+                        waterSaleOnLastDayOfTheMonth -= chargesRecord.getAmount();
+                        if (amountToAllocate >= waterSaleOnLastDayOfTheMonth) {
+                            chargesRecord.setWaterSaleArrears(0.0);
+                            amountToAllocate -= waterSaleOnLastDayOfTheMonth;
+                        } else {
+                            waterSaleOnLastDayOfTheMonth -= amountToAllocate;
+                            chargesRecord.setWaterSaleArrears(waterSaleOnLastDayOfTheMonth);
+                            amountToAllocate = 0.0;
+                        }
+
                         chargesRecords.add(chargesRecord);
                     }
                 }
@@ -1967,4 +2058,433 @@ public class ReportService {
         }
         return response;
     }
+
+//    public RestResponse getWarisByAccountCategories(RestRequestObject<AccountsReportRequest> requestObject) {
+//        try {
+//            response = authManager.tokenValid(requestObject.getToken());
+//            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+//                response = authManager.grant(requestObject.getToken(), "report_waris");
+//                if (response.getStatusCode() != HttpStatus.OK) {
+//                    return response;
+//                }
+//
+//                log.info("Getting WARIS by account categories report...");
+//
+//                AccountsReportRequest accountsReportRequest = requestObject.getObject();
+//
+//
+//                if (accountsReportRequest.getFromDate() == null) {
+//                    responseObject.setMessage("Start date can not be empty");
+//                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//                    return response;
+//                }
+//
+//                if (accountsReportRequest.getToDate() == null) {
+//                    responseObject.setMessage("End date can not be empty");
+//                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//                    return response;
+//                }
+//                JPAQuery query = new JPAQuery(entityManager);
+//                List<Long> accountCategoryIds = query.from(QAccountCategory.accountCategory).orderBy(QAccountCategory.accountCategory.name.asc()).list(QAccountCategory.accountCategory.categoryId);
+//
+//                List<AccountCategory> accountCategories = new ArrayList<>();
+//
+//                BillingSummaryRecord bsr = new BillingSummaryRecord();
+//
+//
+//                BooleanBuilder billsBuilder = new BooleanBuilder();
+//                billsBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//
+//                BooleanBuilder zoneBillsBuilder = new BooleanBuilder();
+//
+//                if (accountsReportRequest.getZoneId() != null) {
+//                    zoneBillsBuilder.and(QBill.bill.account.zone.zoneId.eq(accountsReportRequest.getZoneId()));
+//                } else if (accountsReportRequest.getSchemeId() != null) {
+//                    Scheme scheme = schemeRepository.findOne(accountsReportRequest.getSchemeId());
+//                    if (scheme != null) {
+//                        List<BigInteger> zoneIDs = zoneRepository.findAllBySchemeId(scheme.getSchemeId());
+//                        if (!zoneIDs.isEmpty()) {
+//                            for (BigInteger zoneID : zoneIDs) {
+//                                zoneBillsBuilder.or(QBill.bill.account.zone.zoneId.eq(zoneID.longValue()));
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                billsBuilder.and(zoneBillsBuilder);
+//
+//                List<Long> bills = query.from(QBill.bill).where(billsBuilder).list(QBill.bill.billId);
+//                log.info("Bills " + bills.size() + " found.");
+//                if (bills == null || bills.isEmpty()) {
+//                    responseObject.setMessage("No content found");
+//                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//                    return response;
+//                }
+//
+//                Double totalAmountBilled = 0.0;
+//
+//
+//                //Get total amount billed on actual
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder billedOnActualBuilder = new BooleanBuilder();
+//                billedOnActualBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Actual"));
+//                billedOnActualBuilder.and(zoneBillsBuilder);
+//                billedOnActualBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                Double billedOnActualTotal = query.from(QBill.bill).where(billedOnActualBuilder).singleResult(QBill.bill.amount.sum());
+//                bsr.setBilledOnActual(billedOnActualTotal);
+//                totalAmountBilled += billedOnActualTotal;
+//
+//                //Get total Billed on average
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder billedOnAverageBuilder = new BooleanBuilder();
+//                billedOnAverageBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Average"));
+//                billedOnAverageBuilder.and(zoneBillsBuilder);
+//                billedOnAverageBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                Double billedOnAverageTotal = query.from(QBill.bill).where(billedOnAverageBuilder).singleResult(QBill.bill.amount.sum());
+//                bsr.setBilledOnEstimate(billedOnAverageTotal);
+//                totalAmountBilled += billedOnAverageTotal;
+//
+//                //Get metered billed on actual
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder meteredOnActualBuilder = new BooleanBuilder();
+//                meteredOnActualBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Actual"));
+//                meteredOnActualBuilder.and(zoneBillsBuilder);
+//                meteredOnActualBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                meteredOnActualBuilder.and(QBill.bill.account.meter.isNotNull());
+//                Long meteredBilledOnActual = query.from(QBill.bill).where(meteredOnActualBuilder).singleResult(QBill.bill.count());
+//
+//                //Get metered billed on actual
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder meteredOnAverageBuilder = new BooleanBuilder();
+//                meteredOnAverageBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Average"));
+//                meteredOnAverageBuilder.and(zoneBillsBuilder);
+//                meteredOnAverageBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                meteredOnAverageBuilder.and(QBill.bill.account.meter.isNotNull());
+//                Long meteredBilledOnAverage = query.from(QBill.bill).where(meteredOnAverageBuilder).singleResult(QBill.bill.count());
+//
+//
+//                //Get units billed on actual
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder unitsOnActualBuilder = new BooleanBuilder();
+//                unitsOnActualBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Actual"));
+//                unitsOnActualBuilder.and(zoneBillsBuilder);
+//                unitsOnActualBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                Double unitsBilledOnActual = query.from(QBill.bill).where(unitsOnActualBuilder).singleResult(QBill.bill.unitsBilled.sum());
+//                bsr.setUnitsActualConsumption(unitsBilledOnActual);
+//
+//                //Get units billed on average
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder unitsOnAverageBuilder = new BooleanBuilder();
+//                unitsOnAverageBuilder.and(QBill.bill.consumptionType.equalsIgnoreCase("Average"));
+//                unitsOnAverageBuilder.and(zoneBillsBuilder);
+//                unitsOnAverageBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                Double unitsOnAverage = query.from(QBill.bill).where(unitsOnAverageBuilder).singleResult(QBill.bill.unitsBilled.sum());
+//                bsr.setUnitsEstimatedConsumption(unitsOnAverage);
+//
+//
+//                //Get total Meter Rent
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder meterRentBuilder = new BooleanBuilder();
+//                meterRentBuilder.and(zoneBillsBuilder);
+//                meterRentBuilder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonth.getBillingMonthId()));
+//                Double meterRentTotal = query.from(QBill.bill).where(meterRentBuilder).singleResult(QBill.bill.meterRent.sum());
+//                totalAmountBilled += meterRentTotal;
+//
+//                //Get Other charges
+//
+//                //Reconnection fee
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder reconnectionFeeBuilder = new BooleanBuilder();
+//                reconnectionFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("Reconnection Fee").getBillTypeId()));
+//                reconnectionFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double reconnectionFeeTotal = query.from(QBillItem.billItem).where(reconnectionFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (reconnectionFeeTotal == null) reconnectionFeeTotal = 0d;
+//                bsr.setReconnectionFee(reconnectionFeeTotal);
+//                totalAmountBilled += reconnectionFeeTotal;
+//
+//                //At Owners Request Fee
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder ownersRequestFeeBuilder = new BooleanBuilder();
+//                ownersRequestFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("At Owners Request Fee").getBillTypeId()));
+//                ownersRequestFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double ownersRequestFeeTotal = query.from(QBillItem.billItem).where(ownersRequestFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (ownersRequestFeeTotal == null) ownersRequestFeeTotal = 0d;
+//                bsr.setAtOwnersRequestFee(ownersRequestFeeTotal);
+//                totalAmountBilled += ownersRequestFeeTotal;
+//
+//                //Change Of Account Name
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder changeOfAccountBuilder = new BooleanBuilder();
+//                changeOfAccountBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("Change Of Account Name").getBillTypeId()));
+//                changeOfAccountBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double changeOfAccountFeeTotal = query.from(QBillItem.billItem).where(changeOfAccountBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (changeOfAccountFeeTotal == null) changeOfAccountFeeTotal = 0d;
+//                bsr.setChangeOfAccountName(changeOfAccountFeeTotal);
+//                totalAmountBilled += changeOfAccountFeeTotal;
+//
+//                //By Pass Fee
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder byPassFeeBuilder = new BooleanBuilder();
+//                byPassFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("By Pass Fee").getBillTypeId()));
+//                byPassFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double byPassFeeTotal = query.from(QBillItem.billItem).where(byPassFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (byPassFeeTotal == null) byPassFeeTotal = 0d;
+//                bsr.setByPassFee(byPassFeeTotal);
+//                totalAmountBilled += byPassFeeTotal;
+//
+//                //Bounced Cheque Fee
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder bouncedChequeFeeBuilder = new BooleanBuilder();
+//                bouncedChequeFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("Bounced Cheque Fee").getBillTypeId()));
+//                bouncedChequeFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double bouncedChequeFeeTotal = query.from(QBillItem.billItem).where(bouncedChequeFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (bouncedChequeFeeTotal == null) bouncedChequeFeeTotal = 0d;
+//                bsr.setBouncedChequeFee(bouncedChequeFeeTotal);
+//                totalAmountBilled += bouncedChequeFeeTotal;
+//
+//                //Surcharge Irrigation
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder surchageIrrigationFeeBuilder = new BooleanBuilder();
+//                surchageIrrigationFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("Surcharge Irrigation").getBillTypeId()));
+//                surchageIrrigationFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double surchageIrrigationFeeTotal = query.from(QBillItem.billItem).where(surchageIrrigationFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (surchageIrrigationFeeTotal == null) surchageIrrigationFeeTotal = 0d;
+//                bsr.setSurchargeIrrigation(surchageIrrigationFeeTotal);
+//                totalAmountBilled += surchageIrrigationFeeTotal;
+//
+//                //Surcharge Missuse
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder surchageMissuseFeeBuilder = new BooleanBuilder();
+//                surchageMissuseFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("Surcharge Missuse").getBillTypeId()));
+//                surchageMissuseFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double surchageMissuseFeeTotal = query.from(QBillItem.billItem).where(surchageMissuseFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (surchageMissuseFeeTotal == null) surchageMissuseFeeTotal = 0d;
+//                bsr.setSurchargeMissuse(surchageMissuseFeeTotal);
+//                totalAmountBilled += surchageMissuseFeeTotal;
+//
+//                //Meter Servicing
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder meterServicingFeeBuilder = new BooleanBuilder();
+//                meterServicingFeeBuilder.and(QBillItem.billItem.billItemType.billTypeId.eq(billItemTypeRepository.findByName("Meter Servicing").getBillTypeId()));
+//                meterServicingFeeBuilder.and(QBillItem.billItem.bill.billId.in(bills));
+//                Double meterServicingFeeTotal = query.from(QBillItem.billItem).where(meterServicingFeeBuilder).singleResult(QBillItem.billItem.amount.sum());
+//                if (meterServicingFeeTotal == null) meterServicingFeeTotal = 0d;
+//                bsr.setMeterServicing(meterServicingFeeTotal);
+//                totalAmountBilled += meterServicingFeeTotal;
+//
+//
+////                for (Long billId : bills) {
+////                    Bill b = billRepository.findOne(billId);
+////                    //accountRepository.fi
+////                    Long meterId = 0l;
+////                    Boolean isMetered = false;
+////
+////                    try {
+////                        if (b.getAccount().isMetered()) {
+////                            isMetered = true;
+////                        }
+////                    } catch (Exception ex) {
+////                        log.error(ex.getMessage());
+////                    }
+////
+////                    totalAmountBilled += b.getAmount();
+////                    totalMeterRent += b.getMeterRent();
+////                    //amount billed
+////                    if (b.getConsumptionType().compareToIgnoreCase("Actual") == 0) {
+////                        //amount billed on actual
+////                        bsr.setBilledOnActual(bsr.getBilledOnActual() + b.getAmount());
+////
+////                        //units billed on actual
+////                        bsr.setUnitsActualConsumption(bsr.getUnitsActualConsumption() + b.getUnitsBilled());
+////                        if (isMetered) {
+////                            bsr.setMeteredBilledActual(bsr.getMeteredBilledActual() + 1);
+////                        }
+////
+////                    } else if (b.getConsumptionType().compareToIgnoreCase("Average") == 0) {
+////                        //amount billed on average
+////                        bsr.setBilledOnEstimate(bsr.getBilledOnEstimate() + b.getAmount());
+////
+////                        //units billed on average
+////                        bsr.setUnitsEstimatedConsumption(bsr.getUnitsEstimatedConsumption() + b.getAverageConsumption());
+////                        if (isMetered) {
+////                            bsr.setMeteredBilledAverage(bsr.getMeteredBilledAverage() + 1);
+////                        }
+////                    }
+////
+////                    //Other charges
+////                    if (!b.getBillItems().isEmpty()) {
+////                        for (BillItem bi : b.getBillItems()) {
+////                            totalAmountBilled += bi.getAmount();
+////                            if (bi.getBillItemType().getName().compareToIgnoreCase("Reconnection Fee") == 0) {
+////                                bsr.setReconnectionFee(bsr.getReconnectionFee() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("At Owners Request Fee") == 0) {
+////                                bsr.setAtOwnersRequestFee(bsr.getAtOwnersRequestFee() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("Change Of Account Name") == 0) {
+////                                bsr.setChangeOfAccountName(bsr.getChangeOfAccountName() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("By Pass Fee") == 0) {
+////                                bsr.setByPassFee(bsr.getByPassFee() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("Bounced Cheque Fee") == 0) {
+////                                bsr.setBouncedChequeFee(bsr.getBouncedChequeFee() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Irrigation") == 0) {
+////                                bsr.setSurchargeIrrigation(bsr.getSurchargeIrrigation() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("Surcharge Missuse") == 0) {
+////                                bsr.setSurchargeMissuse(bsr.getSurchargeMissuse() + bi.getAmount());
+////                            } else if (bi.getBillItemType().getName().compareToIgnoreCase("Meter Servicing") == 0) {
+////                                bsr.setMeterServicing(bsr.getMeterServicing() + bi.getAmount());
+////                            }
+////                        }
+////                    }
+////
+////                }
+//
+//                PaymentType credit = paymentTypeRepository.findByName("CREDIT");
+//                PaymentType debit = paymentTypeRepository.findByName("DEBIT");
+//                Double creditAdjustmentTotal = 0d;
+//                Double debitAdjustmentTotal = 0d;
+//                DateTime fromDate = new DateTime().withMillis(billingMonth.getMonth().getMillis()).withTimeAtStartOfDay().dayOfMonth().withMinimumValue();
+//                DateTime toDate = fromDate.dayOfMonth().withMaximumValue();
+//
+//                DateTime from = fromDate;
+//                DateTime to = toDate;
+//
+//                BooleanBuilder zonePaymentsBuilder = new BooleanBuilder();
+//                if (accountsReportRequest.getZoneId() != null) {
+//                    zonePaymentsBuilder.and(QPayment.payment.account.zone.zoneId.eq(accountsReportRequest.getZoneId()));
+//                } else if (accountsReportRequest.getSchemeId() != null) {
+//                    Scheme scheme = schemeRepository.findOne(accountsReportRequest.getSchemeId());
+//                    if (scheme != null) {
+//                        List<BigInteger> zoneIDs = zoneRepository.findAllBySchemeId(scheme.getSchemeId());
+//                        if (!zoneIDs.isEmpty()) {
+//                            BooleanBuilder zoneBuilder = new BooleanBuilder();
+//                            for (BigInteger zoneID : zoneIDs) {
+//                                zoneBuilder.or(QPayment.payment.account.zone.zoneId.eq(zoneID.longValue()));
+//                            }
+//                        }
+//                    }
+//                }
+//
+//
+//                //Credit adjustments for the month
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder creditAdjustmentBuilder = new BooleanBuilder();
+//                BooleanBuilder dateBuilder = new BooleanBuilder();
+//                dateBuilder.and(QPayment.payment.transactionDate.goe(from));
+//                dateBuilder.and(QPayment.payment.transactionDate.loe(to));
+//                creditAdjustmentBuilder.and(dateBuilder);
+//                creditAdjustmentBuilder.and(QPayment.payment.paymentType.paymentTypeId.eq(credit.getPaymentTypeId()));
+//                creditAdjustmentBuilder.and(zonePaymentsBuilder);
+//                creditAdjustmentTotal = query.from(QPayment.payment).where(creditAdjustmentBuilder).singleResult(QPayment.payment.amount.sum());
+//
+//                //Debit adjustments for the month
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder debitAdjustmentBuilder = new BooleanBuilder();
+//                debitAdjustmentBuilder.and(dateBuilder);
+//                debitAdjustmentBuilder.and(zonePaymentsBuilder);
+//                debitAdjustmentBuilder.and(QPayment.payment.paymentType.paymentTypeId.eq(debit.getPaymentTypeId()));
+//                debitAdjustmentTotal = query.from(QPayment.payment).where(debitAdjustmentBuilder).singleResult(QPayment.payment.amount.sum());
+//
+//                debitAdjustmentTotal = Math.abs(debitAdjustmentTotal);
+//                creditAdjustmentTotal = Math.abs(creditAdjustmentTotal) * -1;
+//
+//                bsr.setCreditAdjustments(creditAdjustmentTotal);
+//                bsr.setDebitAdjustments(debitAdjustmentTotal);
+//
+//                //Get all payments for the month
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder receiptsBuilder = new BooleanBuilder();
+//                receiptsBuilder.and(dateBuilder);
+//                receiptsBuilder.and(QPayment.payment.paymentType.unique.eq(Boolean.TRUE));
+//                receiptsBuilder.and(zonePaymentsBuilder);
+//                Double totalReceipts = query.from(QPayment.payment).where(receiptsBuilder).singleResult(QPayment.payment.amount.sum());
+//                bsr.setTotalPayments(totalReceipts);
+//
+//
+//                //bsr.set
+//                //Get active and inactive based on the last date of billing month
+//                //Active connections by end of month
+//                DateTime lastDayOfTheMonth = billingMonth.getMonth();
+//                Integer yearMonth = Integer.parseInt(lastDayOfTheMonth.toString("yyyyMM"));
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder activeAccountsBuilder = new BooleanBuilder();
+//                activeAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+//                activeAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Active"));
+//                activeAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+//                Long activeAccounts = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeAccountsBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
+//                bsr.setActiveAccounts(activeAccounts.intValue());
+//
+//                //Inactive connections
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder inActiveAccountsBuilder = new BooleanBuilder();
+//                inActiveAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+//                inActiveAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Inactive"));
+//                inActiveAccountsBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+//                Long inActiveAccounts = query.from(QAccountBalanceRecord.accountBalanceRecord).where(inActiveAccountsBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
+//                bsr.setInactiveAccounts(inActiveAccounts.intValue());
+//
+//                //Active account balances
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder activeAccountBalancesBuilder = new BooleanBuilder();
+//                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+//                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Active"));
+//                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+//                activeAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.balance.gt(0));
+//                Double activeAccountBalances = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeAccountBalancesBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.balance.sum());
+//                bsr.setBalancesActiveAccounts(activeAccountBalances);
+//
+//                //Inactive account balances for the month
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder inactiveAccountBalancesBuilder = new BooleanBuilder();
+//                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+//                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Inactive"));
+//                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+//                inactiveAccountBalancesBuilder.and(QAccountBalanceRecord.accountBalanceRecord.balance.gt(0));
+//                Double inactiveAccountBalances = query.from(QAccountBalanceRecord.accountBalanceRecord).where(inactiveAccountBalancesBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.balance.sum());
+//                bsr.setBalancesInactiveAccounts(inactiveAccountBalances);
+//
+//                //Active metered accounts
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder activeMeteredBuilder = new BooleanBuilder();
+//                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+//                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Active"));
+//                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+//                activeMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.metered.eq(Boolean.TRUE));
+//                Long activeMetered = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeMeteredBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
+//                bsr.setActiveMeteredAccounts(activeMetered.intValue());
+//
+//                //Active not metered accounts
+//                query = new JPAQuery(entityManager);
+//                BooleanBuilder activeUnMeteredBuilder = new BooleanBuilder();
+//                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.code.eq(yearMonth));
+//                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.cutOff.eq("Inactive"));
+//                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.reportHeader.isSystem.eq(Boolean.TRUE));
+//                activeUnMeteredBuilder.and(QAccountBalanceRecord.accountBalanceRecord.metered.eq(Boolean.FALSE));
+//                Long activeUnMetered = query.from(QAccountBalanceRecord.accountBalanceRecord).where(activeUnMeteredBuilder).singleResult(QAccountBalanceRecord.accountBalanceRecord.count());
+//                bsr.setActiveUnMeteredAccounts(activeUnMetered.intValue());
+//
+//
+//                bsr.setMeteredBilledActual(meteredBilledOnActual.intValue());
+//                bsr.setMeteredBilledAverage(meteredBilledOnAverage.intValue());
+//
+//                //send report
+//                ReportObject report = new ReportObject();
+//                report.setDate(Calendar.getInstance());
+//                report.setAmount(totalAmountBilled);
+//                report.setMeterRent(meterRentTotal);
+//                report.setCompany(this.optionService.getOption("COMPANY_NAME").getValue()); //TODO;
+//                report.setTitle(this.optionService.getOption("REPORT:WARIS").getValue());
+//                report.setContent(bsr);
+//
+//                responseObject.setMessage("Fetched data successfully");
+//                responseObject.setPayload(report);
+//                response = new RestResponse(responseObject, HttpStatus.OK);
+//
+//            }
+//        } catch (Exception ex) {
+//            responseObject.setMessage(ex.getLocalizedMessage());
+//            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+//            log.error(ex.getLocalizedMessage());
+//            ex.printStackTrace();
+//        }
+//        return response;
+//    }
 }

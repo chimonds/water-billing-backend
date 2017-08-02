@@ -26,6 +26,33 @@ public class ChargesRecord extends BaseRecord {
     Double units = 0d;
     String consumption;
     Double average = 0d;
+    Double meterRentArrears=0.0;
+    Double fineArrears=0.0;
+    Double waterSaleArrears=0.0;
+
+    public Double getMeterRentArrears() {
+        return meterRentArrears;
+    }
+
+    public void setMeterRentArrears(Double meterRentArrears) {
+        this.meterRentArrears = meterRentArrears;
+    }
+
+    public Double getFineArrears() {
+        return fineArrears;
+    }
+
+    public void setFineArrears(Double fineArrears) {
+        this.fineArrears = fineArrears;
+    }
+
+    public Double getWaterSaleArrears() {
+        return waterSaleArrears;
+    }
+
+    public void setWaterSaleArrears(Double waterSaleArrears) {
+        this.waterSaleArrears = waterSaleArrears;
+    }
 
     public Double getBalanceBroughtForward() {
         return balanceBroughtForward;

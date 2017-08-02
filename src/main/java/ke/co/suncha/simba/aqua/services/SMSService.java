@@ -16,8 +16,11 @@ import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.billing.Bill;
 import ke.co.suncha.simba.aqua.models.*;
 import ke.co.suncha.simba.aqua.repository.*;
+import ke.co.suncha.simba.aqua.sms.SMSInbox;
+import ke.co.suncha.simba.aqua.sms.SMSInboxService;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -97,6 +100,9 @@ public class SMSService {
     @Autowired
     private ZoneRepository zoneRepository;
 
+    @Autowired
+    SMSInboxService smsInboxService;
+
     private Boolean processingSMS = false;
 
     private RestResponse response;
@@ -146,46 +152,51 @@ public class SMSService {
         sendSMS();
     }
 
-    // @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 3000)
     @Transactional
     public void processSMSRequests() {
         try {
-            List<SMSInquiry> smsInquiries = smsInquiryRepository.findAllBySend(false);
-            if (!smsInquiries.isEmpty()) {
-                for (SMSInquiry smsInquiry : smsInquiries) {
+            List<Long> smsInboxIds = smsInboxService.getPending();
+            String sms_username = optionService.getOption("SMS_USERNAME").getValue().toLowerCase();
 
-                    Account account = accountRepository.findByaccNo(smsInquiry.getMessage());
+            if (!smsInboxIds.isEmpty()) {
+                for (Long smsId : smsInboxIds) {
+                    SMSInbox smsInbox = smsInboxService.get(smsId);
+
+                    String accNo = smsInbox.getText().replace(sms_username, "").trim();
+                    Account account = accountRepository.findByaccNo(accNo);
                     if (account == null) {
                         SMS sms = new SMS();
                         //set message
                         SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_NOT_VALID);
-                        //String message = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID_DEFAULT).getMessage();
                         sms.setMessage(smsGroup.getSmsTemplate().getMessage());
-                        sms.setMobileNumber(smsInquiry.getMsgFrom());
+                        sms.setMobileNumber(smsInbox.getFrom());
                         sms.setSmsGroup(smsGroup);
                         smsRepository.save(sms);
 
                         //Save as queued
-                        smsInquiry.setSend(true);
-                        smsInquiryRepository.save(smsInquiry);
+                        smsInbox.setReplied(Boolean.TRUE);
+                        smsInbox.setDateReplied(new DateTime());
+                        smsInbox.setReplyMsg(sms.getMessage());
+                        smsInboxService.update(smsInbox);
                     } else {
                         SMS sms = new SMS();
 
                         //set message
-
                         SMSGroup smsGroup = smsGroupRepository.findByName(Config.SMS_NOTIFICATION_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID);
-                        //String message = smsTemplateRepository.findByName(Config.SMS_TEMPLATE_REMOTE_BALANCE_REQUEST_ACCOUNT_VALID_DEFAULT).getMessage();
-
 
                         String message = this.parseSMS(smsGroup.getSmsTemplate().getMessage(), account.getAccountId(), 0L, 0L);
                         sms.setMessage(message);
-                        sms.setMobileNumber(smsInquiry.getMsgFrom());
+                        sms.setMobileNumber(smsInbox.getFrom());
                         sms.setSmsGroup(smsGroup);
                         smsRepository.save(sms);
 
                         //Save as queued
-                        smsInquiry.setSend(true);
-                        smsInquiryRepository.save(smsInquiry);
+                        smsInbox.setReplied(Boolean.TRUE);
+                        smsInbox.setAccount(account);
+                        smsInbox.setDateReplied(new DateTime());
+                        smsInbox.setReplyMsg(sms.getMessage());
+                        smsInboxService.update(smsInbox);
                     }
 
                 }
@@ -1138,7 +1149,7 @@ public class SMSService {
         return response;
     }
 
-    @Scheduled(fixedDelay = Integer.MAX_VALUE)
+    @Scheduled(fixedDelay = 30000)
     @Transactional
     public void populateDefaultPaymentNotifications() {
         try {

@@ -24,8 +24,6 @@
 package ke.co.suncha.simba.aqua.api;
 
 import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
@@ -40,25 +38,28 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Maitha Manyala <maitha.manyala at gmail.com>
- *
  */
 @RestController
 @RequestMapping(value = "/api/v1/bill_item_types")
 @Api(value = "Bill item types", description = "Bill item types API")
 public class BillItemTypeController {
-	@Autowired
-	private BillItemTypeService service;
+    @Autowired
+    private BillItemTypeService service;
 
-	@RequestMapping(value = "", method = RequestMethod.POST, consumes = { "application/json", "application/xml" }, produces = { "application/json", "application/xml" })
-	@ApiOperation(value = "Get a list of all bill item types.", notes = "The list is paginated. You can provide a page number (default 0) and a page size (default 100)")
-	public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return service.getAll(requestObject);
-	}
+    @RequestMapping(value = "", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
+    public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return service.getAll(requestObject);
+    }
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = { "application/json" }, produces = { "application/json" })
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@ApiOperation(value = "Update a bill item type resource.", notes = "You have to provide a valid user role ID in the URL and in the payload. The ID attribute can not be updated.")
-	public RestResponse update(@ApiParam(value = "The ID of the existing user role resource.", required = true) @PathVariable("id") Long id, @RequestBody RestRequestObject<BillItemType> requestObject, HttpServletRequest request, HttpServletResponse response) {
-		return service.update(requestObject);
-	}
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = {"application/json"}, produces = {"application/json"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public RestResponse update(@PathVariable("id") Long id, @RequestBody RestRequestObject<BillItemType> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return service.update(requestObject, id);
+    }
+
+    @RequestMapping(value = "/create", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public RestResponse create(@RequestBody RestRequestObject<BillItemType> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return service.create(requestObject);
+    }
 }
