@@ -30,6 +30,9 @@ public class SMS extends SimbaBaseEntity implements Serializable {
     @Column(name = "send")
     private Boolean send = false;
 
+    @Column(name = "re_send")
+    private Boolean reSend = Boolean.FALSE;
+
     @Column(name = "is_void")
     private Boolean isVoid = false;
 
@@ -125,6 +128,14 @@ public class SMS extends SimbaBaseEntity implements Serializable {
 
     public void setCost(Double cost) {
         this.cost = cost;
+    }
+
+    public Boolean getReSend() {
+        return reSend;
+    }
+
+    public void setReSend(Boolean reSend) {
+        this.reSend = reSend;
     }
 
     @Override

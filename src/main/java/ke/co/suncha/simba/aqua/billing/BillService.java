@@ -187,6 +187,8 @@ public class BillService {
                     response = new RestResponse(responseObject, HttpStatus.CONFLICT);
                     return response;
                 }
+
+
                 //accountService.setUpdateBalance(accountId);
                 //accountService.updateBalance(accountId);
 
@@ -240,6 +242,27 @@ public class BillService {
                 }
 
                 BillRequest billRequest = requestObject.getObject();
+                Bill bill = new Bill();
+
+
+                if (account.getBillingFrequency() == BillingFrequency.ANY_TIME) {
+                    if (billRequest.getTransactionDate() == null) {
+                        responseObject.setMessage("The account billing frequency requires you provide a transaction date.");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+
+                    if (!billingMonthService.canTransact(billRequest.getTransactionDate())) {
+                        responseObject.setMessage("Sorry we can not complete your request, transaction date does not fall within the current billing month");
+                        responseObject.setPayload("");
+                        response = new RestResponse(responseObject, HttpStatus.CONFLICT);
+                        return response;
+                    }
+                    //set transaction date
+                    bill.setTransactionDate(billRequest.getTransactionDate());
+                }
+
 
                 //Check if not to include water sale in bill
                 if (!billRequest.getBillWaterSale()) {
@@ -250,8 +273,6 @@ public class BillService {
                         return response;
                     }
                 }
-
-                Bill bill = new Bill();
 
                 //set
                 //Only allow editing of previous reading if user has a role

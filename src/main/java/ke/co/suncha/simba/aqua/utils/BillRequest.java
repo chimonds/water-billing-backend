@@ -1,6 +1,7 @@
 package ke.co.suncha.simba.aqua.utils;
 
 import ke.co.suncha.simba.aqua.models.BillItemType;
+import org.joda.time.DateTime;
 
 import java.util.List;
 
@@ -12,6 +13,15 @@ public class BillRequest {
     private Double previousReading;
     private List<BillItemType> billItemTypes;
     private Boolean billWaterSale = Boolean.TRUE;
+    private DateTime transactionDate = new DateTime();
+
+    public DateTime getTransactionDate() {
+        return transactionDate;
+    }
+
+    public void setTransactionDate(DateTime transactionDate) {
+        this.transactionDate = transactionDate;
+    }
 
     public Double getCurrentReading() {
         return currentReading;

@@ -942,6 +942,10 @@ public class SMSService {
                 SMS sms = requestObject.getObject();
                 SMS dbSMS = smsRepository.findOne(sms.getSmsId());
 
+                if (dbSMS.getReSend() == null) {
+                    dbSMS.setReSend(Boolean.FALSE);
+                }
+
                 if (dbSMS == null) {
                     responseObject.setMessage("SMS not found");
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
@@ -949,10 +953,13 @@ public class SMSService {
 
                     if (dbSMS.getSend()) {
                         if (StringUtils.isNotEmpty(dbSMS.getMobileNumber())) {
+
                             if (dbSMS.getMobileNumber().length() == 10) {
-                                responseObject.setMessage("Message has already been sent. We can not complete your request.");
-                                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                                return response;
+                                if (dbSMS.getReSend()) {
+                                    responseObject.setMessage("Message has already been sent. We can not complete your request.");
+                                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                                    return response;
+                                }
                             }
                         }
                     }
@@ -964,12 +971,26 @@ public class SMSService {
                     }
 
                     // setup resource
-                    dbSMS.setSend(sms.getSend());
-                    dbSMS.setIsVoid(sms.getIsVoid());
-                    dbSMS.setMobileNumber(sms.getMobileNumber());
+                    if (!dbSMS.getReSend()) {
+                        if (sms.getReSend() != null) {
+                            if (sms.getReSend()) {
+                                SMS s = new SMS();
+                                s.setMessage(sms.getMessage());
+                                s.setMobileNumber(sms.getMessage());
+                                s.setSmsGroup(dbSMS.getSmsGroup());
+                                s.setCreatedOn(new DateTime());
+                                s = smsRepository.save(s);
+                            }
+                        }
+                    } else {
+                        //dbSMS.setSend(sms.getSend());
+                        dbSMS.setIsVoid(sms.getIsVoid());
+                        dbSMS.setMobileNumber(sms.getMobileNumber());
 
-                    // save
-                    dbSMS = smsRepository.save(dbSMS);
+                        // save
+                        dbSMS = smsRepository.save(dbSMS);
+
+                    }
                     responseObject.setMessage("SMS  updated successfully");
                     responseObject.setPayload(dbSMS);
                     response = new RestResponse(responseObject, HttpStatus.OK);
