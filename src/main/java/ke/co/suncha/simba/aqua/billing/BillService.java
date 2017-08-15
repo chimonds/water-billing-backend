@@ -266,7 +266,7 @@ public class BillService {
 
                 //Check if not to include water sale in bill
                 if (!billRequest.getBillWaterSale()) {
-                    if (billRequest.getPreviousReading() != billRequest.getCurrentReading()) {
+                    if (Double.compare(billRequest.getCurrentReading(), billRequest.getPreviousReading()) != 0) {
                         responseObject.setMessage("Previous reading and current reading miss match");
                         responseObject.setPayload("");
                         response = new RestResponse(responseObject, HttpStatus.CONFLICT);
