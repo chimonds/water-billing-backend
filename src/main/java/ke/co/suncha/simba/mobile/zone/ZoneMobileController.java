@@ -1,4 +1,4 @@
-package ke.co.suncha.simba.mobile.user;
+package ke.co.suncha.simba.mobile.zone;
 
 import ke.co.suncha.simba.mobile.MobileUser;
 import ke.co.suncha.simba.mobile.request.RequestResponse;
@@ -10,17 +10,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Created by maitha.manyala on 8/10/17.
+ * Created by maitha.manyala on 8/15/17.
  */
 @RestController
-@RequestMapping(value = "/api/v1/mobile/auth")
-public class AuthMobileUserController {
+@RequestMapping(value = "/api/v1/mobile/zones")
+public class ZoneMobileController {
     @Autowired
-    MobileUserAuthService authenticateMobileUserService;
+    ZoneMobileService zoneMobileService;
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.OK)
-    public RequestResponse auth(@RequestBody MobileUser mobileUser, HttpServletRequest request, HttpServletResponse response) {
-        return authenticateMobileUserService.login(mobileUser);
+    public RequestResponse getAll(@RequestBody MobileUser mobileUser, HttpServletRequest request, HttpServletResponse response) {
+        return zoneMobileService.getAll(mobileUser);
     }
 }

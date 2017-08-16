@@ -83,6 +83,10 @@ public class ZoneService {
 
     }
 
+    public List<Zone> getAll() {
+        return zoneRepository.findAll();
+    }
+
     @Transactional
     public RestResponse create(RestRequestObject<Zone> requestObject) {
         try {

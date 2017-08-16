@@ -160,8 +160,14 @@ public class TariffService {
                 }
             }
         }
+
+        double total = amount;
+
+        total = Math.round(amount);
+
         //set amount
-        result.setAmount(amount);
+        
+        result.setAmount(total);
         result.setContent(content);
         log.info("Bill Amount:" + amount);
         log.info("Bill Content:" + content);
