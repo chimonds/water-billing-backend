@@ -39,6 +39,7 @@ import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeConst;
 import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.SMSNotificationType;
 import org.apache.commons.lang.StringUtils;
@@ -116,6 +117,9 @@ public class PaymentService {
 
     @Autowired
     EntityManager entityManager;
+
+    @Autowired
+    private SystemOptionService systemOptionService;
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
@@ -375,7 +379,11 @@ public class PaymentService {
         payment.setAmount(task.getAmount());
         payment.setAccount(task.getAccount());
         payment.setNotes(task.getNotes());
-        payment.setTransactionDate(new DateTime());
+        payment.setTransactionDate(task.getCreatedOn());
+
+        if (systemOptionService.isStrictModeEnabled()) {
+            payment.setTransactionDate(new DateTime());
+        }
 
         /**DateTime transDate = payment.getTransactionDate();
          if (!billingMonthService.canTransact(transDate)) {
@@ -584,9 +592,9 @@ public class PaymentService {
                 }
 
                 if (StringUtils.equalsIgnoreCase(payment.getPaymentType().getName(), "Credit")) {
-                    taskService.create(accountId, payment.getNotes(), TaskTypeConst.CREDIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l);
+                    taskService.create(accountId, payment.getNotes(), TaskTypeConst.CREDIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l, payment.getTransactionDate());
                 } else if (StringUtils.equalsIgnoreCase(payment.getPaymentType().getName(), "Debit")) {
-                    taskService.create(accountId, payment.getNotes(), TaskTypeConst.DEBIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l);
+                    taskService.create(accountId, payment.getNotes(), TaskTypeConst.DEBIT_ADJUSTMENT, authManager.getEmailFromToken(requestObject.getToken()), payment.getAmount(), 0l, payment.getTransactionDate());
                 } else {
                     response = authManager.grant(requestObject.getToken(), "payments_debit_credit");
                     if (response.getStatusCode() == HttpStatus.OK) {

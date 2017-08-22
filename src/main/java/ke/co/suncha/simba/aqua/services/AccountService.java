@@ -41,6 +41,7 @@ import ke.co.suncha.simba.aqua.account.OnStatus;
 import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.account.scheme.Scheme;
 import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
+import ke.co.suncha.simba.aqua.billing.Bill;
 import ke.co.suncha.simba.aqua.billing.BillService;
 import ke.co.suncha.simba.aqua.billing.QBill;
 import ke.co.suncha.simba.aqua.models.*;
@@ -140,6 +141,113 @@ public class AccountService {
     private RestResponseObject responseObject = new RestResponseObject();
 
     public AccountService() {
+    }
+
+
+    public List<StatementRecord> getStatementRecords(Long accountId) {
+
+        Account account = accountRepository.findOne(accountId);
+
+        //fill report
+        List<StatementRecord> records = new ArrayList<StatementRecord>();
+
+        //balance brought forward
+        StatementRecord balanceBf = new StatementRecord();
+        balanceBf.setTransactionDate(account.getCreatedOn());
+        balanceBf.setItemType("Balance B/f");
+        balanceBf.setRefNo("");
+        balanceBf.setAmount(account.getBalanceBroughtForward());
+        records.add(balanceBf);
+
+        //add bills
+        if (!account.getBills().isEmpty()) {
+            for (Bill bill : account.getBills()) {
+                //add bill record
+                DateTime billingMonth = bill.getBillingMonth().getMonth();
+                String formattedDate = billingMonth.toString("MMM, yyyy");
+                //format1.format(billingMonth.getTime());
+
+                StatementRecord billRecord = new StatementRecord();
+                //billRecord.setTransactionDate(bill.getTransactionDate());
+                billRecord.setTransactionDate(bill.getBillingMonth().getMonth());
+                billRecord.setItemType("Bill");
+                billRecord.setRefNo(formattedDate);
+                billRecord.setAmount(bill.getAmount());
+                records.add(billRecord);
+
+                //get billing items
+                if (!bill.getBillItems().isEmpty()) {
+                    for (BillItem billItem : bill.getBillItems()) {
+                        StatementRecord billItemRecord = new StatementRecord();
+                        billItemRecord.setTransactionDate(bill.getTransactionDate());
+                        billItemRecord.setItemType("Charge");
+                        billItemRecord.setRefNo(formattedDate);
+                        billItemRecord.setAmount(billItem.getAmount());
+                        records.add(billItemRecord);
+                    }
+                }
+
+                //get meter rent
+                if (bill.getMeterRent() > 0) {
+                    billRecord = new StatementRecord();
+                    billRecord.setTransactionDate(bill.getTransactionDate());
+                    billRecord.setItemType("Meter Rent");
+                    billRecord.setRefNo(formattedDate);
+                    billRecord.setAmount(bill.getMeterRent());
+                    records.add(billRecord);
+                }
+            }
+        }
+
+        //add payments
+        if (!account.getPayments().isEmpty()) {
+            for (Payment payment : account.getPayments()) {
+                StatementRecord paymentRecord = new StatementRecord();
+                paymentRecord.setTransactionDate(payment.getTransactionDate());
+
+                paymentRecord.setRefNo(payment.getReceiptNo() + "-" + payment.getPaymentType().getName());
+
+
+                //Double amount = Math.abs(payment.getAmount()) * -1;
+                Double amount = payment.getAmount();
+
+
+                if (payment.getPaymentType().isNegative()) {
+                    amount = Math.abs(payment.getAmount());
+                } else {
+                    if (amount > 0) {
+                        amount = Math.abs(payment.getAmount()) * -1;
+                    } else {
+                        amount = Math.abs(payment.getAmount());
+                    }
+                }
+
+                paymentRecord.setAmount(amount);
+                if (payment.getPaymentType().hasComments()) {
+                    paymentRecord.setItemType("Adjustment");
+                } else {
+                    paymentRecord.setItemType("Payment");
+                }
+                records.add(paymentRecord);
+            }
+        }
+
+        if (!records.isEmpty()) {
+            //Sort collection by transaction date
+            Collections.sort(records);
+
+            Double runningTotal = 0.0;
+            //calculate running totals
+            Integer location = 0;
+            for (StatementRecord record : records) {
+                runningTotal += record.getAmount();
+                record.setRunningAmount(runningTotal);
+                records.set(location, record);
+                location++;
+            }
+        }
+
+        return records;
     }
 
     public Account getByAccountId(Long accountId) {

@@ -13,6 +13,24 @@ public class MobileAccount {
     private String accNo;
     private DateTime lastUpdatedOn;
     private MZone zone;
+    private Integer active;
+    private String phoneNo = "";
+
+    public String getPhoneNo() {
+        return phoneNo;
+    }
+
+    public void setPhoneNo(String phoneNo) {
+        this.phoneNo = phoneNo;
+    }
+
+    public Integer getActive() {
+        return active;
+    }
+
+    public void setActive(Integer active) {
+        this.active = active;
+    }
 
     public Long getAccountId() {
         return accountId;

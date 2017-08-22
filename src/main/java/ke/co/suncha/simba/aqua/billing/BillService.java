@@ -70,6 +70,8 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -294,6 +296,13 @@ public class BillService {
 
                 //get units consumed
                 Double unitsConsumed = bill.getCurrentReading() - bill.getPreviousReading();
+
+                //Round to three decimal places
+                DecimalFormat df = new DecimalFormat("#.###");
+                df.setRoundingMode(RoundingMode.CEILING);
+                String uc = df.format(unitsConsumed);
+                unitsConsumed = Double.valueOf(uc);
+
 
                 Integer billOnAverageUnits = 0;
                 try {
@@ -708,7 +717,7 @@ public class BillService {
                     return response;
                 }
 
-                taskService.create(accountId, requestObject.getObject().getNotes(), "DELETE_BILL", emailAddress, bill.getAmount(), billId);
+                taskService.create(accountId, requestObject.getObject().getNotes(), "DELETE_BILL", emailAddress, bill.getAmount(), billId, new DateTime());
 
                 //delete bill
                 //billRepository.delete(bill.getBillId());

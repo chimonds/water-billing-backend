@@ -3,11 +3,11 @@ package ke.co.suncha.simba.mobile.account;
 import ke.co.suncha.simba.mobile.MobileUser;
 
 /**
- * Created by maitha.manyala on 8/15/17.
+ * Created by maitha.manyala on 8/20/17.
  */
-public class AccountPageRequest {
+public class StatementRequest {
     MobileUser user;
-    Integer page;
+    Long accountId;
 
     public MobileUser getUser() {
         return user;
@@ -17,11 +17,11 @@ public class AccountPageRequest {
         this.user = user;
     }
 
-    public Integer getPage() {
-        return page;
+    public Long getAccountId() {
+        return accountId;
     }
 
-    public void setPage(Integer page) {
-        this.page = page;
+    public void setAccountId(Long accountId) {
+        this.accountId = accountId;
     }
 }

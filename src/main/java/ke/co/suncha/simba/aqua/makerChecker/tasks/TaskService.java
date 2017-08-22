@@ -119,7 +119,7 @@ public class TaskService {
         return add;
     }
 
-    public Task create(Long accountId, String notes, String taskTypeName, String emailAddress, Double amount, Long recordId) {
+    public Task create(Long accountId, String notes, String taskTypeName, String emailAddress, Double amount, Long recordId, DateTime actionDate) {
         //set user
         Task task = new Task();
         task.setAccount(accountService.getByAccountId(accountId));
@@ -129,6 +129,8 @@ public class TaskService {
         task.setRecordId(recordId);
         task.setUser(userService.getByEmailAddress(emailAddress));
         task.setNotes(notes);
+        task.setCreatedOn(actionDate);
+
         Approval approval = approvalService.getStart(task.getTaskType().getTaskTypeId());
         if (approval != null) {
             task.setApproval(approval);
@@ -352,7 +354,7 @@ public class TaskService {
             }
         }
 
-    }   
+    }
 
     @Transactional
     public void addPendingReminderNotification(Long roleId, Integer count) {

@@ -22,4 +22,10 @@ public class MobileAccountController {
     public RequestResponse getAll(@RequestBody AccountPageRequest accountPageRequest, HttpServletRequest request, HttpServletResponse response) {
         return mobileAccountService.getPage(accountPageRequest);
     }
+
+    @RequestMapping(value = "/statement", method = RequestMethod.POST)
+    @ResponseStatus(HttpStatus.OK)
+    public RequestResponse getStatement(@RequestBody StatementRequest statementRequest, HttpServletRequest request, HttpServletResponse response) {
+        return mobileAccountService.getStatement(statementRequest);
+    }
 }

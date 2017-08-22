@@ -79,7 +79,7 @@ public class TariffService {
 
     public RestResponse calculate(RestRequestObject<BillMeta> requestObject, Long accountId) {
         try {
-            response = authManager.tokenValid(requestObject.getToken());
+         response = authManager.tokenValid(requestObject.getToken());
             if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
                 response = authManager.grant(requestObject.getToken(), "bill_account");
                 if (response.getStatusCode() != HttpStatus.OK) {
@@ -166,7 +166,7 @@ public class TariffService {
         total = Math.round(amount);
 
         //set amount
-        
+
         result.setAmount(total);
         result.setContent(content);
         log.info("Bill Amount:" + amount);
