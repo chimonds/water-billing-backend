@@ -72,11 +72,11 @@ public class MobileAccountService {
                         }
 
                         if (account.getIsCutOff()) {
-                            mobileAccount.setActive(1);
-                        } else {
                             mobileAccount.setActive(0);
-
+                        } else {
+                            mobileAccount.setActive(1);
                         }
+                        
                         MZone mZone = new MZone();
                         mZone.setZoneId(account.getZone().getZoneId());
                         mobileAccount.setZone(mZone);

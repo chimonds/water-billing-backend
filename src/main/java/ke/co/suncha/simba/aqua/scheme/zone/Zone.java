@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.models;
+package ke.co.suncha.simba.aqua.scheme.zone;
 
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
-import ke.co.suncha.simba.aqua.account.scheme.Scheme;
+import ke.co.suncha.simba.aqua.scheme.Scheme;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

@@ -6,6 +6,7 @@ package ke.co.suncha.simba.mobile.zone;
 public class MZone {
     private Long zoneId;
     private String name;
+    private Integer takeReadings = 0;
 
     public Long getZoneId() {
         return zoneId;
@@ -21,5 +22,13 @@ public class MZone {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Integer getTakeReadings() {
+        return takeReadings;
+    }
+
+    public void setTakeReadings(Integer takeReadings) {
+        this.takeReadings = takeReadings;
     }
 }

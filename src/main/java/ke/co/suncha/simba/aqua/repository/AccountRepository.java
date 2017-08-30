@@ -26,7 +26,7 @@ package ke.co.suncha.simba.aqua.repository;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.models.Meter;
 
-import ke.co.suncha.simba.aqua.models.Zone;
+import ke.co.suncha.simba.aqua.scheme.zone.Zone;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;

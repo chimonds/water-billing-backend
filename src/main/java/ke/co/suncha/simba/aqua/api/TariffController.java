@@ -31,7 +31,6 @@ import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
-import ke.co.suncha.simba.aqua.models.Zone;
 import ke.co.suncha.simba.aqua.services.TariffService;
 
 import ke.co.suncha.simba.aqua.utils.BillMeta;

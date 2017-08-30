@@ -23,4 +23,6 @@ public class ZoneMobileController {
     public RequestResponse getAll(@RequestBody MobileUser mobileUser, HttpServletRequest request, HttpServletResponse response) {
         return zoneMobileService.getAll(mobileUser);
     }
+
+
 }

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.helpers.SimbaBaseEntity;
 import ke.co.suncha.simba.aqua.billing.Bill;
 import ke.co.suncha.simba.aqua.models.*;
+import ke.co.suncha.simba.aqua.scheme.zone.Zone;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 

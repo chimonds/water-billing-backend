@@ -1,4 +1,4 @@
-package ke.co.suncha.simba.aqua.account.scheme;
+package ke.co.suncha.simba.aqua.scheme;
 
 /**
  * Created by maitha.manyala on 7/27/16.

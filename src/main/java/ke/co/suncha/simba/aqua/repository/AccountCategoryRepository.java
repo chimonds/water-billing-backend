@@ -1,7 +1,6 @@
 package ke.co.suncha.simba.aqua.repository;
 
 import ke.co.suncha.simba.aqua.models.AccountCategory;
-import ke.co.suncha.simba.aqua.models.Zone;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;

@@ -23,20 +23,19 @@
  */
 package ke.co.suncha.simba.admin.service;
 
-import com.auth0.jwt.internal.com.fasterxml.jackson.databind.JsonNode;
 import com.mysema.query.BooleanBuilder;
 import edu.vt.middleware.password.*;
-import javassist.tools.framedump;
-import ke.co.suncha.simba.admin.models.*;
+import ke.co.suncha.simba.admin.models.QUser;
+import ke.co.suncha.simba.admin.models.User;
+import ke.co.suncha.simba.admin.models.UserAuth;
+import ke.co.suncha.simba.admin.models.UserRole;
 import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
-import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
-
-import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.security.PasswordReset;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -99,6 +98,14 @@ public class UserService {
 
     public User getByEmailAddress(String emailAddress) {
         return userRepository.findByEmailAddress(emailAddress);
+    }
+
+    public User getById(Long userId) {
+        return userRepository.findOne(userId);
+    }
+
+    public List<User> getUserList() {
+        return userRepository.findAll();
     }
 
     public RestResponse create(RestRequestObject<User> requestObject) {

@@ -21,21 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.services;
+package ke.co.suncha.simba.aqua.scheme.zone;
 
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
-import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
-import ke.co.suncha.simba.aqua.account.scheme.Scheme;
-import ke.co.suncha.simba.aqua.account.scheme.SchemeRepository;
-import ke.co.suncha.simba.aqua.models.Zone;
-import ke.co.suncha.simba.aqua.repository.ZoneRepository;
-
+import ke.co.suncha.simba.aqua.scheme.Scheme;
+import ke.co.suncha.simba.aqua.scheme.SchemeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -251,4 +248,43 @@ public class ZoneService {
         return response;
     }
 
+    public RestResponse getById(RestRequestObject<RestPageRequest> requestObject, Long id) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "zones_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+
+                Zone zone = zoneRepository.findOne(id);
+                if (zone == null) {
+                    responseObject.setMessage("Invalid zone resource");
+                    responseObject.setPayload("");
+                    response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
+                } else {
+                    responseObject.setMessage("Fetched data successfully");
+                    responseObject.setPayload(zone);
+                    response = new RestResponse(responseObject, HttpStatus.OK);
+
+                    //Start - audit trail
+                    AuditRecord auditRecord = new AuditRecord();
+                    auditRecord.setParentID(String.valueOf(zone.getZoneId()));
+                    auditRecord.setParentObject("Zone");
+                    auditRecord.setNotes("ZONE PROFILE VIEW");
+                    auditService.log(AuditOperation.VIEWED, auditRecord);
+                    //End - audit trail
+                }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public Zone getById(Long zoneId) {
+        return zoneRepository.findOne(zoneId);
+    }
 }

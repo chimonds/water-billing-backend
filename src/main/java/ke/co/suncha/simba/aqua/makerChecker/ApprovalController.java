@@ -1,11 +1,9 @@
 package ke.co.suncha.simba.aqua.makerChecker;
 
-import com.wordnik.swagger.annotations.ApiOperation;
 import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskType;
-import ke.co.suncha.simba.aqua.models.Zone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;

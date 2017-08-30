@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package ke.co.suncha.simba.aqua.repository;
+package ke.co.suncha.simba.aqua.scheme.zone;
 
-import ke.co.suncha.simba.aqua.account.scheme.Scheme;
-import ke.co.suncha.simba.aqua.models.Zone;
+import ke.co.suncha.simba.aqua.scheme.Scheme;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,4 +1,4 @@
-package ke.co.suncha.simba.aqua.account.scheme;
+package ke.co.suncha.simba.aqua.scheme;
 
 import org.springframework.data.repository.PagingAndSortingRepository;
 

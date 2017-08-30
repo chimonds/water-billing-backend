@@ -1,8 +1,8 @@
 package ke.co.suncha.simba.aqua.reports.scheduled;
 
 import ke.co.suncha.simba.aqua.account.OnStatus;
-import ke.co.suncha.simba.aqua.account.scheme.Scheme;
-import ke.co.suncha.simba.aqua.models.Zone;
+import ke.co.suncha.simba.aqua.scheme.Scheme;
+import ke.co.suncha.simba.aqua.scheme.zone.Zone;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
