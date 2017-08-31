@@ -230,35 +230,43 @@ public class BillingMonthService {
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
                 } else {
 
+                    //1 = open
+                    //0 = closed
+
                     if (billingMonth.getCurrent() == 1) {
                         if (billingMonthRepository.countWithCurrent(1) > 0) {
-                            responseObject.setMessage("Please close all billing dates before opening a new billing date");
-                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                        } else if (systemOptionService.isStrictModeEnabled()) {
-                            responseObject.setMessage("Sorry we can not complete your request. Strct mode is enabled.");
-                            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
-                        } else {
+                            if (this.getActiveMonth().getBillingMonthId() != billingMonth.getBillingMonthId()) {
+                                responseObject.setMessage("Please close all billing dates before opening a new billing date");
+                                response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                            } else {
 
-                            // Open month
-                            bm.setCurrent(billingMonth.getCurrent());
-                            // save
-                            billingMonthRepository.save(bm);
-                            responseObject.setMessage("Billing month updated successfully");
-                            responseObject.setPayload(bm);
-                            response = new RestResponse(responseObject, HttpStatus.OK);
+                                // Open month
+                                if (!systemOptionService.isStrictModeEnabled()) {
+                                    bm.setCurrent(billingMonth.getCurrent());
+                                }
 
-                            //Start - audit trail
-                            AuditRecord auditRecord = new AuditRecord();
-                            auditRecord.setParentID(String.valueOf(bm.getBillingMonthId()));
-                            auditRecord.setParentObject("BILLING MONTH");
-                            auditRecord.setCurrentData(bm.toString());
-                            auditRecord.setNotes("CREATED BILLING MONTH");
-                            auditService.log(AuditOperation.CREATED, auditRecord);
-                            //End - audit trail
+                                bm.setMeterReading(billingMonth.getMeterReading());
+
+                                // save
+                                billingMonthRepository.save(bm);
+                                responseObject.setMessage("Billing month updated successfully");
+                                responseObject.setPayload(bm);
+                                response = new RestResponse(responseObject, HttpStatus.OK);
+
+                                //Start - audit trail
+                                AuditRecord auditRecord = new AuditRecord();
+                                auditRecord.setParentID(String.valueOf(bm.getBillingMonthId()));
+                                auditRecord.setParentObject("BILLING MONTH");
+                                auditRecord.setCurrentData(bm.toString());
+                                auditRecord.setNotes("CREATED BILLING MONTH");
+                                auditService.log(AuditOperation.CREATED, auditRecord);
+                                //End - audit trail
+                            }
                         }
                     } else {
                         // close month
-                        bm.setCurrent(billingMonth.getCurrent());
+                        bm.setCurrent(0);
+                        bm.setMeterReading(Boolean.FALSE);
 
                         // save
                         billingMonthRepository.save(bm);

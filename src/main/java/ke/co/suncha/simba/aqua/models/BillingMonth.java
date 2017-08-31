@@ -65,6 +65,9 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
     @Column(name = "is_enabled")
     private Integer isEnabled = 0;
 
+    @Column(name = "is_meter_reading")
+    private Boolean meterReading = Boolean.FALSE;
+
     @Transient
     private Boolean active;
 
@@ -165,6 +168,13 @@ public class BillingMonth extends SimbaBaseEntity implements Serializable {
         return active;
     }
 
+    public Boolean getMeterReading() {
+        return meterReading;
+    }
+
+    public void setMeterReading(Boolean meterReading) {
+        this.meterReading = meterReading;
+    }
 
     @Override
     public String toString() {
