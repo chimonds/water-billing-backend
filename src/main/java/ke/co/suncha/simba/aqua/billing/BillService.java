@@ -166,6 +166,18 @@ public class BillService {
         return billingMonth;
     }
 
+    public Integer getMinimumAverageUnitsToBill() {
+        Integer units = 0;
+        try {
+            units = Integer.parseInt(optionService.getOption("BILL_ON_AVERAGE_UNITS").getValue());
+        } catch (Exception ex) {
+
+        }
+        if (units == null)
+            units = 0;
+        return units;
+    }
+
     @Transactional
     public RestResponse bill(RestRequestObject<BillRequest> requestObject, Long accountId) {
         try {
@@ -304,16 +316,7 @@ public class BillService {
                 String uc = df.format(unitsConsumed);
                 unitsConsumed = Double.valueOf(uc);
 
-
-                Integer billOnAverageUnits = 0;
-                try {
-                    billOnAverageUnits = Integer.parseInt(optionService.getOption("BILL_ON_AVERAGE_UNITS").getValue());
-                } catch (Exception ex) {
-
-                }
-                if (billOnAverageUnits == null) {
-                    billOnAverageUnits = 0;
-                }
+                Integer billOnAverageUnits = getMinimumAverageUnitsToBill();
 
                 if (unitsConsumed > billOnAverageUnits) {
                     bill.setConsumptionType("Actual");
@@ -519,7 +522,7 @@ public class BillService {
     }
 
     @Transactional
-    private Bill getAccountLastBill(Long accountId) {
+    public Bill getAccountLastBill(Long accountId) {
         Bill lastBill = new Bill();
         // get current billing month
         BillingMonth billingMonth = billingMonthRepository.findByCurrent(1);

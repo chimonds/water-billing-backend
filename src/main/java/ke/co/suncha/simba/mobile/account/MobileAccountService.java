@@ -76,7 +76,9 @@ public class MobileAccountService {
                         } else {
                             mobileAccount.setActive(1);
                         }
-                        
+                        if (account.getMeter() != null) {
+                            mobileAccount.setHasMeter(1);
+                        }
                         MZone mZone = new MZone();
                         mZone.setZoneId(account.getZone().getZoneId());
                         mobileAccount.setZone(mZone);
@@ -133,6 +135,10 @@ public class MobileAccountService {
                         if (StringUtils.isNotEmpty(account.getConsumer().getPhoneNumber())) {
                             mobileAccount.setPhoneNo(account.getConsumer().getPhoneNumber());
                         }
+                    }
+
+                    if (account.getMeter() != null) {
+                        mobileAccount.setHasMeter(1);
                     }
 
                     statement.setAccount(mobileAccount);

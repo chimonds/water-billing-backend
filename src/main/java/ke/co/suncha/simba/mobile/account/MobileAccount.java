@@ -14,7 +14,16 @@ public class MobileAccount {
     private DateTime lastUpdatedOn;
     private MZone zone;
     private Integer active;
+    private Integer hasMeter = 0;
     private String phoneNo = "";
+
+    public Integer getHasMeter() {
+        return hasMeter;
+    }
+
+    public void setHasMeter(Integer hasMeter) {
+        this.hasMeter = hasMeter;
+    }
 
     public String getPhoneNo() {
         return phoneNo;

@@ -1,17 +1,20 @@
 package ke.co.suncha.simba.aqua.models;
 
+import ke.co.suncha.simba.admin.models.User;
+import ke.co.suncha.simba.aqua.account.Account;
+import org.hibernate.annotations.Type;
+import org.joda.time.DateTime;
+
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Calendar;
 
 /**
  * Created by maitha.manyala on 7/26/15.
  */
 @Entity
-@Table(name = "meter_readings")
+@Table(name = "meter_readings_mobile")
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class MeterReading {
@@ -20,12 +23,11 @@ public class MeterReading {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long meterReadingId;
 
-    @NotNull
-    @Column(name = "referenceCode", unique = true)
-    private Integer referenceCode;
+    @Column(name = "current_reading", length = 6)
+    private Double currentReading;
 
-    @Column(name = "reading", length = 6)
-    private Integer reading;
+    @Column(name = "previous_reading", length = 6)
+    private Double previousReading;
 
     @Column(name = "latitude", length = 25)
     private String latitude;
@@ -33,24 +35,81 @@ public class MeterReading {
     @Column(name = "longitude", length = 25)
     private String longitude;
 
-    @Column(name = "addedBy")
-    private String addedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    private Account account;
 
-    @Column(name = "accNo", length = 15)
-    private String accNo;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "billing_month_id")
+    private BillingMonth billingMonth;
 
-    @Column(name = "billingMonth", length = 10)
-    private String billingMonth;
+    @Column(name = "billed")
+    private Boolean billed = Boolean.FALSE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "read_by_id")
+    private User readBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "billed_by_id")
+    private User billedBy;
+
+    @Column(name = "image_path")
+    private String imagePath;
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Calendar createdOn = Calendar.getInstance();
+    @Column(name = "created_on")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime createdOn = new DateTime();
 
-    public Calendar getCreatedOn() {
-        return createdOn;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "read_on")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime readOn = new DateTime();
+
+    @Column(name = "units_consumed")
+    private Double unitsConsumed;
+
+
+    @Column(name = "units_billed")
+    private Double unitsBilled;
+
+    @Column(name = "amount_billed")
+    private Double amountBilled;
+
+    @Column(name = "consumption_type")
+    private String consumptionType;
+
+    public Double getAmountBilled() {
+        return amountBilled;
     }
 
-    public void setCreatedOn(Calendar createdOn) {
-        this.createdOn = createdOn;
+    public void setAmountBilled(Double amountBilled) {
+        this.amountBilled = amountBilled;
+    }
+
+    public Double getUnitsConsumed() {
+        return unitsConsumed;
+    }
+
+    public void setUnitsConsumed(Double unitsConsumed) {
+        this.unitsConsumed = unitsConsumed;
+    }
+
+    public Double getUnitsBilled() {
+        return unitsBilled;
+    }
+
+    public void setUnitsBilled(Double unitsBilled) {
+        this.unitsBilled = unitsBilled;
+    }
+
+    public String getConsumptionType() {
+        return consumptionType;
+    }
+
+    public void setConsumptionType(String consumptionType) {
+        this.consumptionType = consumptionType;
     }
 
     public long getMeterReadingId() {
@@ -61,20 +120,20 @@ public class MeterReading {
         this.meterReadingId = meterReadingId;
     }
 
-    public Integer getReferenceCode() {
-        return referenceCode;
+    public Double getCurrentReading() {
+        return currentReading;
     }
 
-    public void setReferenceCode(Integer referenceCode) {
-        this.referenceCode = referenceCode;
+    public void setCurrentReading(Double currentReading) {
+        this.currentReading = currentReading;
     }
 
-    public Integer getReading() {
-        return reading;
+    public Double getPreviousReading() {
+        return previousReading;
     }
 
-    public void setReading(Integer reading) {
-        this.reading = reading;
+    public void setPreviousReading(Double previousReading) {
+        this.previousReading = previousReading;
     }
 
     public String getLatitude() {
@@ -93,27 +152,67 @@ public class MeterReading {
         this.longitude = longitude;
     }
 
-    public String getAddedBy() {
-        return addedBy;
+    public Account getAccount() {
+        return account;
     }
 
-    public void setAddedBy(String addedBy) {
-        this.addedBy = addedBy;
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
-    public String getAccNo() {
-        return accNo;
-    }
-
-    public void setAccNo(String accNo) {
-        this.accNo = accNo;
-    }
-
-    public String getBillingMonth() {
+    public BillingMonth getBillingMonth() {
         return billingMonth;
     }
 
-    public void setBillingMonth(String billingMonth) {
+    public void setBillingMonth(BillingMonth billingMonth) {
         this.billingMonth = billingMonth;
+    }
+
+    public Boolean getBilled() {
+        return billed;
+    }
+
+    public void setBilled(Boolean billed) {
+        this.billed = billed;
+    }
+
+    public User getReadBy() {
+        return readBy;
+    }
+
+    public void setReadBy(User readBy) {
+        this.readBy = readBy;
+    }
+
+    public User getBilledBy() {
+        return billedBy;
+    }
+
+    public void setBilledBy(User billedBy) {
+        this.billedBy = billedBy;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    public DateTime getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(DateTime createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    public DateTime getReadOn() {
+        return readOn;
+    }
+
+    public void setReadOn(DateTime readOn) {
+        this.readOn = readOn;
     }
 }

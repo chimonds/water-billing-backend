@@ -13,6 +13,7 @@ import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
+import ke.co.suncha.simba.mobile.upload.MeterReadingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +111,7 @@ public class MeterReadingService {
 
                 if (!meterReadings.isEmpty()) {
                     for (MeterReading meterReading : meterReadings) {
-                        MeterReading reading = meterReadingRepository.findByReferenceCode(meterReading.getReferenceCode());
+                        MeterReading reading = null;
                         if (reading == null) {
                             meterReadingRepository.save(meterReading);
                         }
@@ -149,9 +150,10 @@ public class MeterReadingService {
                 if (p.getFilter().isEmpty()) {
                     page = meterReadingRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 } else {
-                    page = meterReadingRepository.findByAccNoContains(p.getFilter(),
+                    page = null;
+                    //meterReadingRepository.findByAccNoContains(p.getFilter(),
 
-                            new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
+//                            new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
                 }
                 if (page.hasContent()) {
                     responseObject.setMessage("Fetched data successfully");
