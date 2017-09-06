@@ -100,6 +100,9 @@ public class Account extends SimbaBaseEntity implements Serializable {
     @Column(name = "meter_rent_balance")
     private Double meterRentBalance = 0d;
 
+    @Column(name = "receipts_this_month_calc")
+    private Double receiptsThisMonthCalculated = 0d;
+
     @NotNull
     @Column(name = "penalties_balance")
     private Double penaltiesBalance = 0d;
@@ -520,6 +523,14 @@ public class Account extends SimbaBaseEntity implements Serializable {
 
     public void setBillingFrequency(Integer billingFrequency) {
         this.billingFrequency = billingFrequency;
+    }
+
+    public Double getReceiptsThisMonthCalculated() {
+        return receiptsThisMonthCalculated;
+    }
+
+    public void setReceiptsThisMonthCalculated(Double receiptsThisMonthCalculated) {
+        this.receiptsThisMonthCalculated = receiptsThisMonthCalculated;
     }
 
     @Override

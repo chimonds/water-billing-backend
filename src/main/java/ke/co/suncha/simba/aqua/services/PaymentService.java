@@ -86,7 +86,7 @@ public class PaymentService {
     private BillService billService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     AccountsUpdateRepository accountsUpdateRepository;

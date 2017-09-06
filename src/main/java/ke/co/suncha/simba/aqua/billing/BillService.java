@@ -121,7 +121,7 @@ public class BillService {
     AuditService auditService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     SMSService smsService;

@@ -7,7 +7,7 @@ import ke.co.suncha.simba.aqua.billing.Bill;
 import ke.co.suncha.simba.aqua.billing.BillService;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.models.MeterReading;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
 import ke.co.suncha.simba.aqua.services.TariffService;
 import ke.co.suncha.simba.aqua.utils.BillMeta;
@@ -32,7 +32,7 @@ public class MeterReadingManager {
     MeterReadingRecordService meterReadingRecordService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     UserService userService;

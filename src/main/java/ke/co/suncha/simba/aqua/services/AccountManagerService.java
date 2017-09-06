@@ -37,6 +37,7 @@ import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.aqua.account.Account;
+import ke.co.suncha.simba.aqua.account.AccountService;
 import ke.co.suncha.simba.aqua.account.OnStatus;
 import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.scheme.Scheme;
@@ -73,7 +74,7 @@ import java.util.*;
  */
 @Service
 @Transactional
-public class AccountService {
+public class AccountManagerService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -137,11 +138,14 @@ public class AccountService {
     @Autowired
     ToActivateService toActivateService;
 
+    @Autowired
+    AccountService accountService;
+
 
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
-    public AccountService() {
+    public AccountManagerService() {
     }
 
 
@@ -377,6 +381,8 @@ public class AccountService {
                 }
             }
             account = accountRepository.save(account);
+
+            accountService.updateAmountToAllocateThisMonth(accountId);
 
             //Check if to move account to the list to activate
 

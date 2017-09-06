@@ -97,7 +97,7 @@ public class ReportService {
     GaugeService gaugeService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     PaymentTypeRepository paymentTypeRepository;

@@ -26,7 +26,7 @@ import ke.co.suncha.simba.aqua.models.SMS;
 import ke.co.suncha.simba.aqua.models.SMSGroup;
 import ke.co.suncha.simba.aqua.repository.SMSGroupRepository;
 import ke.co.suncha.simba.aqua.repository.SMSTemplateRepository;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.aqua.billing.BillService;
 import ke.co.suncha.simba.aqua.services.PaymentService;
 import ke.co.suncha.simba.aqua.services.SMSService;
@@ -74,7 +74,7 @@ public class TaskService {
     UserService userService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     TaskTypeService taskTypeService;

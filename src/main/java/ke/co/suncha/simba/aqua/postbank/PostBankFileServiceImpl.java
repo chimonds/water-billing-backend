@@ -16,7 +16,7 @@ import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.BillingMonthRepository;
 import ke.co.suncha.simba.aqua.repository.PaymentSourceRepository;
 import ke.co.suncha.simba.aqua.repository.PaymentTypeRepository;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
 import ke.co.suncha.simba.aqua.services.PaymentService;
 import ke.co.suncha.simba.aqua.services.SMSService;
@@ -75,7 +75,7 @@ public class PostBankFileServiceImpl implements PostBankFileService {
     PaymentService paymentService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     BillingMonthRepository billingMonthRepository;

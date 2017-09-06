@@ -26,7 +26,7 @@ import ke.co.suncha.simba.aqua.reports.ReportObject;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.repository.AgeingDataRepository;
 import ke.co.suncha.simba.aqua.scheme.zone.ZoneRepository;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.aqua.services.PaymentService;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -83,7 +83,7 @@ public class ReportHeaderService {
     AccountBalanceRecordRepository accountBalanceRecordRepository;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     EntityManager entityManager;

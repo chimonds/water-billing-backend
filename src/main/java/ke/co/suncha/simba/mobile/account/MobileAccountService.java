@@ -4,7 +4,7 @@ import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.reports.StatementRecord;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.mobile.request.RequestResponse;
 import ke.co.suncha.simba.mobile.user.MobileUserAuthService;
 import ke.co.suncha.simba.mobile.zone.MZone;
@@ -30,7 +30,7 @@ public class MobileAccountService {
     AccountRepository accountRepository;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     private final Integer pageSize = 200;
 

@@ -65,7 +65,7 @@ public class PostBankService {
     private AuditService auditService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     private AccountStatusHistoryRepository accountStatusHistoryRepository;

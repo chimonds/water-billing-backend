@@ -17,7 +17,7 @@ import ke.co.suncha.simba.aqua.makerChecker.ApprovalStep;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.Task;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.makerChecker.type.TaskTypeService;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.aqua.billing.BillService;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -58,7 +58,7 @@ public class TaskApprovalService {
     UserService userService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     TaskTypeService taskTypeService;

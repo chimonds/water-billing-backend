@@ -34,7 +34,7 @@ import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.models.AccountStatusHistory;
 import ke.co.suncha.simba.aqua.reports.AccountsReportRequest;
 import ke.co.suncha.simba.aqua.reports.ReportsParam;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -50,7 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 @Api(value = "Consumer accounts", description = "Consumer accounts API")
 public class AccountController extends AbstractRestHandler {
     @Autowired
-    private AccountService accountService;
+    private AccountManagerService accountService;
 
     @RequestMapping(value = "/create/{id}", method = RequestMethod.POST, consumes = {"application/json", "application/xml"}, produces = {"application/json", "application/xml"})
     @ResponseStatus(HttpStatus.CREATED)

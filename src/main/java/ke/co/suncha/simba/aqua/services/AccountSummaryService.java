@@ -77,7 +77,7 @@ public class AccountSummaryService {
     private UserRepository userRepository;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     AccountsUpdateRepository accountsUpdateRepository;

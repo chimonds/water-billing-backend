@@ -4,7 +4,7 @@ import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.models.QMeterReading;
-import ke.co.suncha.simba.aqua.services.AccountService;
+import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ import java.io.*;
 @Service
 public class MeterReadingRecordService {
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     EntityManager entityManager;

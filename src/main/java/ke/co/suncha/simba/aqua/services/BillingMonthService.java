@@ -23,6 +23,8 @@
  */
 package ke.co.suncha.simba.aqua.services;
 
+import com.mysema.query.BooleanBuilder;
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -32,6 +34,7 @@ import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
+import ke.co.suncha.simba.aqua.models.QBillingMonth;
 import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeader;
 import ke.co.suncha.simba.aqua.reports.scheduled.ReportHeaderRepository;
@@ -55,6 +58,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.util.List;
 
 /**
@@ -91,6 +95,9 @@ public class BillingMonthService {
 
     @Autowired
     private ReportHeaderService reportHeaderService;
+
+    @Autowired
+    EntityManager entityManager;
 
 
     private RestResponse response;
@@ -207,6 +214,17 @@ public class BillingMonthService {
             return billingMonth;
         }
         return null;
+    }
+
+    public Long getActiveMonthId() {
+        JPAQuery query = new JPAQuery(entityManager);
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QBillingMonth.billingMonth.current.eq(1));
+        Long id = query.from(QBillingMonth.billingMonth).where(builder).singleResult(QBillingMonth.billingMonth.billingMonthId);
+        if (id == null) {
+            id = 0l;
+        }
+        return id;
     }
 
     public BillingMonth getById(Long billingMonthId) {

@@ -84,7 +84,7 @@ public class MPESAService {
     AuditService auditService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     AccountStatusHistoryRepository accountStatusHistoryRepository;

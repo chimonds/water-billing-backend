@@ -1,19 +1,19 @@
 package ke.co.suncha.simba.aqua.services;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
 import ke.co.suncha.simba.admin.security.AuthManager;
-import ke.co.suncha.simba.admin.security.Credential;
 import ke.co.suncha.simba.admin.service.AuditService;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
+import ke.co.suncha.simba.admin.version.ReleaseManager;
 import ke.co.suncha.simba.aqua.models.MeterReading;
+import ke.co.suncha.simba.aqua.models.QMeterReading;
 import ke.co.suncha.simba.aqua.repository.*;
-import ke.co.suncha.simba.aqua.utils.MobileClientRequest;
 import ke.co.suncha.simba.mobile.upload.MeterReadingRepository;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +24,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
+import javax.annotation.PostConstruct;
 
 /**
  * Created by maitha.manyala on 7/26/15.
  */
 @Service
-public class MeterReadingService {
+public class MeterReadingService   {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -66,6 +65,8 @@ public class MeterReadingService {
     @Autowired
     private SimbaOptionService optionService;
 
+    @Autowired
+    ReleaseManager releaseManager;
 
     @Autowired
     private AuditService auditService;
@@ -75,61 +76,6 @@ public class MeterReadingService {
 
     public MeterReadingService() {
 
-    }
-
-    //@Scheduled(fixedDelay = 3000)
-    public void poolRemoteMeterReadings() {
-        try {
-            Boolean notifyClient = false;
-            try {
-                notifyClient = Boolean.parseBoolean(optionService.getOption("REMOTE_METER_READINGS_ENABLE").getValue());
-            } catch (Exception ex) {
-
-            }
-            if (!notifyClient) {
-                return;
-            }
-
-            RestTemplate restTemplate = new RestTemplate();
-
-            MobileClientRequest request = new MobileClientRequest();
-            Credential credential = new Credential();
-
-            credential.setUsername(optionService.getOption("MOBILE_CLIENT_USERNAME").getValue());
-            credential.setPassword(optionService.getOption("MOBILE_CLIENT_KEY").getValue());
-            request.setLogin(credential);
-            //request.setPayload(accountSummary);
-
-            String url = optionService.getOption("MOBILE_CLIENT_ENDPOINT").getValue() + "/get_meter_readings";
-            String jsonResponse = restTemplate.postForObject(url, request, String.class);
-            //log.info("Response:" + jsonResponse);
-            //2. Convert JSON to Java object
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                List<MeterReading> meterReadings = mapper.readValue(jsonResponse, new TypeReference<List<MeterReading>>() {
-                });
-
-                if (!meterReadings.isEmpty()) {
-                    for (MeterReading meterReading : meterReadings) {
-                        MeterReading reading = null;
-                        if (reading == null) {
-                            meterReadingRepository.save(meterReading);
-                        }
-
-                        //Update remote reading allocated
-                        request.setPayload(meterReading);
-                        url = optionService.getOption("MOBILE_CLIENT_ENDPOINT").getValue() + "/set_reading_synced";
-                        jsonResponse = restTemplate.postForObject(url, request, String.class);
-                    }
-                }
-            } catch (Exception ex) {
-                //log.error(ex.getMessage());
-            }
-        } catch (Exception ex)
-
-        {
-            log.error(ex.getMessage());
-        }
     }
 
     private Sort sortByDateAddedDesc() {
@@ -145,16 +91,14 @@ public class MeterReadingService {
                     return response;
                 }
                 RestPageRequest p = requestObject.getObject();
+                BooleanBuilder builder = new BooleanBuilder();
+                if (StringUtils.isNotEmpty(p.getFilter())) {
+                    builder.and(QMeterReading.meterReading.account.accNo.containsIgnoreCase(p.getFilter()));
+                }
 
                 Page<MeterReading> page;
-                if (p.getFilter().isEmpty()) {
-                    page = meterReadingRepository.findAll(new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-                } else {
-                    page = null;
-                    //meterReadingRepository.findByAccNoContains(p.getFilter(),
+                page = meterReadingRepository.findAll(builder, new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
 
-//                            new PageRequest(p.getPage(), p.getSize(), sortByDateAddedDesc()));
-                }
                 if (page.hasContent()) {
                     responseObject.setMessage("Fetched data successfully");
                     responseObject.setPayload(page);
@@ -171,5 +115,11 @@ public class MeterReadingService {
         }
         return response;
     }
+
+    @PostConstruct
+    public void addPermissions() {
+        releaseManager.addPermission("meter_readings_view");
+    }
+
 
 }

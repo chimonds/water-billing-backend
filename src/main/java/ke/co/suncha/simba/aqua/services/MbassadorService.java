@@ -17,7 +17,7 @@ public class MbassadorService {
     public MBassador bus = new MBassador();
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     public MbassadorService() {
         bus.subscribe(this);

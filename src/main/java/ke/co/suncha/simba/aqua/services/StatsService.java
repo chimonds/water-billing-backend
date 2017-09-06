@@ -87,7 +87,7 @@ public class StatsService {
     GaugeService gaugeService;
 
     @Autowired
-    AccountService accountService;
+    AccountManagerService accountService;
 
     @Autowired
     private PaymentService paymentService;
