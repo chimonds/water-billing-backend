@@ -32,7 +32,7 @@ public class MobileAccountService {
     @Autowired
     AccountManagerService accountService;
 
-    private final Integer pageSize = 200;
+    private final Integer pageSize = 150;
 
     public RequestResponse<CustomPage> getPage(AccountPageRequest accountPageRequest) {
 

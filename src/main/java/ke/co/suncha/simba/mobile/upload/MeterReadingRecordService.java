@@ -2,6 +2,7 @@ package ke.co.suncha.simba.mobile.upload;
 
 import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
+import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.models.QMeterReading;
 import ke.co.suncha.simba.aqua.services.AccountManagerService;
@@ -27,6 +28,30 @@ public class MeterReadingRecordService {
 
     @Autowired
     MeterReadingRepository meterReadingRepository;
+
+    public Long readByBillingMonth(Long billingMonthId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QMeterReading.meterReading.billingMonth.billingMonthId.eq(billingMonthId));
+        JPAQuery query = new JPAQuery(entityManager);
+        Long count = query.from(QMeterReading.meterReading).where(builder).count();
+        if (count == null) {
+            count = 0l;
+        }
+        return count;
+    }
+
+    public Long accountsWithMeters() {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QAccount.account.meter.isNotNull());
+        builder.and(QAccount.account.active.eq(Boolean.TRUE));
+        JPAQuery query = new JPAQuery(entityManager);
+        Long count = query.from(QAccount.account).where(builder).count();
+        if (count == null) {
+            count = 0l;
+        }
+        return count;
+
+    }
 
     public Boolean hasMeterReading(Long accountId, Long billingMonthId) {
         if (get(accountId, billingMonthId) != null) {
@@ -96,7 +121,7 @@ public class MeterReadingRecordService {
                 file = new File(path);
             }
 
-            byte[] imageByte= Base64.decodeBase64(imageString);
+            byte[] imageByte = Base64.decodeBase64(imageString);
             InputStream input = new ByteArrayInputStream(imageByte);
             OutputStream output = new FileOutputStream(path);
             IOUtils.copy(input, output);

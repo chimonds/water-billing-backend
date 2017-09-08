@@ -43,6 +43,18 @@ public class BillingService {
         return totalBilled;
     }
 
+    public Long getTotalAccountsBilled(Long billingMonthId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonthId));
+
+        JPAQuery query = new JPAQuery(entityManager);
+        Long count = query.from(QBill.bill).where(builder).count();
+        if (count == null)
+            count = 0l;
+        return count;
+    }
+
+
     public Double getBilledInMonth(Long billingMonthId) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonthId));
