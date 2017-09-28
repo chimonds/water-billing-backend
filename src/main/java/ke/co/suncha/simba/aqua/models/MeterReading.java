@@ -3,7 +3,6 @@ package ke.co.suncha.simba.aqua.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.aqua.account.Account;
-import org.apache.commons.codec.binary.Base64;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
@@ -11,8 +10,6 @@ import javax.persistence.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.io.File;
-import java.io.FileInputStream;
 
 /**
  * Created by maitha.manyala on 7/26/15.
@@ -61,9 +58,6 @@ public class MeterReading {
     @JsonIgnore
     @Column(name = "image_path")
     private String imagePath;
-
-    @Transient
-    private String imageString;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_on")
@@ -221,22 +215,5 @@ public class MeterReading {
 
     public void setReadOn(DateTime readOn) {
         this.readOn = readOn;
-    }
-
-    public String getImageString() {
-        try {
-            File file = new File(this.imagePath);
-            FileInputStream fileInputStreamReader = new FileInputStream(file);
-            byte[] bytes = new byte[(int) file.length()];
-            fileInputStreamReader.read(bytes);
-            imageString = new String(Base64.encodeBase64(bytes), "UTF-8");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return imageString;
-    }
-
-    public void setImageString(String imageString) {
-        this.imageString = imageString;
     }
 }

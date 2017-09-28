@@ -76,4 +76,22 @@ public class BillingService {
         totalBilled = totalBilled + getBalanceBroughtForward(accountId);
         return totalBilled;
     }
+
+    public Double getLastMeterReading(Long accountId) {
+        Double meterReading = 0.0;
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QBill.bill.account.accountId.eq(accountId));
+        JPAQuery query = new JPAQuery(entityManager);
+        Long lastBillId = query.from(QBill.bill).where(builder).orderBy(QBill.bill.billCode.desc()).singleResult(QBill.bill.billId.max());
+        if (lastBillId != null) {
+            builder = new BooleanBuilder();
+            builder.and(QBill.bill.billId.eq(lastBillId));
+            query = new JPAQuery(entityManager);
+            meterReading = query.from(QBill.bill).where(builder).singleResult(QBill.bill.currentReading);
+            if (meterReading == null) {
+                meterReading = 0.0;
+            }
+        }
+        return meterReading;
+    }
 }

@@ -13,6 +13,7 @@ import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.models.QMeterReading;
 import ke.co.suncha.simba.aqua.repository.*;
 import ke.co.suncha.simba.mobile.upload.MeterReadingRepository;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +27,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
+import java.io.FileInputStream;
 
 /**
  * Created by maitha.manyala on 7/26/15.
  */
 @Service
-public class MeterReadingService   {
+public class MeterReadingService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -107,6 +110,52 @@ public class MeterReadingService   {
                     responseObject.setMessage("Your search did not match any records");
                     response = new RestResponse(responseObject, HttpStatus.NOT_FOUND);
                 }
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    public RestResponse getMeterReadingImageString(RestRequestObject<MeterReading> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "meter_readings_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                Long meterReadingId = requestObject.getObject().getMeterReadingId();
+
+                if (meterReadingId == null) {
+                    responseObject.setMessage("Invalid meter reading resource");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+
+                MeterReading meterReading = meterReadingRepository.findOne(meterReadingId);
+                if (meterReading == null) {
+                    responseObject.setMessage("Invalid meter reading resource");
+                    response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+                    return response;
+                }
+                String imageString = "";
+
+                try {
+                    File file = new File(meterReading.getImagePath());
+                    FileInputStream fileInputStreamReader = new FileInputStream(file);
+                    byte[] bytes = new byte[(int) file.length()];
+                    fileInputStreamReader.read(bytes);
+                    imageString = new String(Base64.encodeBase64(bytes), "UTF-8");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                responseObject.setMessage("Fetched data successfully");
+                responseObject.setPayload(imageString);
+                response = new RestResponse(responseObject, HttpStatus.OK);
             }
         } catch (Exception ex) {
             responseObject.setMessage(ex.getLocalizedMessage());

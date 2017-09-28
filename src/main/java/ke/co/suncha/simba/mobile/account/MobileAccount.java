@@ -16,6 +16,15 @@ public class MobileAccount {
     private Integer active;
     private Integer hasMeter = 0;
     private String phoneNo = "";
+    private Double currentMeterReading = 0.0;
+
+    public Double getCurrentMeterReading() {
+        return currentMeterReading;
+    }
+
+    public void setCurrentMeterReading(Double currentMeterReading) {
+        this.currentMeterReading = currentMeterReading;
+    }
 
     public Integer getHasMeter() {
         return hasMeter;

@@ -5,6 +5,7 @@ import ke.co.suncha.simba.admin.api.AbstractRestHandler;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
 import ke.co.suncha.simba.admin.request.RestRequestObject;
 import ke.co.suncha.simba.admin.request.RestResponse;
+import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.services.MeterReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,9 +25,15 @@ import javax.servlet.http.HttpServletResponse;
 public class MeterReadingsController extends AbstractRestHandler {
     @Autowired
     private MeterReadingService meterReadingService;
-    
+
     @RequestMapping(value = "", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
     public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
         return meterReadingService.getAllByFilter(requestObject);
+    }
+
+
+    @RequestMapping(value = "/getImage", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
+    public RestResponse getMeterReadingImageString(@RequestBody RestRequestObject<MeterReading> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return meterReadingService.getMeterReadingImageString(requestObject);
     }
 }

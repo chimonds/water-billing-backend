@@ -211,6 +211,7 @@ public class MobileChartService implements IMobileChartService {
     @Override
     public CardStatData getReceiptsYesterday(int sequence) {
         CardStatData data = new CardStatData();
+        data.setSequence(sequence);
         data.setValue(MobileUtil.getAmountPlain(receiptService.getReceiptsYesterday()) + " KES");
         data.setLabel("Receipts Yesterday");
         return data;
@@ -219,6 +220,7 @@ public class MobileChartService implements IMobileChartService {
     @Override
     public CardStatData getReceiptsThisMonth(int sequence) {
         CardStatData data = new CardStatData();
+        data.setSequence(sequence);
         data.setValue(MobileUtil.getAmountPlain(receiptService.getReceiptsThisMonth()) + " KES");
         data.setLabel("Receipts This Month");
         return data;

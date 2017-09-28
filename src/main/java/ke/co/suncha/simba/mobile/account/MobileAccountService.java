@@ -2,6 +2,7 @@ package ke.co.suncha.simba.mobile.account;
 
 import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.account.Account;
+import ke.co.suncha.simba.aqua.billing.BillingService;
 import ke.co.suncha.simba.aqua.reports.StatementRecord;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.services.AccountManagerService;
@@ -25,6 +26,8 @@ public class MobileAccountService {
     @Autowired
     MobileUserAuthService mobileUserAuthService;
 
+    @Autowired
+    BillingService billingService;
 
     @Autowired
     AccountRepository accountRepository;
@@ -83,6 +86,8 @@ public class MobileAccountService {
                         mZone.setZoneId(account.getZone().getZoneId());
                         mobileAccount.setZone(mZone);
 
+                        mobileAccount.setCurrentMeterReading(billingService.getLastMeterReading(account.getAccountId()));
+
                         mobileAccounts.add(mobileAccount);
                     }
 
@@ -121,6 +126,8 @@ public class MobileAccountService {
                     mobileAccount.setBalance(account.getOutstandingBalance());
                     mobileAccount.setAccountId(account.getAccountId());
                     mobileAccount.setName(account.getAccName());
+                    mobileAccount.setCurrentMeterReading(billingService.getLastMeterReading(account.getAccountId()));
+
                     if (account.getIsCutOff()) {
                         mobileAccount.setActive(0);
                     } else {

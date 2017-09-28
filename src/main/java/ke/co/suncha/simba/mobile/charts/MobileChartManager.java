@@ -29,17 +29,17 @@ public class MobileChartManager {
             return response;
         } else {
             List<MobileChart> mobileChartList = new ArrayList<>();
-            mobileChartList.add(mobileChartService.getReceiptsToday(10));
-            mobileChartList.add(mobileChartService.getReceiptsYesterday(11));
-            mobileChartList.add(mobileChartService.getReceiptsThisMonth(12));
-            mobileChartList.add(mobileChartService.getReceiptsAndBilledThisMonthCalc(20));
-            mobileChartList.add(mobileChartService.getMetersRead(21));
-            mobileChartList.add(mobileChartService.getAccountsBilled(21));
-            mobileChartList.add(mobileChartService.getAccounts(30));
-            mobileChartList.add(mobileChartService.getReceiptsBillingOverPeriod(40));
-            mobileChartList.add(mobileChartService.getTotalAccounts(50));
-            mobileChartList.add(mobileChartService.getTotalBalances(60));
-            mobileChartList.add(mobileChartService.getTotalCreditBalances(70));
+            mobileChartList.add(mobileChartService.getReceiptsToday(1));
+            mobileChartList.add(mobileChartService.getReceiptsYesterday(2));
+            mobileChartList.add(mobileChartService.getReceiptsAndBilledThisMonthCalc(3));
+            mobileChartList.add(mobileChartService.getMetersRead(4));
+            mobileChartList.add(mobileChartService.getAccountsBilled(5));
+            mobileChartList.add(mobileChartService.getAccounts(6));
+            mobileChartList.add(mobileChartService.getReceiptsThisMonth(7));
+            mobileChartList.add(mobileChartService.getReceiptsBillingOverPeriod(8));
+            mobileChartList.add(mobileChartService.getTotalAccounts(9));
+            mobileChartList.add(mobileChartService.getTotalBalances(10));
+            mobileChartList.add(mobileChartService.getTotalCreditBalances(11));
 
             Collections.sort(mobileChartList);
 
