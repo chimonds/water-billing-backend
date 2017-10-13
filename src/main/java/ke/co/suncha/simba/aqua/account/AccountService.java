@@ -80,6 +80,10 @@ public class AccountService {
         return count;
     }
 
+    public Account getById(Long accountId) {
+        return accountRepository.findOne(accountId);
+    }
+
     public Double getTotalCreditBalances() {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.outstandingBalance.lt(0d));
