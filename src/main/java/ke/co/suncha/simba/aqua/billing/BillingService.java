@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import java.util.List;
 
 /**
  * Created by maitha.manyala on 9/6/17.
@@ -60,10 +61,12 @@ public class BillingService {
         return totalBilled;
     }
 
-    public Long getTotalAccountsBilled(Long billingMonthId) {
+    public Long getTotalAccountsBilled(List<Long> zoneList, Long billingMonthId) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonthId));
-
+        if (!zoneList.isEmpty()) {
+            builder.and(QBill.bill.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Long count = query.from(QBill.bill).where(builder).count();
         if (count == null)
@@ -72,9 +75,12 @@ public class BillingService {
     }
 
 
-    public Double getBilledInMonth(Long billingMonthId) {
+    public Double getBilledInMonth(List<Long> zoneList, Long billingMonthId) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QBill.bill.billingMonth.billingMonthId.eq(billingMonthId));
+        if (!zoneList.isEmpty()) {
+            builder.and(QBill.bill.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Double totalBilled = query.from(QBill.bill).where(builder).singleResult(QBill.bill.totalBilled.sum());
         if (totalBilled == null)

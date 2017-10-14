@@ -1,10 +1,18 @@
 package ke.co.suncha.simba.mobile.account;
 
+import com.mysema.query.BooleanBuilder;
+import ke.co.suncha.simba.admin.models.User;
+import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.UserService;
 import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.account.Account;
+import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.billing.BillingService;
 import ke.co.suncha.simba.aqua.reports.StatementRecord;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
+import ke.co.suncha.simba.aqua.scheme.zone.Zone;
+import ke.co.suncha.simba.aqua.scheme.zone.ZoneService;
+import ke.co.suncha.simba.aqua.scheme.zone.meterReader.MeterReaderService;
 import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.mobile.request.RequestResponse;
 import ke.co.suncha.simba.mobile.user.MobileUserAuthService;
@@ -35,7 +43,19 @@ public class MobileAccountService {
     @Autowired
     AccountManagerService accountService;
 
-    private final Integer pageSize = 150;
+    @Autowired
+    AuthManager authManager;
+
+    @Autowired
+    UserService userService;
+
+    @Autowired
+    ZoneService zoneService;
+
+    @Autowired
+    MeterReaderService meterReaderService;
+
+    private final Integer pageSize = 500;
 
     public RequestResponse<CustomPage> getPage(AccountPageRequest accountPageRequest) {
 
@@ -48,7 +68,19 @@ public class MobileAccountService {
             response.setError(Boolean.TRUE);
             response.setMessage("Access denied to this resource");
         } else {
-            Page<Account> accountPage = accountRepository.findAll(new PageRequest(page, pageSize));
+
+            User user = userService.getByEmailAddress(accountPageRequest.getUser().getEmail());
+            Boolean organizationLevel = authManager.hasPermission(user.getUserId(), "mobile_OrganizationLevel");
+
+            BooleanBuilder builder = new BooleanBuilder();
+            if (!organizationLevel) {
+                List<Zone> zoneList = meterReaderService.getZonesWithMeterReader(user.getUserId());
+                if (zoneList != null) {
+                    builder.and(QAccount.account.zone.in(zoneList));
+                }
+            }
+
+            Page<Account> accountPage = accountRepository.findAll(builder, new PageRequest(page, pageSize));
             if (accountPage != null) {
                 if (accountPage.hasContent()) {
 

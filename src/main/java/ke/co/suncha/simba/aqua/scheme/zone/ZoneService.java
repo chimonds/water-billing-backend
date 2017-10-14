@@ -23,6 +23,7 @@
  */
 package ke.co.suncha.simba.aqua.scheme.zone;
 
+import com.mysema.query.jpa.impl.JPAQuery;
 import ke.co.suncha.simba.admin.helpers.AuditOperation;
 import ke.co.suncha.simba.admin.models.AuditRecord;
 import ke.co.suncha.simba.admin.request.RestPageRequest;
@@ -45,6 +46,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.util.List;
 
 /**
@@ -73,6 +75,9 @@ public class ZoneService {
     @Autowired
     SchemeRepository schemeRepository;
 
+    @Autowired
+    EntityManager entityManager;
+
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
@@ -82,6 +87,12 @@ public class ZoneService {
 
     public List<Zone> getAll() {
         return zoneRepository.findAll();
+    }
+
+
+    public List<Long> getZoneIdList() {
+        JPAQuery query = new JPAQuery(entityManager);
+        return query.from(QZone.zone).list(QZone.zone.zoneId);
     }
 
     @Transactional

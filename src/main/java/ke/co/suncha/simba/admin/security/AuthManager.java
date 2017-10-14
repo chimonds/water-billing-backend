@@ -38,10 +38,7 @@ import ke.co.suncha.simba.admin.repositories.SystemActionRepository;
 import ke.co.suncha.simba.admin.repositories.UserRepository;
 import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.admin.request.RestResponseObject;
-import ke.co.suncha.simba.admin.service.AuditService;
-import ke.co.suncha.simba.admin.service.CurrentUserService;
-import ke.co.suncha.simba.admin.service.SimbaOptionService;
-import ke.co.suncha.simba.admin.service.UserRoleService;
+import ke.co.suncha.simba.admin.service.*;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,12 +77,41 @@ public class AuthManager {
     @Autowired
     private UserRoleService userRoleService;
 
+    @Autowired
+    private UserService userService;
+
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     private RestResponse response;
     private RestResponseObject responseObject = new RestResponseObject();
 
     public AuthManager() {
 
+    }
+
+
+
+    public Boolean hasPermission(Long userId, String permission) {
+        SystemAction systemAction = systemActionRepository.findByName(permission);
+        if (systemAction == null) {
+            systemAction = new SystemAction();
+            systemAction.setName(permission);
+            systemAction.setDescription("Auto generated");
+            systemAction.setActive(true);
+            systemAction = systemActionRepository.save(systemAction);
+            return Boolean.FALSE;
+        }
+
+        User user = userService.getById(userId);
+        if (user == null)
+            return Boolean.FALSE;
+
+        if (!user.getUserRole().getSystemActions().contains(systemAction)) {
+            AuditRecord auditRecord = new AuditRecord();
+            auditRecord.setNotes(permission.toUpperCase());
+            auditService.log(AuditOperation.DENIED, auditRecord);
+            return Boolean.FALSE;
+        }
+        return Boolean.TRUE;
     }
 
     public RestResponse grant(String token, String action) {

@@ -40,8 +40,8 @@ public class MobileChartService implements IMobileChartService {
     MeterReadingRecordService meterReadingRecordService;
 
     @Override
-    public CardStatData getReceiptsToday(int sequence) {
-        Double amount = receiptService.getReceiptsToday();
+    public CardStatData getReceiptsToday(List<Long> zoneList, int sequence) {
+        Double amount = receiptService.getReceiptsToday(zoneList);
         CardStatData data = new CardStatData();
         data.setLabel("Receipts Today so far");
         data.setValue(MobileUtil.getAmountPlain(amount) + " KES");
@@ -55,8 +55,8 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public CardStatData getTotalBalances(int sequence) {
-        Double amount = accountService.getTotalBalances();
+    public CardStatData getTotalBalances(List<Long> zoneList, int sequence) {
+        Double amount = accountService.getTotalBalances(zoneList);
         CardStatData data = new CardStatData();
         data.setLabel("Balances");
         data.setValue(MobileUtil.getAmountPlain(amount) + " KES");
@@ -65,8 +65,8 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public CardStatData getTotalCreditBalances(int sequence) {
-        Double amount = accountService.getTotalCreditBalances();
+    public CardStatData getTotalCreditBalances(List<Long> zoneList, int sequence) {
+        Double amount = accountService.getTotalCreditBalances(zoneList);
         CardStatData data = new CardStatData();
         data.setLabel("Credit Balances");
         data.setValue(MobileUtil.getAmountPlain(amount) + " KES");
@@ -75,8 +75,8 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public CardStatData getTotalAccounts(int sequence) {
-        Long count = accountService.getTotalAccounts();
+    public CardStatData getTotalAccounts(List<Long> zoneList, int sequence) {
+        Long count = accountService.getTotalAccounts(zoneList);
         CardStatData data = new CardStatData();
         data.setLabel("Total Accounts");
         data.setValue(MobileUtil.getAmountPlain(Double.parseDouble(count.toString())));
@@ -85,9 +85,9 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public PieChartData getAccounts(int sequence) {
-        Long activeAccounts = accountService.getTotalActiveAccounts();
-        Long inActiveAccounts = accountService.getTotalInActiveAccounts();
+    public PieChartData getAccounts(List<Long> zoneList, int sequence) {
+        Long activeAccounts = accountService.getTotalActiveAccounts(zoneList);
+        Long inActiveAccounts = accountService.getTotalInActiveAccounts(zoneList);
         Long totalAccount = activeAccounts + inActiveAccounts;
         PieChartData data = new PieChartData();
         data.setSequence(sequence);
@@ -109,7 +109,7 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public PieChartData getReceiptsAndBilledThisMonth(int sequence) {
+    public PieChartData getReceiptsAndBilledThisMonth(List<Long> zoneList, int sequence) {
         Long billingMonthId = billingMonthService.getActiveMonthId();
         if (billingMonthId == null) {
             billingMonthId = 0l;
@@ -117,8 +117,8 @@ public class MobileChartService implements IMobileChartService {
             billingMonthId = billingMonthId - 1;
         }
 
-        Double receiptsThisMonth = receiptService.getReceiptsThisMonth();
-        Double billedLastMonth = billingService.getBilledInMonth(billingMonthId);
+        Double receiptsThisMonth = receiptService.getReceiptsThisMonth(zoneList);
+        Double billedLastMonth = billingService.getBilledInMonth(zoneList, billingMonthId);
         Double percentage = receiptsThisMonth / billedLastMonth * 100;
 
         if (percentage.isNaN()) {
@@ -145,7 +145,7 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public PieChartData getReceiptsAndBilledThisMonthCalc(int sequence) {
+    public PieChartData getReceiptsAndBilledThisMonthCalc(List<Long> zoneList, int sequence) {
         Long billingMonthId = billingMonthService.getActiveMonthId();
         if (billingMonthId == null) {
             billingMonthId = 0l;
@@ -153,8 +153,8 @@ public class MobileChartService implements IMobileChartService {
             billingMonthId = billingMonthId - 1;
         }
 
-        Double receiptsThisMonth = receiptService.getReceiptsThisMonthCalculated();
-        Double billedLastMonth = billingService.getBilledInMonth(billingMonthId);
+        Double receiptsThisMonth = receiptService.getReceiptsThisMonthCalculated(zoneList);
+        Double billedLastMonth = billingService.getBilledInMonth(zoneList, billingMonthId);
         Double percentage = receiptsThisMonth / billedLastMonth * 100;
         if (percentage.isNaN()) {
             percentage = 0.0;
@@ -163,7 +163,7 @@ public class MobileChartService implements IMobileChartService {
         PieChartData data = new PieChartData();
         data.setSequence(sequence);
         data.setName("This Month");
-        data.setCenterText( percentage.intValue() + "% Actual Efficiency");
+        data.setCenterText(percentage.intValue() + "% Actual Efficiency");
 
         List<PEntry> entries = new ArrayList<>();
         entries.add(new PEntry("Receipts", receiptsThisMonth.floatValue()));
@@ -180,7 +180,7 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public LineGraphData getReceiptsBillingOverPeriod(int sequence) {
+    public LineGraphData getReceiptsBillingOverPeriod(List<Long> zoneList, int sequence) {
         Integer period = 6;
         Long billingMonthId = billingMonthService.getActiveMonthId();
         LineGraphData data = new LineGraphData();
@@ -191,7 +191,7 @@ public class MobileChartService implements IMobileChartService {
         billsDataSet.setCircleColor("#FF8A65");
         List<LineEntry> billsLineEntries = new ArrayList<>();
         for (int x = 1; x <= period; x++) {
-            Double amount = billingService.getBilledInMonth(billingMonthId);
+            Double amount = billingService.getBilledInMonth(zoneList, billingMonthId);
             billingMonthId--;
             LineEntry entry = new LineEntry();
             entry.setX(startOfMonth.plusDays(10).getMillis());
@@ -209,25 +209,25 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public CardStatData getReceiptsYesterday(int sequence) {
+    public CardStatData getReceiptsYesterday(List<Long> zoneList, int sequence) {
         CardStatData data = new CardStatData();
         data.setSequence(sequence);
-        data.setValue(MobileUtil.getAmountPlain(receiptService.getReceiptsYesterday()) + " KES");
+        data.setValue(MobileUtil.getAmountPlain(receiptService.getReceiptsYesterday(zoneList)) + " KES");
         data.setLabel("Receipts Yesterday");
         return data;
     }
 
     @Override
-    public CardStatData getReceiptsThisMonth(int sequence) {
+    public CardStatData getReceiptsThisMonth(List<Long> zoneList, int sequence) {
         CardStatData data = new CardStatData();
         data.setSequence(sequence);
-        data.setValue(MobileUtil.getAmountPlain(receiptService.getReceiptsThisMonth()) + " KES");
+        data.setValue(MobileUtil.getAmountPlain(receiptService.getReceiptsThisMonth(zoneList)) + " KES");
         data.setLabel("Receipts This Month");
         return data;
     }
 
     @Override
-    public PieChartData getMetersRead(int sequence) {
+    public PieChartData getMetersRead(List<Long> zoneList, int sequence) {
         Long billingMonthId = billingMonthService.getActiveMonthId();
         Long accountsWithMeters = meterReadingRecordService.accountsWithMeters();
         Long metersRead = meterReadingRecordService.readByBillingMonth(billingMonthId);
@@ -253,16 +253,19 @@ public class MobileChartService implements IMobileChartService {
     }
 
     @Override
-    public PieChartData getAccountsBilled(int sequence) {
+    public PieChartData getAccountsBilled(List<Long> zoneList, int sequence) {
         Long billingMonthId = billingMonthService.getActiveMonthId();
 
-        Long accountsBilled = billingService.getTotalAccountsBilled(billingMonthId);
-        Long activeAccounts = accountService.getTotalActiveAccounts();
-        Long percentage = (accountsBilled / activeAccounts * 100);
+        Long accountsBilled = billingService.getTotalAccountsBilled(zoneList, billingMonthId);
+        Long activeAccounts = accountService.getTotalActiveAccounts(zoneList);
+        Double percentage = Double.valueOf(accountsBilled) / Double.valueOf(activeAccounts) * 100;
+
+
+        //Long percentage = (accountsBilled / activeAccounts * 100);
         PieChartData data = new PieChartData();
         data.setSequence(sequence);
         data.setName("Billing");
-        data.setCenterText(percentage.intValue() + "% Billed");
+        data.setCenterText(MobileUtil.getAmountPlain(percentage) + "% Billed");
 
         List<PEntry> entries = new ArrayList<>();
         entries.add(new PEntry("Accounts", activeAccounts.floatValue()));

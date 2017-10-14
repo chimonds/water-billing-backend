@@ -8,6 +8,8 @@ public class MobileUser {
     private String password;
     private String name;
     private String email;
+    private Integer organizationLevel = 0;
+    private Integer ReadOnlyMeteredAccounts = 1;
 
     public Long getUserId() {
         return userId;
@@ -39,5 +41,21 @@ public class MobileUser {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Integer getOrganizationLevel() {
+        return organizationLevel;
+    }
+
+    public void setOrganizationLevel(Integer organizationLevel) {
+        this.organizationLevel = organizationLevel;
+    }
+
+    public Integer getReadOnlyMeteredAccounts() {
+        return ReadOnlyMeteredAccounts;
+    }
+
+    public void setReadOnlyMeteredAccounts(Integer readOnlyMeteredAccounts) {
+        ReadOnlyMeteredAccounts = readOnlyMeteredAccounts;
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import java.util.List;
 
 /**
  * Created by maitha.manyala on 9/6/17.
@@ -34,9 +35,12 @@ public class AccountService {
     @Autowired
     AccountRepository accountRepository;
 
-    public Double getTotalBalances() {
+    public Double getTotalBalances(List<Long> zoneList) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.outstandingBalance.gt(0d));
+        if (!zoneList.isEmpty()) {
+            builder.and(QAccount.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Double amount = query.from(QAccount.account).where(builder).singleResult(QAccount.account.outstandingBalance.sum());
         if (amount == null) {
@@ -45,10 +49,13 @@ public class AccountService {
         return amount;
     }
 
-    public Long getTotalActiveAccounts() {
+    public Long getTotalActiveAccounts(List<Long> zoneList) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.onStatus.eq(1));
         builder.and(QAccount.account.active.eq(Boolean.TRUE));
+        if(!zoneList.isEmpty()){
+            builder.and(QAccount.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Long count = query.from(QAccount.account).where(builder).singleResult(QAccount.account.accountId.count());
         if (count == null) {
@@ -57,10 +64,13 @@ public class AccountService {
         return count;
     }
 
-    public Long getTotalInActiveAccounts() {
+    public Long getTotalInActiveAccounts(List<Long> zoneList) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.onStatus.eq(1));
         builder.and(QAccount.account.active.eq(Boolean.FALSE));
+        if(!zoneList.isEmpty()){
+            builder.and(QAccount.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Long count = query.from(QAccount.account).where(builder).singleResult(QAccount.account.accountId.count());
         if (count == null) {
@@ -69,9 +79,12 @@ public class AccountService {
         return count;
     }
 
-    public Long getTotalAccounts() {
+    public Long getTotalAccounts(List<Long> zoneList) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.onStatus.eq(1));
+        if (!zoneList.isEmpty()) {
+            builder.and(QAccount.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Long count = query.from(QAccount.account).where(builder).singleResult(QAccount.account.accountId.count());
         if (count == null) {
@@ -84,9 +97,12 @@ public class AccountService {
         return accountRepository.findOne(accountId);
     }
 
-    public Double getTotalCreditBalances() {
+    public Double getTotalCreditBalances(List<Long> zoneList) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.outstandingBalance.lt(0d));
+        if (!zoneList.isEmpty()) {
+            builder.and(QAccount.account.zone.zoneId.in(zoneList));
+        }
         JPAQuery query = new JPAQuery(entityManager);
         Double amount = query.from(QAccount.account).where(builder).singleResult(QAccount.account.outstandingBalance.sum());
         if (amount == null) {
