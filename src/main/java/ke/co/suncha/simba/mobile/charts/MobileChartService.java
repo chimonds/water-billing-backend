@@ -1,7 +1,7 @@
 package ke.co.suncha.simba.mobile.charts;
 
 import ke.co.suncha.simba.aqua.account.AccountService;
-import ke.co.suncha.simba.aqua.billing.BillingService;
+import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
 import ke.co.suncha.simba.aqua.receipts.ReceiptService;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
 import ke.co.suncha.simba.mobile.MobileUtil;
@@ -28,7 +28,7 @@ public class MobileChartService implements IMobileChartService {
     AccountService accountService;
 
     @Autowired
-    BillingService billingService;
+    BillingServiceImpl billingService;
 
     @Autowired
     ReceiptService receiptService;

@@ -7,7 +7,8 @@ import ke.co.suncha.simba.admin.service.UserService;
 import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.account.QAccount;
-import ke.co.suncha.simba.aqua.billing.BillingService;
+import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
+import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.reports.StatementRecord;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.scheme.zone.Zone;
@@ -35,7 +36,7 @@ public class MobileAccountService {
     MobileUserAuthService mobileUserAuthService;
 
     @Autowired
-    BillingService billingService;
+    BillingServiceImpl billingService;
 
     @Autowired
     AccountRepository accountRepository;
@@ -55,6 +56,9 @@ public class MobileAccountService {
     @Autowired
     MeterReaderService meterReaderService;
 
+    @Autowired
+    SystemOptionService systemOptionService;
+
     private final Integer pageSize = 500;
 
     public RequestResponse<CustomPage> getPage(AccountPageRequest accountPageRequest) {
@@ -67,6 +71,9 @@ public class MobileAccountService {
         if (!mobileUserAuthService.canLogin(accountPageRequest.user)) {
             response.setError(Boolean.TRUE);
             response.setMessage("Access denied to this resource");
+        } else if (!systemOptionService.isMobileEnabled()) {
+            response.setError(Boolean.TRUE);
+            response.setMessage(systemOptionService.getMobileLicenceExpired());
         } else {
 
             User user = userService.getByEmailAddress(accountPageRequest.getUser().getEmail());
@@ -139,7 +146,11 @@ public class MobileAccountService {
         if (!mobileUserAuthService.canLogin(statementRequest.getUser())) {
             response.setError(Boolean.TRUE);
             response.setMessage("Access denied to this resource");
+        } else if (!systemOptionService.isMobileEnabled()) {
+            response.setError(Boolean.TRUE);
+            response.setMessage(systemOptionService.getMobileLicenceExpired());
         } else {
+
             if (statementRequest.getAccountId() == null) {
                 response.setError(Boolean.TRUE);
                 response.setMessage("Invalid account resource");

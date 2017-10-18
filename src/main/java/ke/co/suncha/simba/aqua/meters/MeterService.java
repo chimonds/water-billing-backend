@@ -100,6 +100,16 @@ public class MeterService {
 
     }
 
+    public Meter getByMeterId(Long meterId) {
+        return meterRepository.findOne(meterId);
+    }
+
+    public Meter activate(Long meterId) {
+        Meter meter = getByMeterId(meterId);
+        meter.setIsNew(Boolean.FALSE);
+        return meterRepository.save(meter);
+    }
+
     @Transactional
     public RestResponse create(RestRequestObject<Meter> requestObject) {
         try {

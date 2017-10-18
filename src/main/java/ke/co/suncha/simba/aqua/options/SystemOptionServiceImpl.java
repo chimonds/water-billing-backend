@@ -41,4 +41,15 @@ public class SystemOptionServiceImpl implements SystemOptionService {
         }
         return enabled;
     }
+
+    @Override
+    public Boolean isMobileEnabled() {
+        return Boolean.valueOf(getValue("MOBILE_ENABLED"));
+    }
+
+    @Override
+    public String getMobileLicenceExpired() {
+        String msg = getValue("MOBILE_LICENCE_EXPIRED");
+        return msg;
+    }
 }

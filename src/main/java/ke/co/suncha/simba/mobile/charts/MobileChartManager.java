@@ -2,6 +2,7 @@ package ke.co.suncha.simba.mobile.charts;
 
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.service.UserService;
+import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.scheme.zone.Zone;
 import ke.co.suncha.simba.aqua.scheme.zone.meterReader.MeterReaderService;
 import ke.co.suncha.simba.mobile.MobileUser;
@@ -31,11 +32,18 @@ public class MobileChartManager {
     @Autowired
     MeterReaderService meterReaderService;
 
+    @Autowired
+    SystemOptionService systemOptionService;
+
     public RequestResponse<List<MobileChart>> getCharts(MobileUser mobileUser) {
         RequestResponse<List<MobileChart>> response = new RequestResponse<>();
         if (!mobileUserAuthService.canLogin(mobileUser)) {
             response.setError(Boolean.TRUE);
             response.setMessage("Access denied to this resource");
+            return response;
+        } else if (!systemOptionService.isMobileEnabled()) {
+            response.setError(Boolean.TRUE);
+            response.setMessage(systemOptionService.getMobileLicenceExpired());
             return response;
         } else {
             User user = userService.getByEmailAddress(mobileUser.getEmail());
@@ -46,20 +54,18 @@ public class MobileChartManager {
                     zoneIds.add(zone.getZoneId());
                 }
             }
-
-
             List<MobileChart> mobileChartList = new ArrayList<>();
             mobileChartList.add(mobileChartService.getReceiptsToday(zoneIds, 1));
             mobileChartList.add(mobileChartService.getReceiptsYesterday(zoneIds, 2));
             mobileChartList.add(mobileChartService.getReceiptsAndBilledThisMonthCalc(zoneIds, 3));
             //mobileChartList.add(mobileChartService.getMetersRead(zoneIds,4));
-            mobileChartList.add(mobileChartService.getAccountsBilled(zoneIds,5));
-            mobileChartList.add(mobileChartService.getAccounts(zoneIds,6));
+            mobileChartList.add(mobileChartService.getAccountsBilled(zoneIds, 5));
+            mobileChartList.add(mobileChartService.getAccounts(zoneIds, 6));
             mobileChartList.add(mobileChartService.getReceiptsThisMonth(zoneIds, 7));
             mobileChartList.add(mobileChartService.getReceiptsBillingOverPeriod(zoneIds, 8));
-            mobileChartList.add(mobileChartService.getTotalAccounts(zoneIds,9));
-            mobileChartList.add(mobileChartService.getTotalBalances(zoneIds,10));
-            mobileChartList.add(mobileChartService.getTotalCreditBalances(zoneIds,11));
+            mobileChartList.add(mobileChartService.getTotalAccounts(zoneIds, 9));
+            mobileChartList.add(mobileChartService.getTotalBalances(zoneIds, 10));
+            mobileChartList.add(mobileChartService.getTotalCreditBalances(zoneIds, 11));
 
             Collections.sort(mobileChartList);
 

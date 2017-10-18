@@ -5,6 +5,7 @@ import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.admin.service.UserService;
+import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.mobile.MobileUser;
 import ke.co.suncha.simba.mobile.request.RequestResponse;
 import org.apache.commons.lang.StringUtils;
@@ -24,6 +25,9 @@ public class MobileUserAuthService {
 
     @Autowired
     AuthManager authManager;
+
+    @Autowired
+    SystemOptionService systemOptionService;
 
     public Boolean isMobileOrganizationLevel(Long userId) {
         return authManager.hasPermission(userId, "mobile_OrganizationLevel");
@@ -60,6 +64,13 @@ public class MobileUserAuthService {
             return response;
         }
 
+        if (!systemOptionService.isMobileEnabled()) {
+            response.setError(Boolean.TRUE);
+            response.setMessage(systemOptionService.getMobileLicenceExpired());
+            return response;
+        }
+
+
         User user = userService.getByEmailAddress(mobileUser.getEmail());
 
         mobileUser.setName(user.getFirstName() + " " + user.getLastName());
@@ -68,9 +79,10 @@ public class MobileUserAuthService {
             mobileUser.setOrganizationLevel(1);
         }
 
-        if (readOnlyMeteredAccounts()) {
-            mobileUser.setReadOnlyMeteredAccounts(1);
-        }
+        /**
+         if (readOnlyMeteredAccounts()) {
+         mobileUser.setReadOnlyMeteredAccounts(1);
+         }**/
 
         response.setError(Boolean.FALSE);
         response.setMessage("Logged in");

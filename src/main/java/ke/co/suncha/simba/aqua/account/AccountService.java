@@ -3,10 +3,13 @@ package ke.co.suncha.simba.aqua.account;
 import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
 import com.mysema.query.jpa.impl.JPAUpdateClause;
-import ke.co.suncha.simba.aqua.billing.BillingService;
+import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
+import ke.co.suncha.simba.aqua.billing.QBill;
+import ke.co.suncha.simba.aqua.models.QPayment;
 import ke.co.suncha.simba.aqua.receipts.ReceiptService;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
+import ke.co.suncha.simba.aqua.toActivate.ToActivateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +27,7 @@ public class AccountService {
     EntityManager entityManager;
 
     @Autowired
-    BillingService billingService;
+    BillingServiceImpl billingService;
 
     @Autowired
     ReceiptService receiptService;
@@ -34,6 +37,13 @@ public class AccountService {
 
     @Autowired
     AccountRepository accountRepository;
+
+    @Autowired
+    ToActivateService toActivateService;
+
+    public Account save(Account account) {
+        return accountRepository.save(account);
+    }
 
     public Double getTotalBalances(List<Long> zoneList) {
         BooleanBuilder builder = new BooleanBuilder();
@@ -53,7 +63,7 @@ public class AccountService {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.onStatus.eq(1));
         builder.and(QAccount.account.active.eq(Boolean.TRUE));
-        if(!zoneList.isEmpty()){
+        if (!zoneList.isEmpty()) {
             builder.and(QAccount.account.zone.zoneId.in(zoneList));
         }
         JPAQuery query = new JPAQuery(entityManager);
@@ -68,7 +78,7 @@ public class AccountService {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QAccount.account.onStatus.eq(1));
         builder.and(QAccount.account.active.eq(Boolean.FALSE));
-        if(!zoneList.isEmpty()){
+        if (!zoneList.isEmpty()) {
             builder.and(QAccount.account.zone.zoneId.in(zoneList));
         }
         JPAQuery query = new JPAQuery(entityManager);
@@ -143,4 +153,141 @@ public class AccountService {
         updateClause.set(QAccount.account.receiptsThisMonthCalculated, amount);
         updateClause.execute();
     }
+
+    @Transactional
+    public Account updateBalance(Long accountId) {
+        // update balances
+        Account account = accountRepository.findOne(accountId);
+        try {
+            if (!accountRepository.exists(accountId)) {
+                return null;
+            }
+
+            JPAQuery query = new JPAQuery(entityManager);
+            BooleanBuilder accountBuilder = new BooleanBuilder();
+            accountBuilder.and(QAccount.account.accountId.eq(accountId));
+            Double balanceBroughtForward = query.from(QAccount.account).where(accountBuilder).singleResult(QAccount.account.balanceBroughtForward);
+            if (balanceBroughtForward == null) {
+                balanceBroughtForward = 0d;
+            }
+
+            Double balance = 0d;
+
+            // add balance b/f
+            balance += balanceBroughtForward;
+
+            Double waterSaleTotal = 0d;
+            waterSaleTotal += balance;
+
+            Double meterRentTotal = 0d;
+            Double penaltiesTotal = 0d;
+
+            //get total billed amount for all bills
+            //Double dbTotalWaterSaleBilled = billRepository.getTotalBilledAmountByAccount(account.getAccountId());
+
+            query = new JPAQuery(entityManager);
+            BooleanBuilder billsBuilder = new BooleanBuilder();
+            billsBuilder.and(QBill.bill.account.accountId.eq(accountId));
+            Double dbTotalWaterSaleBilled = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.amount.sum());
+
+
+            if (dbTotalWaterSaleBilled != null) {
+                balance += dbTotalWaterSaleBilled;
+                waterSaleTotal += dbTotalWaterSaleBilled;
+            }
+
+            //get total meter rent for all bills
+            //Double dbTotalMeterRentBilled = billRepository.getTotalMeterRentByAccount(account.getAccountId());
+            query = new JPAQuery(entityManager);
+            Double dbTotalMeterRentBilled = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.meterRent.sum());
+
+            if (dbTotalMeterRentBilled != null) {
+                balance += dbTotalMeterRentBilled;
+                meterRentTotal += dbTotalMeterRentBilled;
+            }
+
+            //Get total_billed-meter_rent-amount
+            query = new JPAQuery(entityManager);
+            Double dbTotalFines = query.from(QBill.bill).where(billsBuilder).singleResult(QBill.bill.totalBilled.sum().subtract(QBill.bill.meterRent.sum().add(QBill.bill.amount.sum())));
+
+
+            //Double dbTotalFines = billRepository.getTotalFinesByAccount(account.getAccountId());
+            if (dbTotalFines != null) {
+                balance += dbTotalFines;
+                penaltiesTotal += dbTotalFines;
+            }
+
+
+            Double totalPayments = 0d;
+            query = new JPAQuery(entityManager);
+            BooleanBuilder paymentBuilder = new BooleanBuilder();
+            paymentBuilder.and(QPayment.payment.account.accountId.eq(accountId));
+            Double dbTotalPayments = query.from(QPayment.payment).where(paymentBuilder).singleResult(QPayment.payment.amount.sum());
+
+
+            //Double dbTotalPayments = paymentRepository.getTotalByAccount(account.getAccountId());
+            if (dbTotalPayments != null) {
+                totalPayments += dbTotalPayments;
+            }
+
+            balance = (balance - totalPayments);
+
+
+            account.setOutstandingBalance(balance);
+
+            Double moneyToAllocate = 0d;
+            //if balance
+            if (balance == 0) {
+                account.setOutstandingBalance(0d);
+                account.setPenaltiesBalance(0d);
+                account.setWaterSaleBalance(0d);
+                account.setMeterRentBalance(0d);
+            } else if (balance > 0) {
+                account.setPenaltiesBalance(penaltiesTotal);
+                account.setWaterSaleBalance(waterSaleTotal);
+                account.setMeterRentBalance(meterRentTotal);
+
+                //Penalties
+                moneyToAllocate = totalPayments - penaltiesTotal;
+                if (moneyToAllocate >= 0) {
+                    account.setPenaltiesBalance(0d);
+                } else {
+                    account.setPenaltiesBalance(Math.abs(moneyToAllocate));
+                }
+
+                //Meter Rent
+                if (moneyToAllocate > 0) {
+                    moneyToAllocate = moneyToAllocate - meterRentTotal;
+                    if (moneyToAllocate >= 0) {
+                        account.setMeterRentBalance(0d);
+                    } else {
+                        account.setMeterRentBalance(Math.abs(moneyToAllocate));
+                    }
+                }
+
+                //Water Sale
+                if (moneyToAllocate > 0) {
+                    moneyToAllocate = moneyToAllocate - waterSaleTotal;
+                    if (moneyToAllocate >= 0) {
+                        account.setWaterSaleBalance(0d);
+                    } else {
+                        account.setWaterSaleBalance(Math.abs(moneyToAllocate));
+                    }
+                }
+            }
+            account = accountRepository.save(account);
+
+
+            updateAmountToAllocateThisMonth(accountId);
+
+            //Check if to move account to the list to activate
+
+            toActivateService.create(account.getAccountId());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return account;
+    }
 }
+
+

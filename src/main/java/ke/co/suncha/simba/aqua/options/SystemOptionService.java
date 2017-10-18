@@ -5,5 +5,10 @@ package ke.co.suncha.simba.aqua.options;
  */
 public interface SystemOptionService {
     String getValue(String name);
+
     Boolean isStrictModeEnabled();
+
+    Boolean isMobileEnabled();
+
+    String getMobileLicenceExpired();
 }
