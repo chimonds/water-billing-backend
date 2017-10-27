@@ -1,26 +1,42 @@
 package ke.co.suncha.simba.mobile.upload;
 
+import ke.co.suncha.simba.admin.security.AuthManager;
 import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.admin.service.UserService;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.billing.Bill;
 import ke.co.suncha.simba.aqua.billing.BillService;
+import ke.co.suncha.simba.aqua.billing.BillingService;
+import ke.co.suncha.simba.aqua.billing.charges.Charge;
+import ke.co.suncha.simba.aqua.billing.charges.ChargeItem;
+import ke.co.suncha.simba.aqua.billing.charges.ChargeService;
+import ke.co.suncha.simba.aqua.billing.validator.BillValidator;
+import ke.co.suncha.simba.aqua.models.BillItemType;
 import ke.co.suncha.simba.aqua.models.BillingMonth;
 import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.services.AccountManagerService;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
+import ke.co.suncha.simba.aqua.services.MeterReadingService;
 import ke.co.suncha.simba.aqua.services.TariffService;
 import ke.co.suncha.simba.aqua.utils.BillMeta;
+import ke.co.suncha.simba.aqua.utils.BillRequest;
+import ke.co.suncha.simba.aqua.utils.Response;
 import ke.co.suncha.simba.mobile.request.RequestResponse;
 import ke.co.suncha.simba.mobile.user.MobileUserAuthService;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by maitha.manyala on 9/3/17.
  */
 @Service
+@Transactional
 public class MeterReadingManager {
     @Autowired
     MobileUserAuthService mobileUserAuthService;
@@ -29,7 +45,7 @@ public class MeterReadingManager {
     BillingMonthService billingMonthService;
 
     @Autowired
-    MeterReadingRecordService meterReadingRecordService;
+    MeterReadingRecordServiceImpl meterReadingRecordService;
 
     @Autowired
     AccountManagerService accountService;
@@ -45,6 +61,21 @@ public class MeterReadingManager {
 
     @Autowired
     private SimbaOptionService optionService;
+
+    @Autowired
+    BillingService billingService;
+
+    @Autowired
+    ChargeService chargeService;
+
+    @Autowired
+    BillValidator billValidator;
+
+    @Autowired
+    MeterReadingService meterReadingService;
+
+    @Autowired
+    AuthManager authManager;
 
     public RequestResponse<MeterReadingRequest> addMeterReadingRequest(UploadRequest request) {
 
@@ -139,4 +170,60 @@ public class MeterReadingManager {
         }
     }
 
+    @Scheduled(fixedDelay = 5000)
+    public void processReadings() {
+        Boolean autoBill = Boolean.valueOf(optionService.getOption("AUTO_BILL").getValue());
+        if (autoBill) {
+            List<Long> meterReadingIds = meterReadingRecordService.getPendingReadings();
+            if (!meterReadingIds.isEmpty()) {
+                for (Long meterReadingId : meterReadingIds) {
+                    billAccount(meterReadingId);
+                }
+            }
+        }
+    }
+
+    @Transactional
+    private void billAccount(Long meterReadingId) {
+        MeterReading meterReading = meterReadingRecordService.getByMeterReadingId(meterReadingId);
+        if (meterReading != null) {
+            BillRequest billRequest = new BillRequest();
+            billRequest.setCurrentReading(meterReading.getCurrentReading());
+
+            Double previousReading = billingService.getLastMeterReading(meterReading.getAccount().getAccountId());
+            billRequest.setPreviousReading(previousReading);
+            List<BillItemType> billItemTypeList = new ArrayList<>();
+
+            Charge charge = chargeService.get(meterReading.getAccount().getAccountId(), meterReading.getBillingMonth().getBillingMonthId());
+            if (charge != null) {
+                for (ChargeItem chargeItem : charge.getChargeItems()) {
+                    billItemTypeList.add(chargeItem.getBillItemType());
+                }
+            }
+
+            billRequest.setBillItemTypes(billItemTypeList);
+
+            //set previous reading
+            Response response = billValidator.create(billRequest, meterReading.getAccount().getAccountId());
+            if (response.hasError()) {
+                meterReading.setBilled(Boolean.FALSE);
+                meterReading.setResponse(response.getMessage());
+                meterReading.setBilledBy(meterReading.getReadBy());
+                meterReading.setProcessed(Boolean.TRUE);
+                meterReading.setBilledOn(new DateTime());
+                meterReadingRecordService.save(meterReading);
+            } else {
+                Bill bill = billingService.create(billRequest, meterReading.getAccount().getAccountId());
+                if (bill != null) {
+                    meterReading.setBilled(Boolean.TRUE);
+                    meterReading.setResponse("Billed");
+                    meterReading.setBilledBy(meterReading.getReadBy());
+                    meterReading.setProcessed(Boolean.TRUE);
+                    meterReading.setBilledOn(new DateTime());
+                    meterReading.setBill(bill);
+                    meterReadingRecordService.save(meterReading);
+                }
+            }
+        }
+    }
 }

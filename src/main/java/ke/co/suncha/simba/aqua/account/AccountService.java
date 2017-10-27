@@ -3,7 +3,7 @@ package ke.co.suncha.simba.aqua.account;
 import com.mysema.query.BooleanBuilder;
 import com.mysema.query.jpa.impl.JPAQuery;
 import com.mysema.query.jpa.impl.JPAUpdateClause;
-import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
+import ke.co.suncha.simba.aqua.billing.BillingService;
 import ke.co.suncha.simba.aqua.billing.QBill;
 import ke.co.suncha.simba.aqua.models.QPayment;
 import ke.co.suncha.simba.aqua.receipts.ReceiptService;
@@ -27,7 +27,7 @@ public class AccountService {
     EntityManager entityManager;
 
     @Autowired
-    BillingServiceImpl billingService;
+    BillingService billingService;
 
     @Autowired
     ReceiptService receiptService;

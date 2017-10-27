@@ -36,6 +36,13 @@ public class MeterReaderController {
         return this.meterReaderManager.getZoneMeterReaders(requestObject);
     }
 
+
+    @RequestMapping(value = "/getMeterReaders", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
+    @ResponseStatus(HttpStatus.CREATED)
+    public RestResponse getMeterReaders(@RequestBody RestRequestObject<MeterReader> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return this.meterReaderManager.getMeterReaders(requestObject);
+    }
+
     @RequestMapping(value = "/getMeterReadersNotInZone", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
     @ResponseStatus(HttpStatus.CREATED)
     public RestResponse getMeterReadersNotInZone(@RequestBody RestRequestObject<MeterReader> requestObject, HttpServletRequest request, HttpServletResponse response) {

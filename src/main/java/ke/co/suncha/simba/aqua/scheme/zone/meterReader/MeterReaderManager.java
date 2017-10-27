@@ -182,6 +182,29 @@ public class MeterReaderManager {
     }
 
     @Transactional
+    public RestResponse getMeterReaders(RestRequestObject<MeterReader> requestObject) {
+        try {
+            response = authManager.tokenValid(requestObject.getToken());
+            if (response.getStatusCode() != HttpStatus.UNAUTHORIZED) {
+                response = authManager.grant(requestObject.getToken(), "zones_view");
+                if (response.getStatusCode() != HttpStatus.OK) {
+                    return response;
+                }
+                List<User> userList = meterReaderService.getMeterReaders();
+                if (userList == null) {
+                    return RestResponse.getExpectationFailed("We could not retrive any meter readers");
+                }
+                return RestResponse.getOk("user list", userList);
+            }
+        } catch (Exception ex) {
+            responseObject.setMessage(ex.getLocalizedMessage());
+            response = new RestResponse(responseObject, HttpStatus.EXPECTATION_FAILED);
+            log.error(ex.getLocalizedMessage());
+        }
+        return response;
+    }
+
+    @Transactional
     public RestResponse getMeterReadersNotInZone(RestRequestObject<MeterReader> requestObject) {
         try {
             response = authManager.tokenValid(requestObject.getToken());
@@ -214,7 +237,7 @@ public class MeterReaderManager {
         }
         return response;
     }
-    
+
     @PostConstruct
     public void addPermissions() {
         releaseManager.addPermission("meterReader_create");

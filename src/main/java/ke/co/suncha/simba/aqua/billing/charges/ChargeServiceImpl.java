@@ -105,6 +105,15 @@ public class ChargeServiceImpl implements ChargeService {
     }
 
     @Override
+    public Charge get(Long accountId, Long billingMonthId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QCharge.charge.account.accountId.eq(accountId));
+        builder.and(QCharge.charge.billingMonth.billingMonthId.eq(billingMonthId));
+        JPAQuery query = new JPAQuery(entityManager);
+        return query.from(QCharge.charge).where(builder).singleResult(QCharge.charge);
+    }
+
+    @Override
     public Page<Charge> getPage(BooleanBuilder builder, PageRequest pageRequest) {
         return chargeRepository.findAll(builder, pageRequest);
     }

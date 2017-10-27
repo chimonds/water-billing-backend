@@ -8,10 +8,8 @@ import ke.co.suncha.simba.admin.request.RestResponse;
 import ke.co.suncha.simba.aqua.models.MeterReading;
 import ke.co.suncha.simba.aqua.services.MeterReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,9 +26,15 @@ public class MeterReadingsController extends AbstractRestHandler {
 
     @RequestMapping(value = "", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
     public RestResponse getAll(@RequestBody RestRequestObject<RestPageRequest> requestObject, HttpServletRequest request, HttpServletResponse response) {
-        return meterReadingService.getAllByFilter(requestObject);
+        return meterReadingService.getPage(requestObject);
     }
 
+
+    @RequestMapping(value = "/{meterReadingId}", method = RequestMethod.PUT, consumes = { "application/json"}, produces = { "application/json" })
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public RestResponse update(@PathVariable("meterReadingId") Long meterReadingId, @RequestBody RestRequestObject<MeterReading> requestObject, HttpServletRequest request, HttpServletResponse response) {
+        return meterReadingService.update(requestObject, meterReadingId);
+    }
 
     @RequestMapping(value = "/getImage", method = RequestMethod.POST, consumes = {"application/json"}, produces = {"application/json"})
     public RestResponse getMeterReadingImageString(@RequestBody RestRequestObject<MeterReading> requestObject, HttpServletRequest request, HttpServletResponse response) {

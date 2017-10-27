@@ -1,140 +1,38 @@
 package ke.co.suncha.simba.mobile.upload;
 
-import com.mysema.query.BooleanBuilder;
-import com.mysema.query.jpa.impl.JPAQuery;
-import ke.co.suncha.simba.aqua.account.QAccount;
 import ke.co.suncha.simba.aqua.models.MeterReading;
-import ke.co.suncha.simba.aqua.models.QMeterReading;
-import ke.co.suncha.simba.aqua.services.AccountManagerService;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
-import java.io.*;
+import java.util.List;
 
 /**
- * Created by maitha.manyala on 9/3/17.
+ * Created by maitha.manyala on 10/20/17.
  */
-@Service
-public class MeterReadingRecordService {
-    @Autowired
-    AccountManagerService accountService;
+public interface MeterReadingRecordService {
+    MeterReading save(MeterReading meterReading);
 
-    @Autowired
-    EntityManager entityManager;
+    MeterReading updateCurrentReading(Long meterReadingId, MeterReading meterReading);
 
-    @Autowired
-    MeterReadingRepository meterReadingRepository;
+    Long readByBillingMonth(Long billingMonthId);
 
-    public Long readByBillingMonth(Long billingMonthId) {
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(QMeterReading.meterReading.billingMonth.billingMonthId.eq(billingMonthId));
-        JPAQuery query = new JPAQuery(entityManager);
-        Long count = query.from(QMeterReading.meterReading).where(builder).count();
-        if (count == null) {
-            count = 0l;
-        }
-        return count;
-    }
+    List<Long> getPendingReadings();
 
-    public Long accountsWithMeters() {
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(QAccount.account.meter.isNotNull());
-        builder.and(QAccount.account.active.eq(Boolean.TRUE));
-        JPAQuery query = new JPAQuery(entityManager);
-        Long count = query.from(QAccount.account).where(builder).count();
-        if (count == null) {
-            count = 0l;
-        }
-        return count;
+    Long accountsWithMeters();
 
-    }
+    Boolean hasMeterReading(Long accountId, Long billingMonthId);
 
-    public Boolean hasMeterReading(Long accountId, Long billingMonthId) {
-        if (get(accountId, billingMonthId) != null) {
-            return Boolean.TRUE;
-        }
-        return Boolean.FALSE;
-    }
+    MeterReading addRecord(MeterReading meterReading);
 
-    public MeterReading addRecord(MeterReading meterReading) {
-        return meterReadingRepository.save(meterReading);
-    }
+    void removeRecord(Long accountId, Long billingMonthId);
 
-    public void removeRecord(Long accountId, Long billingMonthId) {
-        MeterReading meterReading = get(accountId, billingMonthId);
-        if (meterReading != null) {
-            meterReadingRepository.delete(meterReading);
-        }
-    }
+    Boolean isBilled(Long accountId, Long billingMonthId);
 
-    public Boolean isBilled(Long accountId, Long billingMonthId) {
-        MeterReading meterReading = get(accountId, billingMonthId);
-        if (meterReading.getBilled()) {
-            return Boolean.TRUE;
-        }
-        return Boolean.FALSE;
-    }
+    MeterReading get(Long accountId, Long billingMonthId);
 
-    public MeterReading get(Long accountId, Long billingMonthId) {
-        JPAQuery query = new JPAQuery(entityManager);
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(QMeterReading.meterReading.account.accountId.eq(accountId));
-        builder.and(QMeterReading.meterReading.billingMonth.billingMonthId.eq(billingMonthId));
-        MeterReading meterReading = query.from(QMeterReading.meterReading).where(builder).singleResult(QMeterReading.meterReading);
-        if (meterReading != null) {
-            return meterReading;
-        }
-        return null;
-    }
+    MeterReading getByMeterReadingId(Long meterReadingId);
 
-    private String getImagesDirectory() {
-        String path = System.getProperty("user.home") + File.separator + "meter_readings";
-        File file = new File(path);
-        if (!file.exists()) {
-            file.mkdir();
-        }
-        return path;
-    }
+    String getImagesDirectory();
 
-    public String getImagePath(MeterReading meterReading) {
-        String imageDirectory = getImagesDirectory();
-        String billingMonthImageDir = imageDirectory + File.separator + meterReading.getBillingMonth().getMonth().toString("yyyy_MM");
-        File file = new File(billingMonthImageDir);
-        if (!file.exists()) {
-            file.mkdir();
-        }
+    String getImagePath(MeterReading meterReading);
 
-        String path = billingMonthImageDir + File.separator + meterReading.getAccount().getAccNo() + ".jpg";
-        return path;
-    }
-
-    public Boolean saveImage(MeterReading meterReading, String imageString) {
-        String path = getImagePath(meterReading);
-        try {
-            File file = new File(path);
-            if (file.exists()) {
-                file.delete();
-                file = new File(path);
-            }
-
-            byte[] imageByte = Base64.decodeBase64(imageString);
-            InputStream input = new ByteArrayInputStream(imageByte);
-            OutputStream output = new FileOutputStream(path);
-            IOUtils.copy(input, output);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return Boolean.FALSE;
-        }
-        return Boolean.TRUE;
-    }
-
-    @PostConstruct
-    private void setupImagesDirectory() {
-        getImagesDirectory();
-    }
+    Boolean saveImage(MeterReading meterReading, String imageString);
 }

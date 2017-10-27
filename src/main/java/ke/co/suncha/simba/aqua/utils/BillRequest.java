@@ -3,6 +3,7 @@ package ke.co.suncha.simba.aqua.utils;
 import ke.co.suncha.simba.aqua.models.BillItemType;
 import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,6 +41,9 @@ public class BillRequest {
     }
 
     public List<BillItemType> getBillItemTypes() {
+        if (billItemTypes == null) {
+            billItemTypes = new ArrayList<>();
+        }
         return billItemTypes;
     }
 

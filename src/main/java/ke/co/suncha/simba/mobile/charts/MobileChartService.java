@@ -1,7 +1,7 @@
 package ke.co.suncha.simba.mobile.charts;
 
 import ke.co.suncha.simba.aqua.account.AccountService;
-import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
+import ke.co.suncha.simba.aqua.billing.BillingService;
 import ke.co.suncha.simba.aqua.receipts.ReceiptService;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
 import ke.co.suncha.simba.mobile.MobileUtil;
@@ -11,7 +11,7 @@ import ke.co.suncha.simba.mobile.charts.line.LineGraphData;
 import ke.co.suncha.simba.mobile.charts.line.LineGraphDataset;
 import ke.co.suncha.simba.mobile.charts.pie.PEntry;
 import ke.co.suncha.simba.mobile.charts.pie.PieChartData;
-import ke.co.suncha.simba.mobile.upload.MeterReadingRecordService;
+import ke.co.suncha.simba.mobile.upload.MeterReadingRecordServiceImpl;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class MobileChartService implements IMobileChartService {
     AccountService accountService;
 
     @Autowired
-    BillingServiceImpl billingService;
+    BillingService billingService;
 
     @Autowired
     ReceiptService receiptService;
@@ -37,7 +37,7 @@ public class MobileChartService implements IMobileChartService {
     BillingMonthService billingMonthService;
 
     @Autowired
-    MeterReadingRecordService meterReadingRecordService;
+    MeterReadingRecordServiceImpl meterReadingRecordService;
 
     @Override
     public CardStatData getReceiptsToday(List<Long> zoneList, int sequence) {

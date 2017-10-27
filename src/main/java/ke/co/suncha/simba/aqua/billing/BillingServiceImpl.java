@@ -36,6 +36,7 @@ import java.util.List;
  * Created by maitha.manyala on 9/6/17.
  */
 @Service
+@Transactional
 public class BillingServiceImpl implements BillingService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -134,6 +135,7 @@ public class BillingServiceImpl implements BillingService {
     }
 
     @Override
+    @Transactional
     public Double getLastMeterReading(Long accountId) {
         Double meterReading = 0.0;
         BooleanBuilder builder = new BooleanBuilder();

@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @RestController
 @RequestMapping(value = "/api/v1/inbox")
-public class atController {
+public class SMSInboxController {
     @Autowired
     SMSInboxService smsInboxService;
 

@@ -70,6 +70,26 @@ public class MeterReaderService {
         return userList;
     }
 
+    public List<User> getMeterReaders() {
+        List<User> userList = new ArrayList<>();
+        List<Long> zoneIdList = zoneService.getZoneIdList();
+        if (zoneIdList != null) {
+            for (Long zoneId : zoneIdList) {
+                List<User> users = getZoneMeterReaders(zoneId);
+                if (users != null) {
+                    if (!users.isEmpty()) {
+                        for (User user : users) {
+                            if (!userList.contains(user)) {
+                                userList.add(user);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return userList;
+    }
+
     public List<User> getMeterReadersNotInZone(Long zoneId) {
         List<User> meterReaderListInZone = getZoneMeterReaders(zoneId);
         List<Long> userIdsInZone = new ArrayList<>();

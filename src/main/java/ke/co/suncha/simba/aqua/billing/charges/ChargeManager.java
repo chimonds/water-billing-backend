@@ -17,7 +17,7 @@ import ke.co.suncha.simba.aqua.account.AccountService;
 import ke.co.suncha.simba.aqua.account.BillingFrequency;
 import ke.co.suncha.simba.aqua.account.OnStatus;
 import ke.co.suncha.simba.aqua.billing.Bill;
-import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
+import ke.co.suncha.simba.aqua.billing.BillingService;
 import ke.co.suncha.simba.aqua.makerChecker.tasks.TaskService;
 import ke.co.suncha.simba.aqua.services.BillingMonthService;
 import org.apache.commons.lang.StringUtils;
@@ -60,7 +60,7 @@ public class ChargeManager {
     AccountService accountService;
 
     @Autowired
-    BillingServiceImpl billingService;
+    BillingService billingService;
 
     @Autowired
     ReleaseManager releaseManager;

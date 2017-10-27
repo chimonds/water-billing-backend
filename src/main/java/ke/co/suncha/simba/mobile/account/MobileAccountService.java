@@ -3,11 +3,12 @@ package ke.co.suncha.simba.mobile.account;
 import com.mysema.query.BooleanBuilder;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.admin.security.AuthManager;
+import ke.co.suncha.simba.admin.service.SimbaOptionService;
 import ke.co.suncha.simba.admin.service.UserService;
 import ke.co.suncha.simba.admin.utils.CustomPage;
 import ke.co.suncha.simba.aqua.account.Account;
 import ke.co.suncha.simba.aqua.account.QAccount;
-import ke.co.suncha.simba.aqua.billing.BillingServiceImpl;
+import ke.co.suncha.simba.aqua.billing.BillingService;
 import ke.co.suncha.simba.aqua.options.SystemOptionService;
 import ke.co.suncha.simba.aqua.reports.StatementRecord;
 import ke.co.suncha.simba.aqua.repository.AccountRepository;
@@ -36,7 +37,7 @@ public class MobileAccountService {
     MobileUserAuthService mobileUserAuthService;
 
     @Autowired
-    BillingServiceImpl billingService;
+    BillingService billingService;
 
     @Autowired
     AccountRepository accountRepository;
@@ -59,7 +60,23 @@ public class MobileAccountService {
     @Autowired
     SystemOptionService systemOptionService;
 
-    private final Integer pageSize = 500;
+    @Autowired
+    SimbaOptionService optionService;
+
+    //private final Integer pageSize = 200;
+
+    public Integer getPageSize() {
+        Integer pageSize = 200;
+        try {
+            Integer p = Integer.valueOf(optionService.getOption("DEFAULT_PAGE_SIZE").getValue());
+            if (p != null) {
+                pageSize = p;
+            }
+        } catch (Exception ex) {
+
+        }
+        return pageSize;
+    }
 
     public RequestResponse<CustomPage> getPage(AccountPageRequest accountPageRequest) {
 
@@ -87,7 +104,7 @@ public class MobileAccountService {
                 }
             }
 
-            Page<Account> accountPage = accountRepository.findAll(builder, new PageRequest(page, pageSize));
+            Page<Account> accountPage = accountRepository.findAll(builder, new PageRequest(page, getPageSize()));
             if (accountPage != null) {
                 if (accountPage.hasContent()) {
 

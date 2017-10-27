@@ -3,6 +3,7 @@ package ke.co.suncha.simba.aqua.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ke.co.suncha.simba.admin.models.User;
 import ke.co.suncha.simba.aqua.account.Account;
+import ke.co.suncha.simba.aqua.billing.Bill;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
@@ -36,9 +37,19 @@ public class MeterReading {
     @Column(name = "longitude", length = 25)
     private String longitude;
 
+    @Column(name = "bill_response", length = 1000)
+    private String response;
+
+    @Column(name = "bill_processed")
+    private Boolean processed = Boolean.FALSE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     private Account account;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bill_id")
+    private Bill bill;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "billing_month_id")
@@ -68,6 +79,12 @@ public class MeterReading {
     @Column(name = "read_on")
     @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
     private DateTime readOn = new DateTime();
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "billed_on")
+    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+    private DateTime billedOn = new DateTime();
+
 
     @Column(name = "units_consumed")
     private Double unitsConsumed;
@@ -216,4 +233,37 @@ public class MeterReading {
     public void setReadOn(DateTime readOn) {
         this.readOn = readOn;
     }
+
+    public String getResponse() {
+        return response;
+    }
+
+    public void setResponse(String response) {
+        this.response = response;
+    }
+
+    public Boolean getProcessed() {
+        return processed;
+    }
+
+    public void setProcessed(Boolean processed) {
+        this.processed = processed;
+    }
+
+    public DateTime getBilledOn() {
+        return billedOn;
+    }
+
+    public void setBilledOn(DateTime billedOn) {
+        this.billedOn = billedOn;
+    }
+
+    public Bill getBill() {
+        return bill;
+    }
+
+    public void setBill(Bill bill) {
+        this.bill = bill;
+    }
 }
+

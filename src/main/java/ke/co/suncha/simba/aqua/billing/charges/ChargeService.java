@@ -23,5 +23,7 @@ public interface ChargeService {
 
     Charge getById(Long chargeId);
 
+    Charge get(Long accountId, Long billingMonthId);
+
     Page<Charge> getPage(BooleanBuilder builder, PageRequest pageRequest);
 }
